@@ -2,10 +2,11 @@ import { Router, send } from "../deps.ts";
 import * as userController from "../controllers/userController.ts";
 
 const router = new Router();
+const root = `${Deno.cwd()}`.substring(0,`${Deno.cwd()}`.lastIndexOf("\\"))
 
 router.get("/", async (ctx) => {
   await send(ctx, ctx.request.url.pathname, {
-    root: `${Deno.cwd()}/deno_backend/static`,
+    root: `${root.toString()}/static`,
     index: "index.html",
   });
 });

@@ -1,5 +1,5 @@
 import { Response, Request, type Body, v1 } from "../deps.ts";
-
+import {client} from "../server.ts";
 interface User {
   id: string;
   name: string;
@@ -12,12 +12,14 @@ let users: User[] = [
   },
 ];
 
-export const getUsers = ({ response }: { response: Response }) => {
+export const getUsers = async ({ response }: { response: Response }) => {
+const users1 = await client.collection("users").find().toArray()
   response.body = {
     message: "Sucessful Query",
-    users,
+    users1
   };
 };
+
 
 export const getUser = ({
   params,
