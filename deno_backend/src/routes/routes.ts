@@ -1,5 +1,5 @@
 import { Router, send } from "../deps.ts";
-import * as indexCtrl from "../controllers/user_controller.ts";
+import * as userController from "../controllers/userController.ts";
 
 const router = new Router();
 
@@ -11,10 +11,10 @@ router.get("/", async (ctx) => {
 });
 
 router
-  .get("/users", indexCtrl.getUsers)
-  .post("/users", indexCtrl.createUser)
-  .get("/users/:id", indexCtrl.getUser)
-  .put("/users/:id", indexCtrl.updateUser)
-  .delete("/users/:id", indexCtrl.deleteUser);
+  .get("/users", userController.getUsers)
+  .post("/users", userController.createUser)
+  .get("/users/:id", userController.getUser)
+  .put("/users/:id", userController.updateUser)
+  .delete("/users/:id", userController.deleteUser);
 
 export default router;
