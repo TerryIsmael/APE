@@ -5,12 +5,18 @@ import { Ref, ref } from 'vue';
 defineProps<{ msg: string }>()
 
 let var1: Ref<String> = ref("Hola mundo")
-let users = ref(( fetch("http://127.0.0.1:8000/users")))
-
-const fetchData = async() =>{
-  console.log("Buscando...")
-  users = (await(await fetch("http://127.0.0.1:8000/users")).json()).users1
-  console.log(users)
+let users: Ref<any> = ref([]);
+ 
+const fetchData = async () => {
+  try {
+    const response = await fetch("http://127.0.0.1:8000/users");
+    const data = await response.json();
+    users.value = ref(data.users) as Ref<any>; 
+    console.log((users.value));
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    throw error;
+  }
 }
 
 const changeMessage = () =>{
@@ -32,8 +38,12 @@ const count = ref(0)
     <button type="button" @click="changeMessage">count is {{ count }}</button>
     <p>
       <button type="button" @click="fetchData">Buscar usuarios</button>
+      <br />
+      <br />
       Aquí tienes una lista de usuarios: 
-      <li v-for="(user, index) in users" :key="index">{{ user }}</li>
+      <ul>
+        <li v-for="(user, index) in users.value" :key="index">{{ user.name }}</li>
+      </ul>
     </p> 
   </div>
 

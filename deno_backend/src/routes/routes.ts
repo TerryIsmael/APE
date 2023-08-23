@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { Router, send } from "../deps.ts";
 import * as userController from "../controllers/userController.ts";
 
