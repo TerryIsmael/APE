@@ -17,13 +17,36 @@ jobs:
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
+
+    # Ejecuta el backend
+    - name: Setup Node.js ${{ matrix.node-version }} for Backend
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm run dev
+    - name: Install Backend Dependencies
+      run: |
+        cd express_backend
+        npm install
+    - name: Run Backend
+      run: |
+        cd express_backend
+        npm run dev
+
+    # Ejecuta el frontend
+    - name: Setup Node.js ${{ matrix.node-version }} for Frontend
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Install Frontend Dependencies
+      run: |
+        cd vite_frontend
+        npm install
+    - name: Run Frontend
+      run: |
+        cd vite_frontend
+        npm run dev
