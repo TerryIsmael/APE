@@ -1,4 +1,3 @@
-import { ObjectId } from 'mongodb';
 import { body, validationResult } from 'express-validator';
 import  User  from '../schemas/userSchema.ts';
 import  File  from '../schemas/fileSchema.ts';
@@ -12,7 +11,7 @@ export const validatePerm = [
         }
     }),
     body('fileId').custom(async (value) => {
-        const file = await File.findOne({ _id: ObjectId.createFromHexString(value)});
+        const file = await File.findOne({ _id: value});
         if (!file) {
             return Promise.reject('El archivo no existe');
         }
