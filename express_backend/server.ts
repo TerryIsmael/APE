@@ -5,9 +5,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import history from 'connect-history-api-fallback';
-import router from './src/router.js';
-import passport from './src/config/passport.js';
-import cors from './src/config/cors.js';
+import router from './src/router.ts';
+import passport from './src/config/passport.ts';
+import cors from './src/config/cors.ts';
 
 dotenv.config();  
 const app: Express = express();

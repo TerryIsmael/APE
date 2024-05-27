@@ -1,4 +1,4 @@
-import mongoose from '../config/mongoose.js';
+import mongoose from '../config/mongoose.ts';
 import type { IUser } from '../models/user.ts';
 
 const userSchema = new mongoose.Schema<IUser>({
@@ -18,6 +18,26 @@ const userSchema = new mongoose.Schema<IUser>({
                 message: "El nombre de usuario ya está en uso"
             }
         ]
+    },
+    firstName: {
+        type: String,
+        required: [true, "El nombre es obligatorio"],
+        validate: {
+            validator: (value: string) => {
+                return value.trim().length > 0 && /^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/.test(value);
+            },
+            message: "El nombre no puede estar vacío y sólo puede contener letras y espacios"
+        }
+    },
+    surnames: {
+        type: String,
+        required: [true, "Los apellidos son obligatorios"],
+        validate: {
+            validator: (value: string) => {
+                return value.trim().length > 0 && /^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/.test(value)
+            },
+            message: "Los apellidos no pueden estar vacíos y sólo pueden contener letras y espacios"
+        }
     },
     password: {
         type: String,

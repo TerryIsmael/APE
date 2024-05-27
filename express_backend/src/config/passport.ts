@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import User from '../schemas/userSchema.js';
-import type { IUser } from '../models/user.js';
+import User from '../schemas/userSchema.ts';
+import type { IUser } from '../models/user.ts';
 
 passport.use(new LocalStrategy(
   async (username: string, password: string, done: Function) => {
@@ -21,7 +21,7 @@ passport.use(new LocalStrategy(
 ));
 
 passport.serializeUser(function(user: any, done: Function) {
-  done(null, user._id);
+  done(null, user._id.toString());
 });
   
 passport.deserializeUser(async function (id, done) {

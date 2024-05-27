@@ -10,6 +10,7 @@ export default {
     const selectedFilePerms = ref(null);
     const router = useRouter();
     const showSidebar = ref(false);
+    const showMainSidebar = ref(false);
     const showSharedPopup = ref(false);
     const formattedDate = ref(null);
     const selectedFile = ref(null);
@@ -283,6 +284,7 @@ export default {
     return {
       myFiles,
       showSidebar,
+      showMainSidebar,
       showSharedPopup,
       selectedFile,
       selectedFilePerms,
@@ -316,6 +318,24 @@ export default {
 </script>
  
 <template>
+
+  <div :class="{'main-sidebar-toggle':true, 'main-sidebar-toggle-opened':showMainSidebar}">
+    <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined">chevron_right</span>
+    <span v-else @click="showMainSidebar = false" class="material-symbols-outlined">chevron_left</span>
+  </div>
+
+  <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
+    <div class="main-sidebar" :class="{'show' : showMainSidebar}">
+
+      <ul style="height: 80%;">
+          <li style="margin-top: 20%;">Workspace activo: <span style="margin-left: 20%; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">sync</span> </li>
+          <li>Nombre del workspace</li>
+      </ul>
+      <ul style="height: 5%;">
+        <li> Nombre de usuario <span> <button style="margin-left: 25%" @click="logout"><span class="material-symbols-outlined">logout</span></button> </span>   </li>
+      </ul>
+    </div>
+
   <div style="display:flex; justify-content: center; align-items: center;"><h1 style="margin-right:10px ;">Tus archivos</h1> <button style="margin-left: 10px" @click="logout"><span class="material-symbols-outlined">logout</span></button></div>
   <div style="display:flex; flex-direction: column; align-items: center;">
     <div style="display: flex; justify-content: space-between; width:85%;">
@@ -505,6 +525,57 @@ export default {
 
 .sidebar.show + .sidebar-overlay {
   display: block;
+}
+
+.main-sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100%;
+  background-color: #2F184B;
+  transition: left 0.3s ease;
+}
+
+.main-sidebar.show {
+  left: 0;
+}
+
+.main-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  display: none;
+}
+
+.main-sidebar.show + .main-sidebar-overlay {
+  display: block;
+}
+
+.main-sidebar-toggle {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  height: 50%;
+  cursor: pointer;
+}
+.main-sidebar-toggle-opened{
+  top: 15px;
+  left: 275px;
+  z-index: 999;
+}
+
+.main-sidebar ul {
+  list-style-type: none; 
+  padding: 0; 
+}
+
+.main-sidebar ul li {
+  padding: 5px;
 }
 
 .material-symbols-outlined {
