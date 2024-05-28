@@ -5,7 +5,6 @@ import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
 import { isLogged, validateUser } from './middlewares/userMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
-import { validatePerm } from './middlewares/fileMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import fs from 'fs';
@@ -81,24 +80,10 @@ router.post('/logout', (req: Request, res: Response) => {
 //         res.status(500).json({ success: false, error: 'Error al guardar el archivo. ' + error });
 //       };
 //   });
+
+//TODO: Implementar las rutas de los archivos
 router.get('/file', async (req: Request, res: Response) => {
     res.json({ message: 'Ruta GET /file' });
-});
-
-//TODO: ELIMINAR
-router.post('/upload', uploader.single('file'), (req: Request, res: Response) => {
-    try {
-        console.log('Cuerpo de la solicitud:', req.body);
-        console.log('Archivo recibido:', req.file);
-
-        res.status(200).json({
-            message: 'Solicitud recibida correctamente',
-            fileReceived: !!req.file, // Devuelve true si se recibió un archivo, false si no
-            body: req.body // Devuelve el cuerpo de la solicitud
-        });
-    } catch (error) {
-        res.status(400).json({ message: 'Error en la solicitud', error });
-    }
 });
 
 router.post('/file', (req: Request, res: Response) => {
@@ -109,14 +94,12 @@ router.post('/file', (req: Request, res: Response) => {
             } else if (err) {
                 return res.status(500).json({ message: 'Error interno del servidor al subir el archivo. '+err });
             }
-
             res.status(200).json({
                 message: 'Archivo subido correctamente',
                 file: req.file
             });
         });
     } catch (error) {
-        // Capturar errores generales y enviar un mensaje de error al cliente
         console.error('Error al manejar la solicitud:', error);
         res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud' });
     }

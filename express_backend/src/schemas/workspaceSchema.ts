@@ -1,51 +1,56 @@
 import mongoose from '../config/mongoose.ts';
-import type { IMember } from '../models/member.ts';
+import type { IProfile } from '../models/profile.ts';
+import { ProfileType, WSPermission } from '../models/profile.ts';
 import type { IUser } from '../models/user.ts';
 import type { IWorkspace } from '../models/workspace';
-import type { IPermGroup } from '../models/permGroup.ts';
-import { Permission } from '../models/permission.ts';
-import item from './itemSchema.ts';
+import { itemSchema } from './itemSchema.ts';
+import { userSchema } from './userSchema.ts';
 
-const memberSchema = new mongoose.Schema<IMember>({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        unique: true,
-        required: [true, "El id de usuario es obligatorio"],
+const profileSchema = new mongoose.Schema<IProfile>({
+    profileType: {
+        type: String,
+        enum: {
+            values: Object.values(ProfileType),
+            message: '{VALUE} no es un tipo de perfil válido'
+        },
+        required: [true, 'El tipo de perfil es obligatorio']
+    },
+    name: {
+        type: String,
+        required: [true, 'El nombre identificador es obligatorio'],
         validate: {
-            validator: async function(value: mongoose.Types.ObjectId) {
-                const existingUser = await mongoose.model<IUser>('User').findById(value);
-                return !existingUser;
-            },
-            message: "Este usuario no existe"
+            validator: (value: string) => value.trim().length > 0,
+            message: 'El nombre identificador no puede estar vacío'
         }
     },
-    profile: {
-        type: [String],
-        required: [true, 'El perfil es obligatorio'],
-    },
-});
-
-const permGroupSchema = new mongoose.Schema<IPermGroup>({
-    permGroupType: {
-        type: String,
-        enum: {
-            values: Object.values(groupType),
-            message: '{VALUE} no es un tipo de grupo válido'
+    users: {
+        type: [userSchema],
+        required: [true, 'El usuario es obligatorio'],
+        validate: {
+            validator: async function(this: IUser, value: Array<IUser>) {
+              
+                if (Array.isArray(value)) {
+                    for (const user of value) {
+                        const existingUser = await mongoose.model<IUser>('User').findById(user._id);
+                        if (!existingUser) return false;
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            message: "Los usuarios asignados deben existir en el sistema"
         },
-        required: [true, 'El tipo de grupo es obligatorio']
+        default: []
     },
-    groupId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: [true, 'El id del grupo es obligatorio']
-    },
-    permission: {
+    wsPerm: {
         type: String,
+        required: [true, 'El permiso del perfil es obligatorio'],
         enum: {
-            values: Object.values(Permission),
+            values: Object.values(WSPermission),
             message: '{VALUE} no es un permiso válido'
         },
-        default: Permission.Read,
-        required: [true, 'El permiso es obligatorio']
+        default: WSPermission.Read
     }
 });
 
@@ -60,25 +65,13 @@ const workspaceSchema = new mongoose.Schema<IWorkspace>({
             message: "El nombre del espacio de trabajo no puede estar vacío"
         }
     },
-    ownerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: [true, "El propietario del espacio de trabajo es obligatorio"],
-        validate: {
-            validator: async function(value: mongoose.Types.ObjectId) {
-                const existingUser = await mongoose.model<IUser>('User').findById(value);
-                return !existingUser;
-            },
-            message: "Este usuario no existe"
-        }
-    },
     creationDate: {
         type: Date,
         default: Date.now,
         required: [true, "La fecha de creación del espacio de trabajo es obligatoria"],
     },
-    items: [item],
-    members: [memberSchema],
-    permGroups: [permGroupSchema],
+    profiles: [profileSchema],
+    items: [itemSchema],
 });
 
 const workspace = mongoose.model('Workspace', workspaceSchema);

@@ -89,5 +89,5 @@ button:focus-visible {
   padding: 2rem;
   text-align: center;
   width: 100vw;
-  height: 100%; /* 90vh me va a mí bien para ocupar casi toda la pantalla*/
+  height: 100%;
 }

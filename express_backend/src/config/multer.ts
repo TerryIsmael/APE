@@ -2,8 +2,8 @@ import multer from 'multer';
 import fs from 'fs';
 import { uploadFileError } from '../utils/uploadFileError';
 import type { IUser } from '../models/user.ts';
-import type { IMember } from '../models/member.ts';
-import Workspace from "../schemas/workspaceSchema.ts"
+import { getWSPermission } from '../utils/permsFunctions.ts';
+import { WSPermission } from '../models/profile.ts';
 
 const storage = multer.diskStorage({
     
@@ -24,7 +24,6 @@ const storage = multer.diskStorage({
 
   });
   
-  //TODO: Validar que el usuario que sube el archivo tenga permisos en el workspace
   export const uploader = multer({
     storage,
     fileFilter: async (req, file, cb) => {
@@ -37,9 +36,9 @@ const storage = multer.diskStorage({
         if (userId === undefined) {
             cb(new uploadFileError('El campo userId es requerido', 400));
         } else{
-          const workspace = await Workspace.findById(workspaceId);
-          if (true) {
-            cb(new uploadFileError('', 400));
+          const perm = await getWSPermission(userId, workspaceId)
+          if (perm === WSPermission.Read || perm === undefined) {
+            cb(new uploadFileError('No tienes permiso para subir archivos a este workspace.', 400));
           } else {
             if (file.originalname.includes('../')) {
               cb(new uploadFileError('El nombre del archivo no puede contener "../"', 400));
@@ -52,7 +51,4 @@ const storage = multer.diskStorage({
   }
 });
 
-function getUserProfiles(userId: any, workspace: any){
-  workspace?.members.find((member: IMember) => member.userId === userId);
-}
 

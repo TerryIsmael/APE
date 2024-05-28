@@ -3,8 +3,10 @@ import { ref, onMounted, onUnmounted, nextTick  } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
-  setup() {       
+  setup() {
     
+    const workspace = ref(null);
+        
     const myFiles = ref([]);
     const currentUser = ref(null);
     const selectedFilePerms = ref(null);
@@ -19,7 +21,35 @@ export default {
     const sharePerm = ref(null);
     const errorMessage = ref([]);
     const fileInput = ref(null); 
-
+    const folders = ref([]);
+    const selectedFolder = "Favourites"; 
+    
+    currentUser.value = {
+      username: 'username12341234',
+      favorites: [],
+    }
+    
+    workspace.value = {
+      name: 'Nombre_workspace',
+    }
+    folders.value = [
+      {
+        name: 'Carpeta 1',
+      },
+      {
+        name: 'Carpeta 2',
+      },
+      {
+        name: 'Carpeta 3',
+      },
+      {
+        name: 'Carpeta 44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444',
+      },
+      {
+        name: 'Carpeta 5',
+      }
+    ]
+      
     const openModal = () => {
       isModalOpened.value = true;
       sharePerm.value = 'view';
@@ -282,6 +312,9 @@ export default {
     });
     
     return {
+      workspace,
+      folders,
+      selectedFolder,
       myFiles,
       showSidebar,
       showMainSidebar,
@@ -327,17 +360,40 @@ export default {
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
-      <ul style="height: 80%;">
-          <li style="margin-top: 20%;">Workspace activo: <span style="margin-left: 20%; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">sync</span> </li>
-          <li>Nombre del workspace</li>
+      <ul style="height: 85%; min-height: 85%;">
+        <div style="display:flex; width: 50px; height: 50px;">
+    <div style="margin-left: 35%"><img class="logo-img" src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
+    <div style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
+        <div style="text-align: center;">
+            <p style="margin: 0; font-weight: bold;">APE</p>
+            <p style="margin: 0;">{{ currentUser?.username }}</p>
+        </div>
+    </div>
+</div>
+
+        <li style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Nombre_workspaceeeeeeeeeeeeeeeeeeeeeeeeeeeeeeNombre_workspaceeeeeeeeeeeeeeeeeeeeeeeeeeeeee</li>
+        <button class="change-workspace-button">Cambiar</button>
+
+        <li class = "main-sidebar-title">Inicio</li>
+        <li class="li-clickable">Gestionar perfil</li>
+        <li class="li-clickable">Gestionar workspaces</li>
+
+        <li class="main-sidebar-subtitle">Workspace actual <span style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
+        </li>
+
+        <li class="li-clickable">Detalles del workspace</li>
+        <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Favoritos</li>
+        <div v-for="folder in folders" style="overflow-y: auto; word-wrap: break-word; max-height: 60%">
+          <li :class="{'li-clickable':true, 'selected_folder': selectedFolder.id !== undefined && selectedFolder.id == folder.id}" >{{ folder.name }}</li>
+        </div>
       </ul>
       <ul style="height: 5%;">
-        <li> Nombre de usuario <span> <button style="margin-left: 25%" @click="logout"><span class="material-symbols-outlined">logout</span></button> </span>   </li>
+        <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
     </div>
 
-  <div style="display:flex; justify-content: center; align-items: center;"><h1 style="margin-right:10px ;">Tus archivos</h1> <button style="margin-left: 10px" @click="logout"><span class="material-symbols-outlined">logout</span></button></div>
-  <div style="display:flex; flex-direction: column; align-items: center;">
+  <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;">Nombre_workspace</h1></div>
+  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
     <div style="display: flex; justify-content: space-between; width:85%;">
       <div></div>
       <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
@@ -569,6 +625,32 @@ export default {
   z-index: 999;
 }
 
+.main-sidebar-title {
+  text-align: left; 
+  margin-left: 5%; 
+  margin-top: 3%; 
+  font-weight: bolder; 
+  word-wrap: break-word;
+}
+
+.main-sidebar-subtitle {
+  text-align: left;
+  margin-left: 5%;
+  margin-top: 3%;
+  font-weight: bolder;
+}
+
+.li-clickable {
+  text-align: left; 
+  margin-left: 10%; 
+  cursor: pointer;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
+}
+
 .main-sidebar ul {
   list-style-type: none; 
   padding: 0; 
@@ -604,6 +686,47 @@ export default {
   margin-left: auto;
   margin-right: auto;
   overflow-wrap: break-word;
+}
+
+.main-content {
+  z-index: 1;
+}
+
+.selected_folder {
+  margin-left: 10%; 
+  border-radius: 8px;
+  width: 80%;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  text-align: left;
+  cursor: pointer;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
+}
+
+.logo-img{
+  width: 50px;
+  height: 50px;
+  
+}
+.change-workspace-button {
+  height: auto;
+  border-radius: 8px;
+  margin-top: 1%;
+  padding: 0.4em 0.7em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
 }
 
 </style>

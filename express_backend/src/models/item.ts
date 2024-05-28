@@ -1,19 +1,21 @@
 import mongoose from '../config/mongoose.ts';
-import type { IPermGroup } from './permGroup.ts';
+import type { IProfilePerms } from './profilePerms.ts';
 
 export enum itemType {
     calendar = 'Calendar',
     note = 'Note',
     timer = 'Timer',
     studySession = 'Study Session',
+    folder = 'Folder',
 }
 
 export interface IItem extends mongoose.Document {
     _id: mongoose.Types.ObjectId;
     name: string;
+    path: string;
     itemType: itemType;
     length: number;
     uploadDate: Date;
     modifiedDate: Date;
-    subscribers: Array<IPermGroup>;
+    profilePerms: Array<IProfilePerms>;
 }
