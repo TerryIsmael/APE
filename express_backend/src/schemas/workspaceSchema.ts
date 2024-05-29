@@ -77,6 +77,6 @@ const workspaceSchema = new mongoose.Schema<IWorkspace>({
     items: [itemSchema],
 });
 
-const workspace = mongoose.model('Workspace', workspaceSchema);
+const Workspace = mongoose.model('Workspace', workspaceSchema);
 
-export default workspace;
+export default Workspace;

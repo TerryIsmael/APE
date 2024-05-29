@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
-import { getWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addItemToWorkspace } from './controllers/workspaceController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
 import type { IUser } from './models/user.ts';
@@ -95,14 +95,14 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
                 return res.status(400).json({ message: 'Error al subir el archivo', error: err.message });
             } else if (err) {
                 return res.status(500).json({ message: 'Error interno del servidor al subir el archivo. '+err });
+            }else{
+                addItemToWorkspace(req, res).catch((error) => {
+                    return res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. '+error });
+                });
             }
-            res.status(200).json({
-                message: 'Archivo subido correctamente',
-                file: req.file
-            });
-        });
+        }
+        );
     } catch (error) {
-        console.error('Error al manejar la solicitud:', error);
         res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud' });
     }
 });

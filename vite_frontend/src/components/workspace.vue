@@ -295,10 +295,11 @@ export default {
         });
         if (response.ok) {
           getMyFiles();
+          console.log('Archivo subido correctamente');
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         } else{
-          response.json().then((data) => {
+          response.json().then((data) => { 
             console.log(data);
           })
         }

@@ -29,7 +29,7 @@ const profilePermSchema = new mongoose.Schema<IProfilePerms>({
 });
 
 const itemSchema = new mongoose.Schema({
-    filename: { 
+    name: { 
         type: String, 
         required: [true, "El nombre del archivo es obligatorio"], 
         validate: {  
@@ -38,12 +38,7 @@ const itemSchema = new mongoose.Schema({
         }
     },
     path: {
-        type: String,
-        required: [true, 'La ruta del archivo es obligatoria'],
-        validate: {  
-            validator: (value: string) => value.trim().length > 0,
-            message: `El nombre del archivo no puede estar vacío`
-        }
+        type: String
     },
     itemType: {      
         type: String,
@@ -59,6 +54,6 @@ const itemSchema = new mongoose.Schema({
     profilePerms: [profilePermSchema],
 });
 
-const item = mongoose.model('Item', itemSchema, 'items');
+const Item = mongoose.model('Item', itemSchema, 'items');
 
-export { item, itemSchema };
+export { Item, itemSchema };
