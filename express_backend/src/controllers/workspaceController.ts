@@ -75,6 +75,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
         }
       }
       workspace.items.push(item);
+      await item.save();
       await workspace.save();
       res.status(201).json(item);
     }
