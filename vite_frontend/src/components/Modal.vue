@@ -21,7 +21,7 @@ onClickOutside(target, ()=>emit('modal-close'))
           <slot name="header"> default header </slot>
         </div>
         <div class="modal-body">
-          <slot name="content"> default content </slot>
+          <slot name="content">  </slot>
         </div>
         <div class="modal-footer">
           <slot name="footer">

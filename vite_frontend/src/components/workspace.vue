@@ -24,7 +24,12 @@ export default {
 
     const folders = ref([]);
     const selectedFolder = "Favourites"; 
-    const dropdownOpen = ref(false);
+    const isNewItemModalOpened = ref(false);
+    const newItemType = ref(null);
+    const itemName = ref(null);
+    const hours = ref(0);
+    const minutes = ref(0);
+    const seconds = ref(0);
     
     const fetchWorkspace = async () => {
       try {
@@ -308,13 +313,30 @@ export default {
       }
     }
 
-    const toggleDropdown = () => {
-      dropdownOpen.value = !dropdownOpen.value;
-    }
+    const openNewItemModal = (itemType) => {
+      isNewItemModalOpened.value = true;
+      itemName.value = '';
+      newItemType.value = itemType;
+      if (itemType == 'temporizador') {
+        hours.value = 0;
+        minutes.value = 0;
+        seconds.value = 0;
+      }
+    };
 
-    const openDropdown = () => {
-      dropdownOpen.value = true;
-    }
+    const closeNewItemModal = () => {
+      isNewItemModalOpened.value = false;
+      errorMessage.value = [];
+      clearNewItemModalFields();
+    };
+
+    const clearNewItemModalFields = () => {
+      itemName.value = '';
+      hours.value = 0;
+      minutes.value = 0;
+      seconds.value = 0;
+      newItemType.value = null;
+    };
 
     onBeforeMount(() => {
       fetchWorkspace();
@@ -346,7 +368,8 @@ export default {
       sharePerm,
       errorMessage,
       fileInput,
-      dropdownOpen,
+      isNewItemModalOpened,
+      newItemType,
       openModal,
       closeModal,
       clearModalFields,
@@ -364,9 +387,9 @@ export default {
       selectUploadFile,
       uploadFile,
       translatePerm,
-      toggleDropdown,
-      openDropdown,
-      
+      openNewItemModal,
+      closeNewItemModal,
+      clearNewItemModalFields,
     }
   }
 }   
@@ -400,7 +423,7 @@ export default {
         <li class="li-clickable">Gestionar perfil</li>
         <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual <span style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
+        <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('carpeta')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
         <li class="li-clickable">Detalles del workspace</li>
         <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Favoritos</li>
@@ -416,41 +439,18 @@ export default {
   <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
     <div style="display: flex; justify-content: right; width:85%;">
       <div></div>
-      <button style="margin-right: 1%;" @click=""><span class="material-symbols-outlined">create_new_folder</span></button>
-      <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-      <button @click="selectUploadFile"><span class="material-symbols-outlined">add</span></button>
 
-      <button @click="openDropdown()"><span class="material-symbols-outlined">add</span></button>
-    </div>
-
-    <div style="justify-content: right;">
-      <div v-if="dropdownOpen">
-          <select v-model="itemType" class="dropdown">
-              <option data-form="form1" value="Calendar">Calendario</option>
-              <option data-form="form2" value="Note">Nota</option>
-              <option value="Timer">Temporizador</option>
-              <option value="Folder">Carpeta</option>
-              <option value="File">Archivo</option>
-            </select>
-            <button @click="changePerms(sharePerm, shareWith).then(clearModalFields())" style="margin-top:10px">Compartir</button>
-
+      <button style="margin-right: 1%;" @click="openNewItemModal('carpeta')"><span class="material-symbols-outlined">create_new_folder</span></button>
+      <div class="dropdown">
+        <button @click="openDropdown"><span class="material-symbols-outlined">add</span></button>
+        <div class="dropdown-content">
+          <div @click="openNewItemModal('calendario')">Calendario</div>
+          <div @click="openNewItemModal('nota')">Nota</div>
+          <div @click="openNewItemModal('temporizador')">Temporizador</div>
+          <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
+          <div @click="selectUploadFile" value="File">Archivo</div>
         </div>
-
-        <div id="form1" class="form-container" style="display:none;">
-          <form id="form1Submit" action="/submitForm1" method="POST">
-              <label for="input1">Input 1:</label>
-              <input type="text" id="input1" name="input1" required>
-              <button type="submit">Submit</button>
-          </form>
-        </div>
-
-        <div id="form2" class="form-container" style="display:none;">
-          <form id="form2Submit" action="/submitForm2" method="POST">
-              <label for="input2">Input 2:</label>
-              <input type="text" id="input2" name="input2" required>
-              <button type="submit">Submit</button>
-          </form>
-        </div>
+      </div>      
     </div>
 
     <div class="container">
@@ -486,6 +486,25 @@ export default {
         </ul>
       </div>
     </div>
+
+    <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
+      <template #header><strong>Crear {{ newItemType }}</strong></template>                
+      <template #footer>
+        <div style="margin-top:20px">
+
+          <div class="error" v-if="errorMessage.length !== 0">
+            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+          </div>
+            <input type="text" v-model="itemName" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px; height:30px; width: 200px; background-color: #f2f2f2; color: black"/>
+            <div v-if="newItemType == 'temporizador'" style="display: inline-flex; vertical-align: middle; align-items: center;">
+              <input v-model="hours" type="number" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+              :<input v-model="minutes" type="number" placeholder="Min" style="margin-top:5px; margin-right: 5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+              :<input v-model="seconds" type="number" placeholder="Seg" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+            </div>
+          </div>
+          <button @click="closeNewItemModal" style="margin-top:15px">Crear</button>
+      </template>
+    </Modal>
 
     <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
       <template #header><strong>Compartir archivo</strong></template>
@@ -784,16 +803,29 @@ export default {
 }
 
 .dropdown {
-  border-radius: 8px;
-  background-color: #f2f2f2; 
-  color: black;
-  width: 60%;
-  height: 50%;
-  padding: 0.4em 0.7em;
-  font-size: 1em;
-  font-weight: 500;
   position: relative;
   display: inline-block;
+  color: black;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  padding: 12px 16px;
+  z-index: 1;
+}
+
+.dropdown-content div {
+  display: block;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
 }
 
 </style>
