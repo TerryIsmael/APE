@@ -4,7 +4,6 @@ import { ProfileType, WSPermission } from '../models/profile.ts';
 import type { IUser } from '../models/user.ts';
 import type { IWorkspace } from '../models/workspace';
 import { itemSchema } from './itemSchema.ts';
-import { userSchema } from './userSchema.ts';
 
 const profileSchema = new mongoose.Schema<IProfile>({
     profileType: {
@@ -24,7 +23,8 @@ const profileSchema = new mongoose.Schema<IProfile>({
         }
     },
     users: {
-        type: [userSchema],
+        type: [mongoose.Types.ObjectId],
+        ref: 'User',
         required: [true, 'El usuario es obligatorio'],
         validate: {
             validator: async function(this: IUser, value: Array<IUser>) {
@@ -59,16 +59,19 @@ const workspaceSchema = new mongoose.Schema<IWorkspace>({
         type: String,
         required: [true, "El nombre del espacio de trabajo es obligatorio"],
         validate: {
-            validator: (value: string) => {
-                return value.trim().length > 0;
-            },
-            message: "El nombre del espacio de trabajo no puede estar vacío"
-        }
+                validator: (value: string) => { return value.trim().length > 0 && value.trim().length <= 55;},
+        message: "El nombre del workspace debe tener entre 1 y 55 caracteres"
+        },
     },
     creationDate: {
         type: Date,
         default: Date.now,
         required: [true, "La fecha de creación del espacio de trabajo es obligatoria"],
+    },
+    default:
+    {
+        type: Boolean,
+        default: false,
     },
     profiles: [profileSchema],
     items: [itemSchema],

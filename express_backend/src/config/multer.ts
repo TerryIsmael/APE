@@ -26,17 +26,19 @@ const storage = multer.diskStorage({
   
   export const uploader = multer({
     storage,
+    preservePath: true,
     fileFilter: async (req, file, cb) => {
       const workspaceId: string = req.body.workspace;
       const user: IUser = req.user as IUser;
-      const userId: string = user?.id;
+      const userId = user?._id;
       if (workspaceId === undefined) {
-        cb(new uploadFileError('El campo userId es requerido', 400));
+        cb(new uploadFileError('El campo workspace es requerido', 400));
       }else{
         if (userId === undefined) {
             cb(new uploadFileError('El campo userId es requerido', 400));
         } else{
           const perm = await getWSPermission(userId, workspaceId)
+          console.log(perm)
           if (perm === WSPermission.Read || perm === undefined) {
             cb(new uploadFileError('No tienes permiso para subir archivos a este workspace.', 400));
           } else {

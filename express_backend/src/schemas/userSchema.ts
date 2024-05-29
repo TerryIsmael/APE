@@ -8,11 +8,11 @@ const userSchema = new mongoose.Schema<IUser>({
         validate: [
             {
                 validator: (value: string) => /^[a-zA-Z0-9_]{4,16}$/.test(value),
-                message: "El nombre de usuario debe tener entre 4 y 16 caracteres y solo puede contener letras, números y guiones bajos"
+                message: "El nombre de usuario debe tener entre 4 y 16 caracteres y sólo puede contener letras, números y guiones bajos"
             },
             {
                 async validator(this: IUser, value: string) {
-                    const existingUser = await (this.constructor as mongoose.Model<IUser>).findOne({ username: value });
+                    const existingUser: IUser = await User.findOne({ username: value }).exec() as IUser;
                     return !existingUser;
                 },
                 message: "El nombre de usuario ya está en uso"
@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema<IUser>({
             },
             {
                 async validator(this: IUser, value: string) {
-                    const existingUser = await (this.constructor as mongoose.Model<IUser>).findOne({ email: value });
+                    const existingUser: IUser = await User.findOne({ email: value }).exec() as IUser;
                     return !existingUser;
                 },
                 message: "El correo ya está en uso"

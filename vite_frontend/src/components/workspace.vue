@@ -1,5 +1,5 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick  } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
@@ -21,34 +21,34 @@ export default {
     const sharePerm = ref(null);
     const errorMessage = ref([]);
     const fileInput = ref(null); 
+
     const folders = ref([]);
     const selectedFolder = "Favourites"; 
+    const dropdownOpen = ref(false);
     
-    currentUser.value = {
-      username: 'username12341234',
-      favorites: [],
-    }
-    
-    workspace.value = {
-      name: 'Nombre_workspace',
-    }
-    folders.value = [
-      {
-        name: 'Carpeta 1',
-      },
-      {
-        name: 'Carpeta 2',
-      },
-      {
-        name: 'Carpeta 3',
-      },
-      {
-        name: 'Carpeta 44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444',
-      },
-      {
-        name: 'Carpeta 5',
+    const fetchWorkspace = async () => {
+      try {
+        const wsId = localStorage.getItem('workspace');
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace'+ (wsId?`/${wsId}`:''), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          workspace.value = data;
+          localStorage.setItem('workspace', data._id);
+          folders.value = workspace.value.items.filter(item => item.type === 'Folder');
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
       }
-    ]
+    }
       
     const openModal = () => {
       isModalOpened.value = true;
@@ -286,6 +286,7 @@ export default {
       const file = event.target.files[0];
       try {
         const formData = new FormData();
+        formData.append('workspace', workspace.value._id);
         formData.append('file', file);
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
           method: 'POST',
@@ -296,11 +297,27 @@ export default {
           getMyFiles();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
+        } else{
+          response.json().then((data) => {
+            console.log(data);
+          })
         }
       } catch (error) {
         console.log(error);
       }
     }
+
+    const toggleDropdown = () => {
+      dropdownOpen.value = !dropdownOpen.value;
+    }
+
+    const openDropdown = () => {
+      dropdownOpen.value = true;
+    }
+
+    onBeforeMount(() => {
+      fetchWorkspace();
+    });
     
     onMounted(() => {
       getMyFiles();
@@ -328,6 +345,7 @@ export default {
       sharePerm,
       errorMessage,
       fileInput,
+      dropdownOpen,
       openModal,
       closeModal,
       clearModalFields,
@@ -345,6 +363,9 @@ export default {
       selectUploadFile,
       uploadFile,
       translatePerm,
+      toggleDropdown,
+      openDropdown,
+      
     }
   }
 }   
@@ -362,24 +383,23 @@ export default {
 
       <ul style="height: 85%; min-height: 85%;">
         <div style="display:flex; width: 50px; height: 50px;">
-    <div style="margin-left: 35%"><img class="logo-img" src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
-    <div style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
-        <div style="text-align: center;">
-            <p style="margin: 0; font-weight: bold;">APE</p>
-            <p style="margin: 0;">{{ currentUser?.username }}</p>
+          <div style="margin-left: 35%"><img class="logo-img" src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
+          <div style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
+              <div style="text-align: center;">
+                  <p style="margin: 0; font-weight: bold;">APE</p>
+                  <p style="margin: 0;">{{ currentUser?.username }}</p>
+              </div>
+          </div>
         </div>
-    </div>
-</div>
 
-        <li style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Nombre_workspaceeeeeeeeeeeeeeeeeeeeeeeeeeeeeeNombre_workspaceeeeeeeeeeeeeeeeeeeeeeeeeeeeee</li>
+        <li style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ workspace?.name }}</li>
         <button class="change-workspace-button">Cambiar</button>
 
         <li class = "main-sidebar-title">Inicio</li>
         <li class="li-clickable">Gestionar perfil</li>
         <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual <span style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
-        </li>
+        <li class="main-sidebar-subtitle">Workspace actual <span style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
         <li class="li-clickable">Detalles del workspace</li>
         <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Favoritos</li>
@@ -391,21 +411,54 @@ export default {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
     </div>
-
-  <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;">Nombre_workspace</h1></div>
+  <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;"> {{ workspace?.name }}</h1></div>
   <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-    <div style="display: flex; justify-content: space-between; width:85%;">
+    <div style="display: flex; justify-content: right; width:85%;">
       <div></div>
+      <button style="margin-right: 1%;" @click=""><span class="material-symbols-outlined">create_new_folder</span></button>
       <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
       <button @click="selectUploadFile"><span class="material-symbols-outlined">add</span></button>
+
+      <button @click="openDropdown()"><span class="material-symbols-outlined">add</span></button>
     </div>
+
+    <div style="justify-content: right;">
+      <div v-if="dropdownOpen">
+          <select v-model="itemType" class="dropdown">
+              <option data-form="form1" value="Calendar">Calendario</option>
+              <option data-form="form2" value="Note">Nota</option>
+              <option value="Timer">Temporizador</option>
+              <option value="Folder">Carpeta</option>
+              <option value="File">Archivo</option>
+            </select>
+            <button @click="changePerms(sharePerm, shareWith).then(clearModalFields())" style="margin-top:10px">Compartir</button>
+
+        </div>
+
+        <div id="form1" class="form-container" style="display:none;">
+          <form id="form1Submit" action="/submitForm1" method="POST">
+              <label for="input1">Input 1:</label>
+              <input type="text" id="input1" name="input1" required>
+              <button type="submit">Submit</button>
+          </form>
+        </div>
+
+        <div id="form2" class="form-container" style="display:none;">
+          <form id="form2Submit" action="/submitForm2" method="POST">
+              <label for="input2">Input 2:</label>
+              <input type="text" id="input2" name="input2" required>
+              <button type="submit">Submit</button>
+          </form>
+        </div>
+    </div>
+
     <div class="container">
       <div v-if="myFiles.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">No hay archivos...</p>
       </div>
       <div class="files-container" v-else>
         <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
-          <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;this.src='files/default.png';"> 
+          <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100" onerror="this.onerror=null;this.src='files/default.png';"> 
           <div style="display:flex; align-items: center;">
             <p class="filename">{{ file.filename }} </p>
             <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
@@ -727,6 +780,19 @@ export default {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
+}
+
+.dropdown {
+  border-radius: 8px;
+  background-color: #f2f2f2; 
+  color: black;
+  width: 60%;
+  height: 50%;
+  padding: 0.4em 0.7em;
+  font-size: 1em;
+  font-weight: 500;
+  position: relative;
+  display: inline-block;
 }
 
 </style>

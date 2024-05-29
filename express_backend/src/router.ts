@@ -3,19 +3,18 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
-import { isLogged, validateUser } from './middlewares/userMiddleware.ts';
+import { getWorkspace } from './controllers/workspaceController.ts';
+import { isLogged } from './middlewares/userMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import fs from 'fs';
 import path from 'path';
-// import type { ParamsDictionary } from 'express-serve-static-core';
-// import type { ParsedQs } from 'qs';
 
 dotenv.config();  
 const router = Router();
 
-router.post('/register',  validateUser, registerUser);
+router.post('/register', registerUser);
 
 router.post('/login', (req: Request , res: Response, next: NextFunction) => {
     passport.authenticate('local', (err : Error, user : IUser, info: { message: any; }) => {
@@ -81,12 +80,15 @@ router.post('/logout', (req: Request, res: Response) => {
 //       };
 //   });
 
+router.get('/workspace/:wsId', isLogged, getWorkspace);
+router.get('/workspace/', isLogged, getWorkspace);
+
 //TODO: Implementar las rutas de los archivos
 router.get('/file', async (req: Request, res: Response) => {
     res.json({ message: 'Ruta GET /file' });
 });
 
-router.post('/file', (req: Request, res: Response) => {
+router.post('/file', isLogged, (req: Request, res: Response) => {
     try {
         uploader.single('file')(req, res, (err: any) => {
             if (err instanceof uploadFileError) {

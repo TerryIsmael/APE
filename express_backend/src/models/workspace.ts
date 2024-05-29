@@ -8,4 +8,5 @@ export interface IWorkspace extends mongoose.Document {
     creationDate: Date;
     items: Array<IItem>;
     profiles: Array<IProfile>;
+    default: boolean;
 }

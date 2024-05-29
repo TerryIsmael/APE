@@ -7,6 +7,7 @@ export enum itemType {
     timer = 'Timer',
     studySession = 'Study Session',
     folder = 'Folder',
+    file = 'File',
 }
 
 export interface IItem extends mongoose.Document {

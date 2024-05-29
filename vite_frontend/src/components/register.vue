@@ -21,12 +21,15 @@ export default {
         return;
       }
       errorMessage.value = [];
+      console.log(user.value)
       fetch(import.meta.env.VITE_BACKEND_URL + "/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: user.value.username,
           password: user.value.password,
+          firstName: user.value.firstName,
+          surnames: user.value.surnames,
           email: user.value.email,
         }),
       })
@@ -38,17 +41,24 @@ export default {
             }, 2000);
           } else {
             errorMessage.value = [];
-            response.json().then((data) => {
-              console.log(data);
-              if (data.message) {
-                errorMessage.value.push(...data.message);
-                
-              } else {
-                data.errors.forEach((error) => {
-                  errorMessage.value.push(error.msg);
-                });
-              }
-            });
+            if (response.status === 500) {
+              errorMessage.value.push("Error en el servidor. Inténtelo de nuevo más tarde.");
+              response.json().then((data) => {
+                console.log(data.message);
+              });
+            }else{
+              response.json().then((data) => {
+                console.log(data);
+                if (data.message) {
+                  errorMessage.value.push(...data.message);
+                  
+                } else {
+                  data.errors.forEach((error) => {
+                    errorMessage.value.push(error.msg);
+                  });
+                }
+              });
+            }
             throw new Error("Error al registrar");
           }
         })
@@ -58,7 +68,6 @@ export default {
       };
     
     const checkPassword = () => {
-      console.log("Comprobando...");
       if (passwordMatch.value !== user.value.password && passwordMatch.value !== "" && user.value.password !== "") {
         if (!errorMessage.value.includes("Las contraseñas no coinciden")) {
           errorMessage.value.unshift("Las contraseñas no coinciden");
@@ -99,6 +108,10 @@ export default {
               <input type="text" id="username" v-model="user.username" required/>
             </div>
             <div class="form-group">
+              <label for="firstName">Nombre:</label>
+              <input type="text" id="firstName" v-model="user.firstName" required/>
+            </div>
+            <div class="form-group">
               <label for="password">Contraseña:</label>
               <input
                 type="password"
@@ -114,7 +127,10 @@ export default {
               <label for="email">Email:</label>
               <input type="email" id="email" v-model="user.email" required />
             </div>
-
+            <div class="form-group">
+              <label for="surnames">Apellidos:</label>
+              <input type="text" id="surnames" v-model="user.surnames" required/>
+            </div>
             <div class="form-group">
               <label for="confirmPassword">Confirmar Contraseña:</label>
               <input
