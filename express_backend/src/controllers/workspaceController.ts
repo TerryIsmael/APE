@@ -1,6 +1,5 @@
-import type { IItem } from '../models/item.ts';
-import { ItemType } from '../models/item.ts';
 import type { IProfile } from '../models/profile.ts';
+import { ItemType, type IItem } from '../models/item.ts';
 import { ProfileType, WSPermission } from '../models/profile.ts';
 import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
