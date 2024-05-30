@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
-import { getWorkspace, addItemToWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addFileToWorkspace } from './controllers/workspaceController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
 import type { IUser } from './models/user.ts';
@@ -95,8 +95,8 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
                 return res.status(400).json({ message: 'Error al subir el archivo', error: err.message });
             } else if (err) {
                 return res.status(500).json({ message: 'Error interno del servidor al subir el archivo. '+err });
-            }else{
-                addItemToWorkspace(req, res).catch((error) => {
+            } else {
+                addFileToWorkspace(req, res).catch((error) => {
                     return res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. '+error });
                 });
             }
@@ -153,5 +153,13 @@ router.get('/download/:filename', (req: Request, res: Response) => {
         res.status(404).send('El archivo no existe');
     }
 });
+
+// router.post('/item', isLogged, (req: Request, res: Response) => {
+//     try {
+//         addItemToWorkspace(req, res);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ' + error});
+//     }
+// });
 
 export default router;

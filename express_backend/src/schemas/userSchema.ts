@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema<IUser>({
     firstName: {
         type: String,
         required: [true, "El nombre es obligatorio"],
+        minlength: [1, "Los apellidos deben tener al menos 1 caracter"],
+        maxlength: [100, "Los apellidos no pueden tener más de 100 caracteres"],
         validate: {
             validator: (value: string) => {
                 return value.trim().length > 0 && /^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/.test(value);
@@ -32,6 +34,8 @@ const userSchema = new mongoose.Schema<IUser>({
     surnames: {
         type: String,
         required: [true, "Los apellidos son obligatorios"],
+        minlength: [1, "Los apellidos deben tener al menos 1 caracter"],
+        maxlength: [100, "Los apellidos no pueden tener más de 100 caracteres"],
         validate: {
             validator: (value: string) => {
                 return value.trim().length > 0 && /^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/.test(value)
@@ -76,7 +80,11 @@ const userSchema = new mongoose.Schema<IUser>({
             }
         ]
     },
-    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'File', default: [] }],
+    favorites: {
+        type: [mongoose.Schema.Types.ObjectId], 
+        ref: 'Item',
+        default: [] 
+    },
 });
 
 const User = mongoose.model<IUser>('User', userSchema);

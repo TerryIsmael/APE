@@ -3,7 +3,6 @@ import type { IProfile } from '../models/profile.ts';
 import { ProfileType, WSPermission } from '../models/profile.ts';
 import type { IUser } from '../models/user.ts';
 import type { IWorkspace } from '../models/workspace';
-import { itemSchema } from './itemSchema.ts';
 
 const profileSchema = new mongoose.Schema<IProfile>({
     profileType: {
@@ -27,11 +26,11 @@ const profileSchema = new mongoose.Schema<IProfile>({
         ref: 'User',
         required: [true, 'El usuario es obligatorio'],
         validate: {
-            validator: async function(this: IUser, value: Array<IUser>) {
+            validator: async function(this: IUser, value: mongoose.Types.ObjectId[]) {
               
                 if (Array.isArray(value)) {
-                    for (const user of value) {
-                        const existingUser = await mongoose.model<IUser>('User').findById(user._id);
+                    for (const v of value) {
+                        const existingUser = await mongoose.model<IUser>('User').findById(v);
                         if (!existingUser) return false;
                     }
                     return true;
@@ -68,13 +67,16 @@ const workspaceSchema = new mongoose.Schema<IWorkspace>({
         default: Date.now,
         required: [true, "La fecha de creación del espacio de trabajo es obligatoria"],
     },
-    default:
-    {
+    default: {
         type: Boolean,
         default: false,
     },
     profiles: [profileSchema],
-    items: [itemSchema],
+    items: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Item',
+        default: [],
+    },
 });
 
 const Workspace = mongoose.model('Workspace', workspaceSchema);

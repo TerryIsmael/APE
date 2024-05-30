@@ -19,7 +19,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         user.password = codedPassword;
         await user.save();
         
-        const profile = { name: user._id, profileType: ProfileType.individual, wsPerm: WSPermission.Owner, users: [user] };
+        const profile = { name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] };
         const workspace = new Workspace({ name: `Workspace de ${user.username}`, items: [], profiles: [profile], default: true });
         await workspace.save();
 

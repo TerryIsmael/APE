@@ -8,6 +8,7 @@ import history from 'connect-history-api-fallback';
 import router from './src/router.ts';
 import passport from './src/config/passport.ts';
 import cors from './src/config/cors.ts';
+import { wsServer } from './src/config/websocket.ts';
 
 dotenv.config();  
 const app: Express = express();
@@ -37,6 +38,12 @@ app.use(history());
 
 const serverPort: number = app.get('serverPort');
 
-app.listen(serverPort, () => {
+const server = app.listen(serverPort, () => {
   console.log(`Servidor iniciado en el puerto ${serverPort}`);
-}); 
+});
+
+server.on('upgrade', (request, socket, head) => {
+  wsServer.handleUpgrade(request, socket, head, (ws) => {
+    wsServer.emit('connection', ws, request);
+  });
+});

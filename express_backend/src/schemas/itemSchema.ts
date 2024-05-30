@@ -1,8 +1,10 @@
 import mongoose from '../config/mongoose.ts';
-import { itemType } from '../models/item.ts';
+import { ItemType } from '../models/item.ts';
 import type { IProfile } from '../models/profile.ts';
 import type { IProfilePerms } from '../models/profilePerms.ts';
 import { Permission } from '../models/profilePerms.ts';
+import type { INote, INotice, ITimer, IFolder, ICalendar, IEvent, IFile, IStudySession } from '../models/typeItem.ts';
+import { noteSchema, noticeSchema, timerSchema, folderSchema, calendarSchema, eventSchema, fileSchema, studySessionSchema } from './typeItemSchema.ts';
 
 const profilePermSchema = new mongoose.Schema<IProfilePerms>({
     profile: {
@@ -44,11 +46,10 @@ const itemSchema = new mongoose.Schema({
         type: String,
         required: [true, 'El tipo de item es obligatorio'],
         enum: {
-            values: Object.values(itemType),
+            values: Object.values(ItemType),
             message: '{VALUE} no es un tipo de item válido'
         },
     },
-    length: { type: Number, required: true },
     uploadDate: { type: Date, default: Date.now },
     modifiedDate: { type: Date, default: Date.now },
     profilePerms: [profilePermSchema],
@@ -56,4 +57,13 @@ const itemSchema = new mongoose.Schema({
 
 const Item = mongoose.model('Item', itemSchema, 'items');
 
-export { Item, itemSchema };
+const NoteItem = Item.discriminator<INote>('NoteItem', noteSchema);
+const NoticeItem = Item.discriminator<INotice>('NoticeItem', noticeSchema);
+const TimerItem = Item.discriminator<ITimer>('TimerItem', timerSchema);
+const FolderItem = Item.discriminator<IFolder>('FolderItem', folderSchema);
+const EventItem = Item.discriminator<IEvent>('EventItem', eventSchema);
+const CalendarItem = Item.discriminator<ICalendar>('CalendarItem', calendarSchema);
+const FileItem = Item.discriminator<IFile>('FileItem', fileSchema);
+const StudySessionItem = Item.discriminator<IStudySession>('StudySessionItem', studySessionSchema);
+
+export { Item, itemSchema, NoteItem, NoticeItem, TimerItem, FolderItem, EventItem, CalendarItem, FileItem, StudySessionItem};
