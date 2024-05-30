@@ -1,7 +1,7 @@
 import Workspace from '../schemas/workspaceSchema.ts';
 import type { IProfile } from '../models/profile.ts';
 import { Item } from '../schemas/itemSchema.ts';
-import { itemType } from '../models/item.ts';
+import { itemType, type IItem } from '../models/item.ts';
 import { ProfileType, WSPermission } from '../models/profile.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 
@@ -74,7 +74,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
           correctPath = false;
         }
       }
-      workspace.items.push(item);
+      workspace.items.push(item as IItem);
       await item.save();
       await workspace.save();
       res.status(201).json(item);
