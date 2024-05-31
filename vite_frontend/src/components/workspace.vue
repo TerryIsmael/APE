@@ -318,14 +318,14 @@ export default {
 
     const openNewItemModal = (itemType) => {
       isNewItemModalOpened.value = true;
-      newItem.value.itemName = '';
+      newItem.value.name = '';
       newItem.value.itemType = itemType;
       if (itemType == 'Timer') {
         hours.value = 0;
         minutes.value = 0;
         seconds.value = 0;
       } else if (itemType == 'Note' || itemType == 'Notice') {
-        newItem.value.itemText = '';
+        newItem.value.text = '';
       }
     };
 
@@ -343,18 +343,14 @@ export default {
         let currentPath = window.location.pathname.split('/').slice(3).join('/');
         const itemType = newItem.value.itemType;
 
-        if (currentPath === '/') {
-          currentPath = '';
-        }        
-
         if (itemType == 'Timer') {
           newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
         } else if (itemType == 'Note' || itemType == 'Notice') {
-          newItem.value.text = newItem.value.itemText;
+          newItem.value.text = newItem.value.text;
         } 
 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value.id, path: `${currentPath}`, item: newItem.value }),
+          body: JSON.stringify({ workspace: workspace.value._id, path: `${currentPath}`, item: newItem.value }),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -362,9 +358,8 @@ export default {
           credentials: "include",
         });
 
-        console.log(newItem.value);
-
         if (response.ok) {
+          closeNewItemModal();
           await getMyFiles();
           errorMessage.value = [];
         } else if (response.status === 401) {
@@ -550,9 +545,9 @@ export default {
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.itemName" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 200px; background-color: #f2f2f2; color: black;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.itemText" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.itemText" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 200px; background-color: #f2f2f2; color: black;"/>
+            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
 
             <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center;">
               <input v-model="hours" type="number" min="0" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
@@ -560,7 +555,7 @@ export default {
               :<input v-model="seconds" type="number" min="0" placeholder="Seg" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
             </div>
           </div>
-          <button @click="handleNewItemForm().then(closeNewItemModal())" style="margin-top:15px">Crear</button>
+          <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
       </template>
     </Modal>
 

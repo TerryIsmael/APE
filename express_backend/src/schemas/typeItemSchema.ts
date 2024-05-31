@@ -42,11 +42,6 @@ export const timerSchema = new mongoose.Schema<ITimer>({
     },
     initialDate: {
         type: Date,
-        validate: {
-            validator: (value: Date) => value.getTime() > Date.now(),
-            message: "La fecha de inicio del temporizador no puede ser anterior a la fecha actual"
-        },
-        default: Date.now
     },
     active: {
         type: Boolean,
