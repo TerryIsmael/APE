@@ -20,13 +20,14 @@ export const getWorkspace = async (req: any, res: any) => {
             wsPerm: WSPermission.Owner
           }
         }
-      });
+      }).populate('items');
       res.status(200).json(workspace);
       return;
     } else {
       const workspace = await Workspace.findOne({ _id: wsId });
       if (workspace) {
         if (workspace.profiles.find((profile: IProfile) => profile.name == req.user._id.toString())) {
+          workspace.populate('items');
           res.status(200).json(workspace);
         } else {
           res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });

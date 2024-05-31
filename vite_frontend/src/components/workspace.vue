@@ -1,30 +1,31 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
-import { ItemType } from '../../../express_backend/src/models/item';
 
 export default {
   setup() {
     
-    const workspace = ref(null);
-        
-    const myFiles = ref([]);
     const currentUser = ref(null);
-    const selectedFilePerms = ref(null);
     const router = useRouter();
+
+    const workspace = ref({});
+    const items = ref([]);
+    const folders = ref([]);
+    const notices = ref([]);
+    const selectedFolder = "Favourites"; 
+        
+    const myFiles = ref([]); // No va a hacer falta?
+    const selectedItemPerms = ref(null);
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const showSharedPopup = ref(false);
     const formattedDate = ref(null);
-    const selectedFile = ref(null);
+    const selectedItem = ref(null);
     const isModalOpened = ref(false);
     const shareWith = ref(null);
     const sharePerm = ref(null);
     const errorMessage = ref([]);
     const fileInput = ref(null); 
-
-    const folders = ref([]);
-    const selectedFolder = "Favourites"; 
 
     // Creation of items
     const isNewItemModalOpened = ref(false);
@@ -49,13 +50,37 @@ export default {
           const data = await response.json();
           workspace.value = data;
           localStorage.setItem('workspace', data._id);
-          folders.value = workspace.value.items.filter(item => item.type === 'Folder');
+          await arrangeItems();
+
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
       } catch (error) {
         console.log(error);
       }
+    }
+
+    const arrangeItems = async () => {
+
+      const wsItems = workspace.value.items;
+      const wsFolders = await wsItems.filter(item => item.itemType === 'Folder');
+      const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar');
+      const wsNotices = await wsItems.filter(item => item.itemType === 'Notice');
+
+      // wsFolders.sort((a, b) => b.modifiedDate - a.modifiedDate);
+      // otherItems.sort((a, b) => b.modifiedDate - a.modifiedDate);
+      // wsNotices.sort((a, b) => b.modifiedDate - a.modifiedDate);
+
+      wsFolders.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
+      otherItems.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
+      wsNotices.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
+
+      items.value = [];
+      items.value.push(...wsFolders);
+      items.value.push(...otherItems);
+
+      folders.value = wsFolders;
+      notices.value = wsNotices;
     }
       
     const openModal = () => {
@@ -82,18 +107,22 @@ export default {
       showSidebar.value = !showSidebar.value;
     }
 
-    const selectFile = async (file) => {
+    const selectItem = async (item) => {
       showSidebar.value = true;
-      selectedFile.value = file;
-      selectedFilePerms.value = await verifyPerms(file, currentUser.value);
+      selectedItem.value = item;
+      selectedItemPerms.value = await verifyPerms(item, currentUser.value);
+    }
+
+    const selectFolder = (folder) => {
+      selectedFolder.value = folder;
     }
 
     const closeSidebar = (event) => {
       const sidebar = document.querySelector('.sidebar');
       const modal = document.querySelector('.modal');
       const fileContainers = Array.from(document.querySelectorAll('.file-container'));
-      const selectedFile = fileContainers.some(fileContainer => fileContainer.contains(event.target));
-      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedFile ) {
+      const selectedItem = fileContainers.some(fileContainer => fileContainer.contains(event.target));
+      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedItem ) {
         showSidebar.value = false;
       }
     };
@@ -117,7 +146,7 @@ export default {
         });
 
         if (response.ok) {
-          selectedFile.value = null;
+          selectedItem.value = null;
           toggleSidebar();
           getMyFiles();
         } else if (response.status === 401) {
@@ -163,7 +192,7 @@ export default {
     const changePerms = async (perm, username) => {
       try { 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          body: JSON.stringify({ username: username, fileId: selectedFile.value._id, perm: perm }),
+          body: JSON.stringify({ username: username, fileId: selectedItem.value._id, perm: perm }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -173,7 +202,7 @@ export default {
 
         if (response.ok) {
           await getMyFiles();
-          selectedFile.value = myFiles.value.find(file => file._id === selectedFile.value._id);
+          selectedItem.value = myFiles.value.find(file => file._id === selectedItem.value._id);
           errorMessage.value = [];
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -263,7 +292,7 @@ export default {
     const downloadFile = async () => {
       try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
-          body: JSON.stringify({ id: selectedFile.value._id }),
+          body: JSON.stringify({ id: selectedItem.value._id }),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -275,7 +304,7 @@ export default {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = selectedFile.value.filename;
+          a.download = selectedItem.value.filename;
           a.click();
           window.URL.revokeObjectURL(url);
         } else if (response.status === 401) {
@@ -302,7 +331,7 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
-          getMyFiles();
+          await fetchWorkspace();
           console.log('Archivo subido correctamente');
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -360,7 +389,7 @@ export default {
 
         if (response.ok) {
           closeNewItemModal();
-          await getMyFiles();
+          await fetchWorkspace();
           errorMessage.value = [];
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -383,6 +412,30 @@ export default {
       }
     }
 
+    const selectImage = (item) => {
+
+      if (item.itemType !== 'File') {
+        if (item.itemType === 'Note') {
+          return `files/default.png`;
+        } else {
+          return `files/${item.itemType.toLowerCase()}.png`;
+        }
+      } else {
+        switch (item.name.split('.').pop().toLowerCase()) {
+          case 'pdf':
+            return 'files/pdf.png';
+          case 'docx':
+            return 'files/docx.png';
+          case 'xlsx':
+            return 'files/xlsx.png';
+          case 'pptx':
+            return 'files/pptx.png';
+          default:
+            return 'files/default.png';
+        }
+      } 
+    }
+
     onBeforeMount(() => {
       fetchWorkspace();
     });
@@ -399,13 +452,15 @@ export default {
     return {
       workspace,
       folders,
+      notices,
+      items,
       selectedFolder,
       myFiles,
       showSidebar,
       showMainSidebar,
       showSharedPopup,
-      selectedFile,
-      selectedFilePerms,
+      selectedItem,
+      selectedItemPerms,
       formattedDate,
       currentUser,
       isModalOpened,
@@ -423,7 +478,7 @@ export default {
       clearModalFields,
       changePerms,
       getMyFiles,
-      selectFile,
+      selectItem,
       toggleSidebar,
       toggleSharedPopup,
       toggleLike,
@@ -433,11 +488,13 @@ export default {
       logout,
       downloadFile,
       selectUploadFile,
+      selectFolder,
       uploadFile,
       translatePerm,
       openNewItemModal,
       closeNewItemModal,
       handleNewItemForm,
+      selectImage,
     }
   }
 }   
@@ -445,13 +502,13 @@ export default {
  
 <template>
 
-  <div :class="{'main-sidebar-toggle':true, 'main-sidebar-toggle-opened':showMainSidebar}">
-    <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined">chevron_right</span>
-    <span v-else @click="showMainSidebar = false" class="material-symbols-outlined">chevron_left</span>
-  </div>
-
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
+
+      <div :class="{'main-sidebar-toggle':true, 'main-sidebar-toggle-opened':showMainSidebar}">
+        <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined" style="z-index: 1002">chevron_right</span>
+        <span v-else @click="showMainSidebar = false" class="material-symbols-outlined" style="z-index: 1002">chevron_left</span>
+      </div>
 
       <ul style="height: 85%; min-height: 85%;">
         <div style="display:flex; width: 50px; height: 50px;">
@@ -483,7 +540,8 @@ export default {
       <ul style="height: 5%;">
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
-    </div>
+  </div>
+
   <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;"> {{ workspace?.name }}</h1></div>
   <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
     <div style="display: flex; justify-content: right; width:85%;">
@@ -492,7 +550,7 @@ export default {
       <button style="margin-right: 1%;" @click="openNewItemModal('Folder')"><span class="material-symbols-outlined">create_new_folder</span></button>
       <div class="dropdown">
         <button @click="openDropdown"><span class="material-symbols-outlined">add</span></button>
-        <div class="dropdown-content">
+        <div style="z-index: 1002;" class="dropdown-content">
           <div @click="openNewItemModal('Notice')">Anuncio</div>
           <div @click="openNewItemModal('Calendar')">Calendario</div>
           <div @click="openNewItemModal('Note')">Nota</div>
@@ -503,35 +561,36 @@ export default {
       </div>      
     </div>
 
-    <div class="container">
-      <div v-if="myFiles.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">No hay archivos...</p>
+    <div class="main-content container">
+      <div v-if="workspace.items?.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
       <div class="files-container" v-else>
-        <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
-          <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100" onerror="this.onerror=null;this.src='files/default.png';"> 
+        <div class="file-container" v-for="item in items" :key="item.id" @click="selectItem(file)">
+          <img class="file-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+
           <div style="display:flex; align-items: center;">
-            <p class="filename">{{ file.filename }} </p>
-            <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
+            <p class="filename">{{ item.name }} </p>
+            <span v-if="currentUser?.favorites.includes(item._id)" class="material-symbols-outlined filledHeart">favorite</span>
           </div>
         </div>
     </div>
     
-    <div class="sidebar-overlay" v-if="showSidebar && selectedFile" @click="closeSidebar"></div>
+    <div class="sidebar-overlay" v-if="showSidebar && selectedItem" @click="closeSidebar"></div>
       <div class="sidebar" :class="{ 'show': showSidebar }">
         <ul>
-          <li>Archivo: {{ selectedFile?.filename }}</li>
-          <li>Autor: {{ selectedFile?.owner.username }} ({{ selectedFile?.owner.email }})</li>
-          <li>Fecha de subida: {{ formatDate(selectedFile?.uploadDate)}}</li>
+          <li>Archivo: {{ selectedItem?.name }}</li>
+          <li>Autor: {{ selectedItem?.owner.username }} ({{ selectedItem?.owner.email }})</li>
+          <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-            <button v-if="['owner'].includes(selectedFilePerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button v-if="['owner','write','read'].includes(selectedFilePerms)" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
-            <button @click="toggleLike(selectedFile)">
-              <span v-if="!currentUser?.favorites.includes(selectedFile?._id)" class="material-symbols-outlined">favorite</span>
+            <button v-if="['owner'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
+            <button v-if="['owner','write','read'].includes(selectedItemPerms)" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+            <button @click="toggleLike(selectedItem)">
+              <span v-if="!currentUser?.favorites.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
               <span v-else class="material-symbols-outlined filledHeart">favorite</span>
             </button>
-            <button v-if="['owner','write'].includes(selectedFilePerms)" @click="deleteFile(selectedFile)"><span class="material-symbols-outlined">delete</span></button>
+            <button v-if="['owner','write'].includes(selectedItemPerms)" @click="deleteFile(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
           </li>
         </ul>
       </div>
@@ -563,7 +622,7 @@ export default {
       <template #header><strong>Compartir archivo</strong></template>
       <template #content>
         
-        <div v-if="selectedFile?.sharedWith.length === 0">
+        <div v-if="selectedItem?.sharedWith.length === 0">
           <p>Este archivo no se ha compartido</p>
         </div>
 
@@ -571,7 +630,7 @@ export default {
           <p>Compartido con:</p>
           <table style="border-collapse: collapse; width: 100%; height: 100%;">
             <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
-              <tr v-for="shared in selectedFile?.sharedWith" :key="shared.user._id" style="display: table-row;">
+              <tr v-for="shared in selectedItem?.sharedWith" :key="shared.user._id" style="display: table-row;">
                 <td style="padding: 0px; text-align: center;">{{ shared.user.username }}</td>
                 <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
                 <td style="padding: 0px; text-align: center;">{{ translatePerm(shared.perm) }}</td>
@@ -630,6 +689,7 @@ export default {
   margin-bottom: 10px;
   justify-self: flex-start;
 }
+
 .filename {
   text-align: center;
   font-size: 16px;
@@ -717,6 +777,7 @@ export default {
   height: 100%;
   background-color: #2F184B;
   transition: left 0.3s ease;
+  z-index: 1001;
 }
 
 .main-sidebar.show {
@@ -730,7 +791,7 @@ export default {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 998;
+  z-index: 1000;
   display: none;
 }
 
@@ -745,10 +806,10 @@ export default {
   height: 50%;
   cursor: pointer;
 }
-.main-sidebar-toggle-opened{
+.main-sidebar-toggle-opened {
   top: 15px;
   left: 275px;
-  z-index: 999;
+  z-index: 1000;
 }
 
 .main-sidebar-title {
