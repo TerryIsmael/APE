@@ -80,5 +80,6 @@ const workspaceSchema = new mongoose.Schema<IWorkspace>({
 });
 
 const Workspace = mongoose.model('Workspace', workspaceSchema);
-
+const Profile = mongoose.model('Profile', profileSchema);
 export default Workspace;
+export { Profile };

@@ -3,8 +3,9 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
-import { getWorkspace, addFileToWorkspace, addItemToWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addFileToWorkspace, addItemToWorkspace, changePerms, addUserToWorkspace } from './controllers/workspaceController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
+import { validatePerm } from './middlewares/itemMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
@@ -22,10 +23,10 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
             return next(err);
         }
         if (!user) {
-            return res.status(404).json({ message: info.message || 'Hubo un error al intentar iniciar sesión'}); 
+            return res.status(404).json({  success: false, error:  info.message || 'Hubo un error al intentar iniciar sesión'}); 
         }
         if (req.isAuthenticated()) {
-            return res.status(401).json({ message: 'Ya existe una sesión activa'});
+            return res.status(401).json({ success: false, error:  'Ya existe una sesión activa'});
         }
         req.login(user, (err: { message: any; }) => {
             if (err) {
@@ -39,11 +40,11 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
 router.post('/logout', (req: Request, res: Response) => {
     
     if(!req.isAuthenticated()){
-        return res.status(401).json({ message: 'No existe ninguna sesión activa' });
+        return res.status(401).json({  success: false, error: 'No existe ninguna sesión activa' });
     }
     req.logout((err) => {
         if (err) {
-            return res.status(500).json({ message: 'Error durante el proceso de cierre de sesión' });
+            return res.status(500).json({  success: false, error:  'Error durante el proceso de cierre de sesión' });
         }
         return res.status(200).json({ message: 'Deslogueo exitoso' });
     });
@@ -92,18 +93,18 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
     try {
         uploader.single('file')(req, res, (err: any) => {
             if (err instanceof uploadFileError) {
-                return res.status(400).json({ message: 'Error al subir el archivo', error: err.message });
+                return res.status(400).json({ success: false, error:  'Error al subir el archivo' + err.message });
             } else if (err) {
-                return res.status(500).json({ message: 'Error interno del servidor al subir el archivo. '+err });
+                return res.status(500).json({ success: false, error:  'Error interno del servidor al subir el archivo. '+err });
             } else {
                 addFileToWorkspace(req, res).catch((error) => {
-                    return res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. '+error });
+                    return res.status(500).json({  success: false, error:  'Error interno del servidor al manejar la solicitud. '+error });
                 });
             }
         }
         );
     } catch (error) {
-        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud' });
+        res.status(500).json({  success: false, error: 'Error interno del servidor al manejar la solicitud' });
     }
 });
 
@@ -134,11 +135,13 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
 //         let liked = await toggleFavorite(fileId, req.user as IUser)
 //         liked?res.json({ success: true, message: 'Archivo '+ fileId + ' marcado como favorito'}):res.json({ success: true, message: 'Archivo '+ fileId + ' desmarcado como favorito'});
 //     } catch(error) {
-//         console.log(error);
 //         res.status(500).json({ success: false, error: 'Error al actualizar el archivo. ' + error });
 //       };
 // });
 
+
+
+//TODO: Implementar las rutas de los directorios
 router.get('/download/:filename', (req: Request, res: Response) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'uploads', filename);
@@ -150,7 +153,7 @@ router.get('/download/:filename', (req: Request, res: Response) => {
         const fileStream = fs.createReadStream(filePath);
         fileStream.pipe(res);
     } else {
-        res.status(404).send('El archivo no existe');
+        res.status(404).json({ success: false, error: 'El archivo no existe'} );
     }
 });
 
@@ -158,7 +161,24 @@ router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {
-        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ', error: error});    }
+        res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
+    }
+});
+
+router.put('/file/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+    try {
+        await changePerms(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo. ' + error });
+    }
+});
+
+router.put('/invite', isLogged, async (req: Request, res: Response) => {
+    try{
+        await addUserToWorkspace(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al invitar al usuario. ' + error });
+    }
 });
 
 export default router;
