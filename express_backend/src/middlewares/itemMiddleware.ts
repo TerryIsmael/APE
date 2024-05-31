@@ -1,6 +1,8 @@
 import { body, validationResult } from 'express-validator';
-import  User  from '../schemas/userSchema.ts';
+import  { Item }  from '../schemas/itemSchema.ts';
+import User from '../schemas/userSchema.ts';
 import type { Request, Response, NextFunction } from 'express';
+import { Permission } from '../models/profilePerms.ts';
 
 export const validatePerm = [
     body('username').custom(async (value) => {
@@ -9,14 +11,17 @@ export const validatePerm = [
             return Promise.reject('El usuario no existe');
         }
     }),
-    body('fileId').custom(async (value) => {
-        //const file = await File.findOne({ _id: value});
-        const file =true;
-        if (!file) {
+    
+    body('itemId').custom(async (value) => {
+        const item = await Item.findOne({ _id: value});
+        if (!item) {
             return Promise.reject('El archivo no existe');
         }
     }),
-    body('perm').trim().notEmpty().withMessage('El permiso del archivo es obligatorio').isIn(['none','view', 'read', 'write']).withMessage('El permiso del archivo debe ser view, read o write, o none para eliminar el permiso'),
+
+    body('perm').trim().notEmpty().withMessage('El permiso del archivo es obligatorio')
+    .isIn([...Object.values(Permission), "None"].filter( (x: String) => x != "Owner" )).withMessage('El permiso del archivo debe ser Read, Write, o None para eliminar el permiso'),
+    
     (req : Request, res : Response, next : NextFunction) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {

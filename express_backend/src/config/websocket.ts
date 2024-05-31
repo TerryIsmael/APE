@@ -25,7 +25,6 @@ wsServer.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log('Cliente WebSocket desconectado');
     if (workspaceId && connectionsByWorkspace.has(workspaceId)) {
       const workspaceConnections = connectionsByWorkspace.get(workspaceId);
       if (!workspaceConnections) {

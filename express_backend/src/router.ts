@@ -3,8 +3,9 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser } from './controllers/userController.ts';
-import { getWorkspace, addFileToWorkspace, addItemToWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addFileToWorkspace, addItemToWorkspace, changePerms, addUserToWorkspace } from './controllers/workspaceController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
+import { validatePerm } from './middlewares/itemMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
@@ -134,11 +135,13 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
 //         let liked = await toggleFavorite(fileId, req.user as IUser)
 //         liked?res.json({ success: true, message: 'Archivo '+ fileId + ' marcado como favorito'}):res.json({ success: true, message: 'Archivo '+ fileId + ' desmarcado como favorito'});
 //     } catch(error) {
-//         console.log(error);
 //         res.status(500).json({ success: false, error: 'Error al actualizar el archivo. ' + error });
 //       };
 // });
 
+
+
+//TODO: Implementar las rutas de los directorios
 router.get('/download/:filename', (req: Request, res: Response) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'uploads', filename);
@@ -158,7 +161,23 @@ router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {
-        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ' + error});
+        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ', error: error});
+    }
+});
+
+router.put('/file/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+    try {
+        await changePerms(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo. ' + error });
+    }
+});
+
+router.put('/invite', isLogged, async (req: Request, res: Response) => {
+    try{
+        await addUserToWorkspace(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo. ' + error });
     }
 });
 
