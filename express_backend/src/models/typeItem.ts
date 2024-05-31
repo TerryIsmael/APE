@@ -13,6 +13,7 @@ export interface ITimer extends IItem {
     duration: number;
     remainingTime: number;
     initialDate: Date;
+    active: boolean;
 }
 
 export interface IFile extends IItem {

@@ -37,18 +37,20 @@ export const timerSchema = new mongoose.Schema<ITimer>({
     },
     remainingTime: { 
         type: Number, 
-        required: [true, "El tiempo restante del temporizador es obligatorio"],
         min: [0, "El tiempo restante del temporizador no puede ser negativo"],
         default: 0
     },
     initialDate: {
         type: Date,
-        required: [true, "La fecha de inicio del temporizador es obligatoria"],
         validate: {
             validator: (value: Date) => value.getTime() > Date.now(),
             message: "La fecha de inicio del temporizador no puede ser anterior a la fecha actual"
         },
         default: Date.now
+    },
+    active: {
+        type: Boolean,
+        default: false
     }
 });
 

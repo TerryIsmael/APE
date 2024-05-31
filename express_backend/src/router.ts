@@ -158,8 +158,7 @@ router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {
-        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ' + error});
-    }
+        res.status(500).json({ message: 'Error interno del servidor al manejar la solicitud. ', error: error});    }
 });
 
 export default router;

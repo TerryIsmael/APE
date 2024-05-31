@@ -1,6 +1,7 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
+import { ItemType } from '../../../express_backend/src/models/item';
 
 export default {
   setup() {
@@ -24,13 +25,15 @@ export default {
 
     const folders = ref([]);
     const selectedFolder = "Favourites"; 
+
+    // Creation of items
     const isNewItemModalOpened = ref(false);
-    const newItemType = ref(null);
-    const itemName = ref(null);
+    const newItem = ref({});
+     
     const hours = ref(0);
     const minutes = ref(0);
     const seconds = ref(0);
-    
+
     const fetchWorkspace = async () => {
       try {
         const wsId = localStorage.getItem('workspace');
@@ -315,28 +318,75 @@ export default {
 
     const openNewItemModal = (itemType) => {
       isNewItemModalOpened.value = true;
-      itemName.value = '';
-      newItemType.value = itemType;
-      if (itemType == 'temporizador') {
+      newItem.value.itemName = '';
+      newItem.value.itemType = itemType;
+      if (itemType == 'Timer') {
         hours.value = 0;
         minutes.value = 0;
         seconds.value = 0;
+      } else if (itemType == 'Note' || itemType == 'Notice') {
+        newItem.value.itemText = '';
       }
     };
 
     const closeNewItemModal = () => {
       isNewItemModalOpened.value = false;
+      newItem.value = {};
       errorMessage.value = [];
-      clearNewItemModalFields();
-    };
-
-    const clearNewItemModalFields = () => {
-      itemName.value = '';
       hours.value = 0;
       minutes.value = 0;
       seconds.value = 0;
-      newItemType.value = null;
     };
+
+    const handleNewItemForm = async () => {
+      try { 
+        let currentPath = window.location.pathname.split('/').slice(3).join('/');
+        const itemType = newItem.value.itemType;
+
+        if (currentPath === '/') {
+          currentPath = '';
+        }        
+
+        if (itemType == 'Timer') {
+          newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
+        } else if (itemType == 'Note' || itemType == 'Notice') {
+          newItem.value.text = newItem.value.itemText;
+        } 
+
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+          body: JSON.stringify({ workspace: workspace.value.id, path: `${currentPath}`, item: newItem.value }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+
+        console.log(newItem.value);
+
+        if (response.ok) {
+          await getMyFiles();
+          errorMessage.value = [];
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        } else if (response.status === 400 || response.status === 404) {
+          errorMessage.value = [];
+          response.json().then((data) => {
+            if (data.error) {
+              errorMessage.value.push(data.error);
+            } else {
+              data.errors.forEach((error) => {
+                errorMessage.value.push(error.msg);
+              });
+            }
+          throw new Error("Error al crear item");
+          })
+        }
+
+      } catch (error) {
+        console.log(error);
+      }
+    }
 
     onBeforeMount(() => {
       fetchWorkspace();
@@ -369,7 +419,10 @@ export default {
       errorMessage,
       fileInput,
       isNewItemModalOpened,
-      newItemType,
+      newItem,
+      hours,
+      minutes,
+      seconds,
       openModal,
       closeModal,
       clearModalFields,
@@ -389,7 +442,7 @@ export default {
       translatePerm,
       openNewItemModal,
       closeNewItemModal,
-      clearNewItemModalFields,
+      handleNewItemForm,
     }
   }
 }   
@@ -423,9 +476,10 @@ export default {
         <li class="li-clickable">Gestionar perfil</li>
         <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('carpeta')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
+        <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
         <li class="li-clickable">Detalles del workspace</li>
+        <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Anuncios</li>
         <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Favoritos</li>
         <div v-for="folder in folders" style="overflow-y: auto; word-wrap: break-word; max-height: 60%">
           <li :class="{'li-clickable':true, 'selected_folder': selectedFolder.id !== undefined && selectedFolder.id == folder.id}" >{{ folder.name }}</li>
@@ -440,13 +494,14 @@ export default {
     <div style="display: flex; justify-content: right; width:85%;">
       <div></div>
 
-      <button style="margin-right: 1%;" @click="openNewItemModal('carpeta')"><span class="material-symbols-outlined">create_new_folder</span></button>
+      <button style="margin-right: 1%;" @click="openNewItemModal('Folder')"><span class="material-symbols-outlined">create_new_folder</span></button>
       <div class="dropdown">
         <button @click="openDropdown"><span class="material-symbols-outlined">add</span></button>
         <div class="dropdown-content">
-          <div @click="openNewItemModal('calendario')">Calendario</div>
-          <div @click="openNewItemModal('nota')">Nota</div>
-          <div @click="openNewItemModal('temporizador')">Temporizador</div>
+          <div @click="openNewItemModal('Notice')">Anuncio</div>
+          <div @click="openNewItemModal('Calendar')">Calendario</div>
+          <div @click="openNewItemModal('Note')">Nota</div>
+          <div @click="openNewItemModal('Timer')">Temporizador</div>
           <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
           <div @click="selectUploadFile" value="File">Archivo</div>
         </div>
@@ -488,21 +543,24 @@ export default {
     </div>
 
     <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-      <template #header><strong>Crear {{ newItemType }}</strong></template>                
+      <template #header><strong>Crear {{ newItem.itemType }}</strong></template>                
       <template #footer>
         <div style="margin-top:20px">
 
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="itemName" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px; height:30px; width: 200px; background-color: #f2f2f2; color: black"/>
-            <div v-if="newItemType == 'temporizador'" style="display: inline-flex; vertical-align: middle; align-items: center;">
-              <input v-model="hours" type="number" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
-              :<input v-model="minutes" type="number" placeholder="Min" style="margin-top:5px; margin-right: 5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
-              :<input v-model="seconds" type="number" placeholder="Seg" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+            <input type="text" v-model="newItem.itemName" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 200px; background-color: #f2f2f2; color: black;"/>
+            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.itemText" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.itemText" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+
+            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center;">
+              <input v-model="hours" type="number" min="0" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+              :<input v-model="minutes" type="number" min="0" placeholder="Min" style="margin-top:5px; margin-right: 5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+              :<input v-model="seconds" type="number" min="0" placeholder="Seg" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
             </div>
           </div>
-          <button @click="closeNewItemModal" style="margin-top:15px">Crear</button>
+          <button @click="handleNewItemForm().then(closeNewItemModal())" style="margin-top:15px">Crear</button>
       </template>
     </Modal>
 
