@@ -55,7 +55,7 @@ const itemSchema = new mongoose.Schema({
     profilePerms: [profilePermSchema],
 });
 
-const Item = mongoose.model('Item', itemSchema, 'items');
+const Item = mongoose.model('Item', itemSchema);
 
 const NoteItem = Item.discriminator<INote>('NoteItem', noteSchema);
 const NoticeItem = Item.discriminator<INotice>('NoticeItem', noticeSchema);
