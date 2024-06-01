@@ -12,9 +12,10 @@ export default {
     const items = ref([]);
     const folders = ref([]);
     const notices = ref([]);
-    const selectedFolder = "Favourites"; 
+    const selectedFolder = "Favourites"; // Si pulso sobre seleccionado, entrar
+
+    const currentPath = ref('');
         
-    const myFiles = ref([]); // No va a hacer falta?
     const selectedItemPerms = ref(null);
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
@@ -51,6 +52,7 @@ export default {
           workspace.value = data;
           localStorage.setItem('workspace', data._id);
           await arrangeItems();
+          await getCurrentPath();
 
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -67,10 +69,6 @@ export default {
       const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar');
       const wsNotices = await wsItems.filter(item => item.itemType === 'Notice');
 
-      // wsFolders.sort((a, b) => b.modifiedDate - a.modifiedDate);
-      // otherItems.sort((a, b) => b.modifiedDate - a.modifiedDate);
-      // wsNotices.sort((a, b) => b.modifiedDate - a.modifiedDate);
-
       wsFolders.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
       otherItems.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
       wsNotices.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
@@ -81,6 +79,21 @@ export default {
 
       folders.value = wsFolders;
       notices.value = wsNotices;
+    }
+
+    const getCurrentPath = () => {
+
+      const pathArray = window.location.pathname.split('/').slice(3);
+
+      if (pathArray.length === 0) {
+        currentPath.value = '/';
+      } else if (pathArray.length <= 2) {
+        currentPath.value =  '/' + pathArray.slice(0).join('/');
+      } else {
+        const lastTwoSegments = pathArray.slice(-3);
+        const path = '... /' + lastTwoSegments.join('/');
+        currentPath.value = path;
+      }
     }
       
     const openModal = () => {
@@ -148,7 +161,7 @@ export default {
         if (response.ok) {
           selectedItem.value = null;
           toggleSidebar();
-          getMyFiles();
+          await fetchWorkspace();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -168,7 +181,7 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
-          await getMyFiles();
+          await fetchWorkspace();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -201,8 +214,8 @@ export default {
         });
 
         if (response.ok) {
-          await getMyFiles();
-          selectedItem.value = myFiles.value.find(file => file._id === selectedItem.value._id);
+          await fetchWorkspace();
+          selectedItem.value = workspace.value.items.find(file => file._id === selectedItem.value._id);
           errorMessage.value = [];
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -239,36 +252,6 @@ export default {
         } else if (response.status === 401){
           router.push({ name: 'login' });
         }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    const getMyFiles = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          currentUser.value = data.currentUser;
-          if (!data.files) return;
-          const favs = await data.files.filter(file => currentUser.value.favorites.includes(file._id))
-          const nofavs = await data.files.filter(file => !currentUser.value.favorites.includes(file._id))
-          
-          myFiles.value = [];
-          myFiles.value.push(...favs);
-          myFiles.value.push(...nofavs);
-
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } 
- 
       } catch (error) {
         console.log(error);
       }
@@ -441,7 +424,6 @@ export default {
     });
     
     onMounted(() => {
-      getMyFiles();
       document.addEventListener('click', closeSidebar);
     });
 
@@ -455,7 +437,6 @@ export default {
       notices,
       items,
       selectedFolder,
-      myFiles,
       showSidebar,
       showMainSidebar,
       showSharedPopup,
@@ -473,11 +454,11 @@ export default {
       hours,
       minutes,
       seconds,
+      currentPath,
       openModal,
       closeModal,
       clearModalFields,
       changePerms,
-      getMyFiles,
       selectItem,
       toggleSidebar,
       toggleSharedPopup,
@@ -495,6 +476,7 @@ export default {
       closeNewItemModal,
       handleNewItemForm,
       selectImage,
+      getCurrentPath,
     }
   }
 }   
@@ -544,22 +526,28 @@ export default {
 
   <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;"> {{ workspace?.name }}</h1></div>
   <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-    <div style="display: flex; justify-content: right; width:85%;">
-      <div></div>
 
-      <button style="margin-right: 1%;" @click="openNewItemModal('Folder')"><span class="material-symbols-outlined">create_new_folder</span></button>
-      <div class="dropdown">
-        <button @click="openDropdown"><span class="material-symbols-outlined">add</span></button>
-        <div style="z-index: 1002;" class="dropdown-content">
-          <div @click="openNewItemModal('Notice')">Anuncio</div>
-          <div @click="openNewItemModal('Calendar')">Calendario</div>
-          <div @click="openNewItemModal('Note')">Nota</div>
-          <div @click="openNewItemModal('Timer')">Temporizador</div>
-          <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-          <div @click="selectUploadFile" value="File">Archivo</div>
+    <div style="display: flex; justify-content: space-between; width: 87%; align-items: center;">
+      
+      <div style="max-width: 85%;">
+        <h2>Ruta actual: {{ currentPath }} </h2>
+      </div>
+
+      <div style="display: flex; justify-content: right; width: 15%;">
+        <button style="margin-right: 3%; max-height: 50px" @click="openNewItemModal('Folder')"><span class="material-symbols-outlined">create_new_folder</span></button>
+        <div class="dropdown">
+          <button style="max-height: 50px;" @click="openDropdown"><span class="material-symbols-outlined">add</span></button>
+          <div style="z-index: 1002;" class="dropdown-content">
+            <div @click="openNewItemModal('Notice')">Anuncio</div>
+            <div @click="openNewItemModal('Calendar')">Calendario</div>
+            <div @click="openNewItemModal('Note')">Nota</div>
+            <div @click="openNewItemModal('Timer')">Temporizador</div>
+            <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
+            <div @click="selectUploadFile" value="File">Archivo</div>
+          </div>
         </div>
       </div>      
-    </div>
+  </div>
 
     <div class="main-content container">
       <div v-if="workspace.items?.length === 0">
@@ -672,7 +660,6 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 20px;
   flex-wrap: wrap;
 }
 
