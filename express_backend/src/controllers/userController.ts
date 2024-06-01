@@ -29,3 +29,16 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         return res.status(500).json({ message: 'Error en el servidor:' + error });
     }
 };
+
+export const fetchUsername = async (req: any, res: Response): Promise<Response> => {
+    try {
+        const userId = req.params.userId;
+        const user = await User.findOne({ _id: userId });
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        return res.status(200).json({"username":user.username});
+    } catch (error) {
+        return res.status(500).json({ message: 'Error en el servidor:' + error });
+    }
+}

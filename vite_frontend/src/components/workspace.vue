@@ -52,8 +52,31 @@ export default {
 
         if (response.ok) {
           const data = await response.json();
-          currentUser.value = data;
-          localStorage.setItem('user', JSON.stringify(data));
+          currentUser.value = data.user;
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const fetchUsername = async (userId) => {
+      try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/username', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+          body: JSON.stringify({ userId: userId }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          currentUser.value = data.username;
+          localStorage.setItem('user', JSON.stringify(data.user));
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -193,7 +216,7 @@ export default {
         }
       } else {
         selectedItem.value = item;
-        selectedItemPerms.value = await verifyPerms(item, currentUser.value);
+        selectedItemPerms.value = await verifyPerms(item);
         showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
         return;
       }
@@ -259,9 +282,9 @@ export default {
       }
     }
 
-    const verifyPerms = async (item, user) => {
+    const verifyPerms = async (item) => {
       const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-      const wpPerm = workspace.value.profiles.filter(profile => profile.users.includes(user._id)).map(x=>[x.permission,permlevel[x.permission]]).sort((a, b) => b[1] - a[1])[0];
+      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.permission,permLevel[x.permission]]).sort((a, b) => b[1] - a[1])[0];
       if (wpPerm[1] === 2){
         const filePermLevel = { 'Owner': 3, 'Write': 2, 'Read': 1 }
         return item.profilePerms.map(x=>{
@@ -269,7 +292,7 @@ export default {
             "profile":workspace.profiles.find(y=>y._id==x.profile),
             "permission": x.permission
           }
-        }).filter(x => x.profile.users.includes(user)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
+        }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
       } else {
         return wpPerm[0];
       }
@@ -380,6 +403,7 @@ export default {
       try {
         const formData = new FormData();
         formData.append('workspace', workspace.value._id);
+        formData.append('path', path.value);
         formData.append('file', file);
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
           method: 'POST',
@@ -490,6 +514,15 @@ export default {
       } 
     }
 
+    const findAuthor = async (selectedItem) => {
+      const profile = selectedItem.profilePerms.find(y=>y.permission == 'Owner').profile;
+      //console.log(workspace.value.profiles.find(x => {console.log(x._id,"<---->",profile);x._id == profile}));
+      console.log(workspace.value.profiles.find(x => x.name == profile)?.users);
+      const userId = workspace.value.profiles.find(x => x.name == profile)?.users[0]
+      console.log( await fetchUsername(userId))
+      return await fetchUsername(userId);
+    }
+
     onBeforeMount(async () => {
       path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
       fetchWorkspace();
@@ -562,6 +595,8 @@ export default {
       selectImage,
       getCurrentPath,
       navigateToPreviousFolder,
+      findAuthor,
+      fetchUsername,
     }
   }
 }   
@@ -587,7 +622,7 @@ export default {
               </div>
           </div>
         </div>
-
+        
         <li style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ workspace?.name }}</li>
         <button class="change-workspace-button">Cambiar</button>
 
@@ -612,7 +647,7 @@ export default {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
-  
+  {{ currentUser }}
   <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
       <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
@@ -659,7 +694,7 @@ export default {
 
           <div style="display:flex; align-items: center;">
             <p class="filename">{{ item.name }} </p>
-            <span v-if="currentUser?.favorites.includes(item._id)" class="material-symbols-outlined filledHeart">favorite</span>
+            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filledHeart">favorite</span>
           </div>
         </div>
     </div>
@@ -668,8 +703,8 @@ export default {
       <div class="sidebar" :class="{ 'show': showSidebar }">
         <ul>
           <li>Archivo: {{ selectedItem?.name }}</li>
-          <li>Autor: {{ selectedItem?.profilePerms.filter(x => x.permission === 'Owner').map(y => y.username) }}</li>
-          <li> {{ selectedItem?.profilePerms.filter(x => x.permission === 'Owner').map(y => `${y.surnames} ${y.firstName}`).join(', ') }}</li>
+          <li>Autor: {{ selectedItem?findAuthor(selectedItem):"" }}</li>
+          <li> </li>
           <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
           <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
 
@@ -677,7 +712,7 @@ export default {
             <button v-if="['Owner'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
             <button v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms)" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedItem)">
-              <span v-if="!currentUser?.favorites.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
+              <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
               <span v-else class="material-symbols-outlined filledHeart">favorite</span>
             </button>
             <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteFile(selectedItem)"><span class="material-symbols-outlined">delete</span></button>

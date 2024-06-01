@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
-import { registerUser } from './controllers/userController.ts';
+import { registerUser, fetchUsername } from './controllers/userController.ts';
 import { getWorkspace, addItemToWorkspace, changePerms, addUserToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite } from './controllers/workspaceController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validatePerm } from './middlewares/itemMiddleware.ts';
@@ -125,6 +125,22 @@ router.put('/file/like', isLogged, async (req: Request, res: Response) => {
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al actualizar el archivo. ' + error });
         };
+});
+
+router.get('/user', isLogged, async (req: Request, res: Response) => {
+    try{
+        res.json({ success: true, user: req.user });
+    }catch(error){
+        res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
+    }
+});
+
+router.get('/user/username', isLogged, async (req: Request, res: Response) => {
+    try{
+        fetchUsername(req, res);
+    }catch(error){
+        res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
+    }
 });
 
 export default router;
