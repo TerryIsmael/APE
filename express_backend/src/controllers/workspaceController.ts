@@ -92,7 +92,6 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   }catch (error: any) {
     res.status(404).json({ error: error.message });
   }
-  
 }
 
 export const addFileToWorkspace = async (req: any, res: any) => {
@@ -140,7 +139,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
     }
     else {
       const folders = path.split('/');
-      const folder = folders[folders.length - 2]; // las rutas van a acabar siempre en /, por lo que el último elemento es vacío
+      const folder = folders[folders.length - 1];
       const isRoot = folder == wsId
       const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
       const folderPath = folders.slice(0, -1).join('/');

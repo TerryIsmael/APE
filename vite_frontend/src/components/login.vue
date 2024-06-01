@@ -26,7 +26,7 @@ export default {
         })
       }).then(response => {
             if (response.status === 200) {
-              router.push('/');
+              router.push('/workspace/');
             } else if (response.status === 401){
               logout();
               login();
