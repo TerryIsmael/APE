@@ -1,36 +1,39 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 
 export default {
   setup() {
     
     const currentUser = ref(null);
     const router = useRouter();
-
+    const route = useRoute();
+    const path = ref("");
+    // const { params } = route.params? route.params: "";
+    // console.log(params)
+    // const path = JSON.stringify(params).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/');
     const workspace = ref({});
-    const items = ref([]);
+    const currentPath = ref('');
+    const items = ref([]); 
     const folders = ref([]);
     const notices = ref([]);
-    const selectedFolder = "Favourites"; // Si pulso sobre seleccionado, entrar
-
-    const currentPath = ref('');
-        
+    const selectedItem = ref(null);
     const selectedItemPerms = ref(null);
+    const selectedFolder = ref(''); // Si pulso sobre seleccionado, entrar  
+          
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const showSharedPopup = ref(false);
     const formattedDate = ref(null);
-    const selectedItem = ref(null);
     const isModalOpened = ref(false);
     const shareWith = ref(null);
     const sharePerm = ref(null);
     const errorMessage = ref([]);
-    const fileInput = ref(null); 
 
     // Creation of items
     const isNewItemModalOpened = ref(false);
     const newItem = ref({});
+    const fileInput = ref(null); 
      
     const hours = ref(0);
     const minutes = ref(0);
@@ -52,7 +55,16 @@ export default {
           workspace.value = data;
           localStorage.setItem('workspace', data._id);
           await arrangeItems();
-          await getCurrentPath();
+          getCurrentPath();
+
+          const pathArray = path.value.split('/');
+          folders.value.forEach(item => {
+            if (item.name === pathArray[pathArray.lenght-1] && item.path === pathArray.slice(0, -1).join('/')) {
+              
+              selectedFolder.value = item.name;
+          }
+
+      });
 
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -83,15 +95,15 @@ export default {
 
     const getCurrentPath = () => {
 
-      const pathArray = window.location.pathname.split('/').slice(3);
+      const pathArray = path.value.split('/');
 
       if (pathArray.length === 0) {
         currentPath.value = '/';
       } else if (pathArray.length <= 2) {
         currentPath.value =  '/' + pathArray.slice(0).join('/');
       } else {
-        const lastTwoSegments = pathArray.slice(-3);
-        const path = '... /' + lastTwoSegments.join('/');
+        const lastTwoSegments = pathArray.slice(-2);
+        const path = '.../' + lastTwoSegments.join('/');
         currentPath.value = path;
       }
     }
@@ -121,13 +133,26 @@ export default {
     }
 
     const selectItem = async (item) => {
-      showSidebar.value = true;
-      selectedItem.value = item;
-      selectedItemPerms.value = await verifyPerms(item, currentUser.value);
-    }
 
-    const selectFolder = (folder) => {
-      selectedFolder.value = folder;
+      if (item == 'wsDetails' || item == 'notices' || item == 'favourites') {
+        selectedFolder.value = item;
+        return;
+      }
+
+      if (item.itemType === 'Folder') {
+        if (selectedItem.value?._id === item._id) {
+          router.push('/workspace/' + item.path + item.name);
+          return;
+        } else {
+          selectedItem.value = item;
+          return;
+        }
+      } else {
+        selectedItem.value = item;
+        selectedItemPerms.value = await verifyPerms(item, currentUser.value);
+        showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
+        return;
+      }
     }
 
     const closeSidebar = (event) => {
@@ -352,7 +377,6 @@ export default {
 
     const handleNewItemForm = async () => {
       try { 
-        let currentPath = window.location.pathname.split('/').slice(3).join('/');
         const itemType = newItem.value.itemType;
 
         if (itemType == 'Timer') {
@@ -362,7 +386,7 @@ export default {
         } 
 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, path: `${currentPath}`, item: newItem.value }),
+          body: JSON.stringify({ workspace: workspace.value._id, path: `${path}`, item: newItem.value }),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -399,31 +423,33 @@ export default {
 
       if (item.itemType !== 'File') {
         if (item.itemType === 'Note') {
-          return `files/default.png`;
+          return `/files/default.png`;
         } else {
-          return `files/${item.itemType.toLowerCase()}.png`;
+          return `/files/${item.itemType.toLowerCase()}.png`;
         }
       } else {
         switch (item.name.split('.').pop().toLowerCase()) {
           case 'pdf':
-            return 'files/pdf.png';
+            return '/files/pdf.png';
           case 'docx':
-            return 'files/docx.png';
+            return '/files/docx.png';
           case 'xlsx':
-            return 'files/xlsx.png';
+            return '/files/xlsx.png';
           case 'pptx':
-            return 'files/pptx.png';
+            return '/files/pptx.png';
           default:
-            return 'files/default.png';
+            return '/files/default.png';
         }
       } 
     }
 
-    onBeforeMount(() => {
+    onBeforeMount(async () => {
+      path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
       fetchWorkspace();
     });
     
     onMounted(() => {
+      selectedFolder.value = path.value;
       document.addEventListener('click', closeSidebar);
     });
 
@@ -431,6 +457,15 @@ export default {
       document.removeEventListener('click', closeSidebar);
     });
     
+    watch(
+      () => route.params.path,
+      () => {
+        path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+        selectedFolder.value = path.value;
+        fetchWorkspace();
+      }
+    );
+
     return {
       workspace,
       folders,
@@ -469,7 +504,6 @@ export default {
       logout,
       downloadFile,
       selectUploadFile,
-      selectFolder,
       uploadFile,
       translatePerm,
       openNewItemModal,
@@ -477,6 +511,7 @@ export default {
       handleNewItemForm,
       selectImage,
       getCurrentPath,
+      path
     }
   }
 }   
@@ -512,18 +547,17 @@ export default {
 
         <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
-        <li class="li-clickable">Detalles del workspace</li>
-        <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Anuncios</li>
-        <li :class="{'li-clickable':true, 'selected_folder':selectedFolder == 'Favourites'}">Favoritos</li>
-        <div v-for="folder in folders" style="overflow-y: auto; word-wrap: break-word; max-height: 60%">
-          <li :class="{'li-clickable':true, 'selected_folder': selectedFolder.id !== undefined && selectedFolder.id == folder.id}" >{{ folder.name }}</li>
+        <li @click="selectItem('wsDetails')" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
+        <li @click="selectItem('notices')" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'notices'}">Anuncios</li>
+        <li @click="selectItem('favourites')" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'favourites'}">Favoritos</li>
+        <div v-for="folder in folders" :key="folder._id" style="overflow-y: auto; word-wrap: break-word; max-height: 60%">
+          <li @click="selectItem(folder)" :class="{'li-clickable': true, 'selected_folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
         </div>
       </ul>
       <ul style="height: 5%;">
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
-
   <div class="main-content" style="display:flex; justify-content: center; align-items: center; word-wrap: break-word;"><h1 style="margin-right: 10px;"> {{ workspace?.name }}</h1></div>
   <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
 
@@ -554,7 +588,7 @@ export default {
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
       <div class="files-container" v-else>
-        <div class="file-container" v-for="item in items" :key="item.id" @click="selectItem(file)">
+        <div class="file-container" v-for="item in items" :key="item.id" @click="selectItem(item)">
           <img class="file-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
 
           <div style="display:flex; align-items: center;">
@@ -564,11 +598,11 @@ export default {
         </div>
     </div>
     
-    <div class="sidebar-overlay" v-if="showSidebar && selectedItem" @click="closeSidebar"></div>
+    <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
       <div class="sidebar" :class="{ 'show': showSidebar }">
         <ul>
           <li>Archivo: {{ selectedItem?.name }}</li>
-          <li>Autor: {{ selectedItem?.owner.username }} ({{ selectedItem?.owner.email }})</li>
+          <li>Autor: {{ selectedItem?.owner?.username }} ({{ selectedItem?.owner?.email }})</li>
           <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">

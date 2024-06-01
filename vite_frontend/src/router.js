@@ -6,9 +6,9 @@ import workspace from './components/workspace.vue'
 const router = createRouter({
     history: createWebHistory(),
     routes: [
-        {path: '/login',name: 'login',component: login},
-        {path: '/register',name: 'register',component: register},
-        {path: '/',name: 'workspace',component: workspace},
+        {path: '/login',name: 'login', component: login},
+        {path: '/register',name: 'register', component: register},
+        {path: '/workspace/:path*',name: 'workspace', component: workspace},
     ] 
 })
 
