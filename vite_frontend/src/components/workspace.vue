@@ -14,6 +14,7 @@ export default {
     const items = ref([]); 
     const folders = ref([]);
     const notices = ref([]);
+    const author = ref(null);
     const selectedItem = ref(null);
     const selectedItemPerms = ref(null);
     const selectedFolder = ref('');
@@ -37,10 +38,6 @@ export default {
     const seconds = ref(0);
 
     const fetchUser = async () => {
-      if (localStorage.getItem('user') !== null) {
-        currentUser.value = JSON.parse(localStorage.getItem('user'));
-        return;
-      }
       try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user', {
           method: 'GET',
@@ -53,7 +50,6 @@ export default {
         if (response.ok) {
           const data = await response.json();
           currentUser.value = data.user;
-          localStorage.setItem('user', JSON.stringify(data.user));
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -62,9 +58,9 @@ export default {
       }
     }
 
-    const fetchUsername = async (userId) => {
+    const fetchUserData = async (userId) => {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/username', {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -75,8 +71,7 @@ export default {
 
         if (response.ok) {
           const data = await response.json();
-          currentUser.value = data.username;
-          localStorage.setItem('user', JSON.stringify(data.user));
+          author.value = data;
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -132,10 +127,19 @@ export default {
       const currentFolders = await wsItems.filter(item => item.itemType === 'Folder' && item.path === path.value);
       const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar' && item.path === path.value);
       const wsNotices = await wsItems.filter(item => item.itemType === 'Notice' && item.path === path.value);
+      const comparator = (a, b) => {
+        if (currentUser.value.favorites.includes(a._id) && !currentUser.value.favorites.includes(b._id)) {
+          return -1;
+        } else if (!currentUser.value.favorites.includes(a._id) && currentUser.value.favorites.includes(b._id)) {
+          return 1;
+        } else {
+          return new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime();
+        }
+      }
 
-      wsFolders.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
-      otherItems.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
-      wsNotices.sort((a, b) => new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime());
+      wsFolders.sort(comparator);
+      otherItems.sort(comparator);
+      wsNotices.sort(comparator);
 
       items.value = [];
       items.value.push(...currentFolders);
@@ -200,7 +204,7 @@ export default {
     }
 
     const selectItem = async (item, direct) => {
-      if ((item == 'wsDetails' || item == 'notices' || item == 'favourites')) {
+      if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
         selectedFolder.value = item;
         router.push('/workspace/' + item);
         return;
@@ -218,6 +222,7 @@ export default {
         selectedItem.value = item;
         selectedItemPerms.value = await verifyPerms(item);
         showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
+        await findAuthor(item);
         return;
       }
     }
@@ -225,10 +230,11 @@ export default {
     const closeSidebar = (event) => {
       const sidebar = document.querySelector('.sidebar');
       const modal = document.querySelector('.modal');
-      const fileContainers = Array.from(document.querySelectorAll('.file-container'));
+      const fileContainers = Array.from(document.querySelectorAll('.item-container'));
       const selectedItem = fileContainers.some(fileContainer => fileContainer.contains(event.target));
       if (sidebar && !sidebar.contains(event.target) && !modal && !selectedItem ) {
         showSidebar.value = false;
+        author.value = null;
       }
     };
 
@@ -237,12 +243,12 @@ export default {
       return new Date(date).toLocaleDateString('es-ES', options);
     }
 
-    const deleteFile = async (file) => {
+    const deleteItem = async (item) => {
       try {
-        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este archivo?");
+        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
         if (!confirmDelete) return;
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          body: JSON.stringify({ id: file._id }),
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+          body: JSON.stringify({ workspace: workspace.value._id, itemId: item._id }),
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -251,8 +257,9 @@ export default {
         });
 
         if (response.ok) {
-          selectedItem.value = null;
           toggleSidebar();
+          selectedItem.value = null;
+          author.value = null;
           await fetchWorkspace();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -262,10 +269,10 @@ export default {
       }
     }
 
-    const toggleLike = async (file) => {
+    const toggleLike = async (item) => {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/like', {
-          body: JSON.stringify({ fileId: file._id }),
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/like', {
+          body: JSON.stringify({ itemId: item._id, workspace: workspace.value._id }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -273,9 +280,14 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
-          await fetchWorkspace();
+          await fetchUser();
+          await arrangeItems();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
+        } else{
+          response.json().then((data) => { 
+            console.log(data.error);
+          })
         }
       } catch (error) {
         console.log(error);
@@ -284,15 +296,16 @@ export default {
 
     const verifyPerms = async (item) => {
       const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.permission,permLevel[x.permission]]).sort((a, b) => b[1] - a[1])[0];
-      if (wpPerm[1] === 2){
+      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
+      if (wpPerm[1] === 2) {
         const filePermLevel = { 'Owner': 3, 'Write': 2, 'Read': 1 }
-        return item.profilePerms.map(x=>{
+        const perm = item.profilePerms.map(x=>{
           return {
             "profile":workspace.profiles.find(y=>y._id==x.profile),
             "permission": x.permission
           }
         }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
+        return perm;
       } else {
         return wpPerm[0];
       }
@@ -368,10 +381,29 @@ export default {
       }
     }
 
+    const translateItemType = (item) => {
+      switch (item) {
+        case 'Notice':
+          return 'Anuncio';
+        case 'Calendar':
+          return 'Calendario';
+        case 'Note':
+          return 'Nota';
+        case 'Timer':
+          return 'Temporizador';
+        case 'File':
+          return 'Archivo';
+        case 'Folder':
+          return 'Carpeta';
+        default:
+          return 'Ninguno';
+      }
+    }
+
     const downloadFile = async () => {
       try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
-          body: JSON.stringify({ id: selectedItem.value._id }),
+          body: JSON.stringify({ workspace: workspace.value._id, fileId: selectedItem.value._id }),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -379,6 +411,7 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
+          console.log(response.headers);
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -388,6 +421,10 @@ export default {
           window.URL.revokeObjectURL(url);
         } else if (response.status === 401) {
           router.push({ name: 'login' });
+        } else {
+          response.json().then((data) => { 
+            console.log(data.error);
+          })
         }
       } catch (error) {
         console.log(error);
@@ -412,7 +449,6 @@ export default {
         });
         if (response.ok) {
           await fetchWorkspace();
-          console.log('Archivo subido correctamente');
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         } else{
@@ -515,16 +551,22 @@ export default {
     }
 
     const findAuthor = async (selectedItem) => {
-      const profile = selectedItem.profilePerms.find(y=>y.permission == 'Owner').profile;
-      //console.log(workspace.value.profiles.find(x => {console.log(x._id,"<---->",profile);x._id == profile}));
-      console.log(workspace.value.profiles.find(x => x.name == profile)?.users);
-      const userId = workspace.value.profiles.find(x => x.name == profile)?.users[0]
-      console.log( await fetchUsername(userId))
-      return await fetchUsername(userId);
+      const profile = selectedItem.profilePerms.find(y => y.permission == 'Owner').profile;
+      const userId = workspace.value.profiles.find(x => x.name == profile)?.users[0];
+      await fetchUserData(userId);
     }
 
     onBeforeMount(async () => {
       path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
+        body: JSON.stringify({
+          username: "marmarsol4",
+          password: "12345678910aA@",
+        })
+      });
       fetchWorkspace();
       fetchUser();
     });
@@ -552,6 +594,7 @@ export default {
       folders,
       notices,
       items,
+      author,
       selectedFolder,
       showSidebar,
       showMainSidebar,
@@ -582,13 +625,14 @@ export default {
       toggleSharedPopup,
       toggleLike,
       formatDate,
-      deleteFile,
+      deleteItem,
       verifyPerms,
       logout,
       downloadFile,
       selectUploadFile,
       uploadFile,
       translatePerm,
+      translateItemType,
       openNewItemModal,
       closeNewItemModal,
       handleNewItemForm,
@@ -596,7 +640,6 @@ export default {
       getCurrentPath,
       navigateToPreviousFolder,
       findAuthor,
-      fetchUsername,
     }
   }
 }   
@@ -632,13 +675,13 @@ export default {
 
         <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
-        <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
-        <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'notices'}">Anuncios</li>
-        <li @click="selectItem('favourites', true)" :class="{'li-clickable': true, 'selected_folder':selectedFolder == 'favourites'}">Favoritos</li>
+        <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
+        <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'notices'}">Anuncios</li>
+        <li @click="selectItem('favorites', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'favorites'}">Favoritos</li>
         
         <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
           <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-            <li @click="selectItem(folder, true)" :class="{'li-clickable': true, 'selected_folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
+            <li @click="selectItem(folder, true)" :class="{'li-clickable': true, 'selected-folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
           </div>
         </div>
 
@@ -647,7 +690,7 @@ export default {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
-  {{ currentUser }}
+  
   <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
       <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
@@ -682,19 +725,22 @@ export default {
         </div>
       </div>
     </div>
-
     <div class="main-content container">
       <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
       <div v-if="existFolder && items.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
-      <div class="files-container" v-else>
-        <div class="file-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
-          <img class="file-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-
+      <div class="items-container" v-else>
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
+          <div v-if="currentUser?.favorites?.includes(item._id)">
+            <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+          </div>
+          <div v-else>
+            <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+          </div>
           <div style="display:flex; align-items: center;">
-            <p class="filename">{{ item.name }} </p>
-            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filledHeart">favorite</span>
+            <p class="item-name">{{ item.name }} </p>
           </div>
         </div>
     </div>
@@ -702,34 +748,35 @@ export default {
     <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
       <div class="sidebar" :class="{ 'show': showSidebar }">
         <ul>
-          <li>Archivo: {{ selectedItem?.name }}</li>
-          <li>Autor: {{ selectedItem?findAuthor(selectedItem):"" }}</li>
-          <li> </li>
+          <li style="margin-bottom: 2px;"> Archivo: </li>
+          <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
+          <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
+          <li style="margin-top: 2px;"> ({{ author?.email }})</li>
           <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
           <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
             <button v-if="['Owner'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms)" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+            <button v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedItem)">
               <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
-              <span v-else class="material-symbols-outlined filledHeart">favorite</span>
+              <span v-else class="material-symbols-outlined filled-heart">favorite</span>
             </button>
-            <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteFile(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
+            <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
           </li>
         </ul>
       </div>
     </div>
 
     <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-      <template #header><strong>Crear {{ newItem.itemType }}</strong></template>                
+      <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
       <template #footer>
         <div style="margin-top:20px">
 
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 200px; background-color: #f2f2f2; color: black;"/>
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 300px; background-color: #f2f2f2; color: black;"/>
             <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
             <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
 
@@ -791,30 +838,53 @@ export default {
 .container {
   display: flex;
   align-items: center;
+  position: relative;
+  overflow-x: hidden;
 }
 
-.files-container {
+.items-container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.file-container {
+.item-container {
   margin: 10px;
   padding: 10px;
   border: 1px solid #C8B1E4;
   border-radius: 10px;
   width: 150px;
   height: 175px;
+  position: relative;
 }
 
-.file-img {
+.absolute-heart {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.filled-heart {
+  font-variation-settings:
+    'FILL' 1;
+}
+
+.item-img {
   margin-bottom: 10px;
   justify-self: flex-start;
 }
 
-.filename {
+.item-name {
   text-align: center;
   font-size: 16px;
   font-weight: bold;
@@ -856,12 +926,14 @@ export default {
 }
 
 .sidebar ul li {
-  padding: 10px;
-}
-
-.container {
-  position: relative;
-  overflow-x: hidden;
+  padding: 0 10px;
+  margin: 15px 0;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 4; 
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar {
@@ -930,6 +1002,7 @@ export default {
   height: 50%;
   cursor: pointer;
 }
+
 .main-sidebar-toggle-opened {
   top: 15px;
   left: 275px;
@@ -971,19 +1044,6 @@ export default {
   padding: 5px;
 }
 
-.material-symbols-outlined {
-  font-variation-settings:
-  'FILL' 0,
-  'wght' 400,
-  'GRAD' 0,
-  'opsz' 24
-}
-
-.filledHeart {
-  font-variation-settings:
-  'FILL' 1
-}
-
 .error {
   grid-column: 1 / -1;
   text-align: center;
@@ -1003,7 +1063,7 @@ export default {
   z-index: 1;
 }
 
-.selected_folder {
+.selected-folder {
   margin-left: 10%; 
   border-radius: 8px;
   width: 80%;

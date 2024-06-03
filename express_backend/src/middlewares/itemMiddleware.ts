@@ -1,5 +1,5 @@
 import { body, validationResult } from 'express-validator';
-import  { Item }  from '../schemas/itemSchema.ts';
+import  Item  from '../schemas/itemSchema.ts';
 import User from '../schemas/userSchema.ts';
 import type { Request, Response, NextFunction } from 'express';
 import { Permission } from '../models/profilePerms.ts';

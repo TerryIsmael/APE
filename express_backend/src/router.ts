@@ -2,8 +2,9 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
-import { registerUser, fetchUsername } from './controllers/userController.ts';
-import { getWorkspace, addItemToWorkspace, changePerms, addUserToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite } from './controllers/workspaceController.ts';
+import { registerUser, fetchUserData } from './controllers/userController.ts';
+import { getWorkspace, addUserToWorkspace } from './controllers/workspaceController.ts';
+import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite} from './controllers/itemController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validatePerm } from './middlewares/itemMiddleware.ts';
 import { uploadFileError } from './utils/uploadFileError.ts';
@@ -51,7 +52,7 @@ router.post('/logout', (req: Request, res: Response) => {
 router.get('/workspace/:wsId', isLogged, getWorkspace);
 router.get('/workspace/', isLogged, getWorkspace);
 
-router.get('/file', async (req: Request, res: Response) => {
+router.post('/file/download', isLogged, async (req: Request, res: Response) => {
     try{
         downloadFile(req, res);
     } catch(error) {
@@ -75,16 +76,6 @@ router.post('/file', isLogged, (req: Request, res: Response) => {
         res.status(500).json({  success: false, error: 'Error interno del servidor al manejar la solicitud' });
     }
 });
-
-// router.put('/file/like', isLogged, async (req: Request<any, any, { fileId: string }, Record<string, any>>, res: Response<any>) => {
-//     const { fileId } = req.body;
-//     try {
-//         let liked = await toggleFavorite(fileId, req.user as IUser)
-//         liked?res.json({ success: true, message: 'Archivo '+ fileId + ' marcado como favorito'}):res.json({ success: true, message: 'Archivo '+ fileId + ' desmarcado como favorito'});
-//     } catch(error) {
-//         res.status(500).json({ success: false, error: 'Error al actualizar el archivo. ' + error });
-//       };
-// });
 
 router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
@@ -118,13 +109,12 @@ router.put('/invite', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.put('/file/like', isLogged, async (req: Request, res: Response) => {
-    
+router.put('/item/like', isLogged, async (req: Request, res: Response) => {
     try {
         await toggleFavorite(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al actualizar el archivo. ' + error });
-        };
+    };
 });
 
 router.get('/user', isLogged, async (req: Request, res: Response) => {
@@ -135,9 +125,9 @@ router.get('/user', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.get('/user/username', isLogged, async (req: Request, res: Response) => {
+router.post('/user/data', isLogged, async (req: Request, res: Response) => {
     try{
-        fetchUsername(req, res);
+        fetchUserData(req, res);
     }catch(error){
         res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
     }

@@ -66,4 +66,5 @@ const CalendarItem = Item.discriminator<ICalendar>('CalendarItem', calendarSchem
 const FileItem = Item.discriminator<IFile>('FileItem', fileSchema);
 const StudySessionItem = Item.discriminator<IStudySession>('StudySessionItem', studySessionSchema);
 
-export { Item, itemSchema, NoteItem, NoticeItem, TimerItem, FolderItem, EventItem, CalendarItem, FileItem, StudySessionItem};
+export default Item;
+export { itemSchema, NoteItem, NoticeItem, TimerItem, FolderItem, EventItem, CalendarItem, FileItem, StudySessionItem};
