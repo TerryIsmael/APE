@@ -13,7 +13,6 @@ export default {
     const currentPath = ref('');
     const items = ref([]); 
     const folders = ref([]);
-    const notices = ref([]);
     const author = ref(null);
     const selectedItem = ref(null);
     const selectedItemPerms = ref(null);
@@ -126,7 +125,7 @@ export default {
       const wsFolders = await wsItems.filter(item => item.itemType === 'Folder');
       const currentFolders = await wsItems.filter(item => item.itemType === 'Folder' && item.path === path.value);
       const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar' && item.path === path.value);
-      const wsNotices = await wsItems.filter(item => item.itemType === 'Notice' && item.path === path.value);
+
       const comparator = (a, b) => {
         if (currentUser.value.favorites.includes(a._id) && !currentUser.value.favorites.includes(b._id)) {
           return -1;
@@ -139,14 +138,12 @@ export default {
 
       wsFolders.sort(comparator);
       otherItems.sort(comparator);
-      wsNotices.sort(comparator);
 
       items.value = [];
       items.value.push(...currentFolders);
       items.value.push(...otherItems);
 
       folders.value = wsFolders;
-      notices.value = wsNotices;
     }
 
     const getCurrentPath = () => {
@@ -204,9 +201,10 @@ export default {
     }
 
     const selectItem = async (item, direct) => {
+
       if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
         selectedFolder.value = item;
-        router.push('/workspace/' + item);
+        router.push({ name: item });
         return;
       }
 
@@ -469,8 +467,11 @@ export default {
         hours.value = 0;
         minutes.value = 0;
         seconds.value = 0;
-      } else if (itemType == 'Note' || itemType == 'Notice') {
+      } else if (itemType == 'Note') {
         newItem.value.text = '';
+      } else if (itemType == 'Notice') {
+        newItem.value.text = '';
+        newItem.value.important = false;
       }
     };
 
@@ -489,8 +490,11 @@ export default {
 
         if (itemType == 'Timer') {
           newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
-        } else if (itemType == 'Note' || itemType == 'Notice') {
+        } else if (itemType == 'Note') {
           newItem.value.text = newItem.value.text;
+        } else if (itemType == 'Notice') {
+          newItem.value.text = newItem.value.text;
+          newItem.value.important = newItem.value.important;
         } 
 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
@@ -592,7 +596,6 @@ export default {
     return {
       workspace,
       folders,
-      notices,
       items,
       author,
       selectedFolder,
@@ -776,9 +779,12 @@ export default {
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height:30px; width: 300px; background-color: #f2f2f2; color: black;"/>
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height: 30px; width: 300px; background-color: #f2f2f2; color: black;"/>
             <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
             <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
+              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
+            </div>
 
             <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center;">
               <input v-model="hours" type="number" min="0" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
@@ -1085,8 +1091,8 @@ export default {
 .logo-img{
   width: 50px;
   height: 50px;
-  
 }
+
 .change-workspace-button {
   height: auto;
   border-radius: 8px;

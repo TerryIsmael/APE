@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
-import { getWorkspace, addUserToWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addUserToWorkspace, getWorkspaceNotices } from './controllers/workspaceController.ts';
 import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite} from './controllers/itemController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validatePerm } from './middlewares/itemMiddleware.ts';
@@ -51,6 +51,14 @@ router.post('/logout', (req: Request, res: Response) => {
 
 router.get('/workspace/:wsId', isLogged, getWorkspace);
 router.get('/workspace/', isLogged, getWorkspace);
+
+router.post('/workspace/notices', isLogged, async (req: Request, res: Response) => {
+    try {
+        getWorkspaceNotices(req, res);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al obtener los anuncios. ' + error });
+    }
+});
 
 router.post('/file/download', isLogged, async (req: Request, res: Response) => {
     try{

@@ -7,8 +7,8 @@ import notices from './components/notices.vue'
 const router = createRouter({
     history: createWebHistory(),
     routes: [
-        {path: '/login',name: 'login', component: login},
-        {path: '/register',name: 'register', component: register},
+        {path: '/login', name: 'login', component: login},
+        {path: '/register', name: 'register', component: register},
         {path: '/workspace/notices', name: 'notices', component: notices},
         {path: '/workspace/:path*', name: 'workspace', component: workspace},
     ] 

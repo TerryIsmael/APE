@@ -4,6 +4,7 @@ import Workspace, { Profile } from '../schemas/workspaceSchema.ts';
 import User from '../schemas/userSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
+import { ItemType, type IItem } from '../models/item.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -36,6 +37,38 @@ export const getWorkspace = async (req: any, res: any) => {
     res.status(404).json({ error: error.message });
   }
 };
+
+export const getWorkspaceNotices = async (req: any, res: any) => {
+  try {
+    const wsId = req.body.wsId;
+    if (!wsId) {
+      res.status(400).json({ error: 'No se ha especificado el workspace' });
+      return;
+    }
+
+    const workspace = await Workspace.findOne({
+      _id: wsId,
+      profiles: {
+        $elemMatch: {
+          users: req.user._id,
+        }
+      }
+    }).populate('items');
+
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace / No estás autorizado para ver ese workspace' });
+      return;
+    }
+
+    const notices = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
+    const folders = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Folder);
+    res.status(200).json({_id: workspace._id, notices: notices, folders: folders, profiles: workspace.profiles, name: workspace.name});
+    return;
+
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
 
 export const createWorkspace = async (req: any, res: any) => {
   const wsName = req.body.wsName;
