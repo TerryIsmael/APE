@@ -1,11 +1,14 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import WorkspaceUtils from '../utils/workspaceFunctions.js';
+import Utils from '../utils/UtilsFunctions.js';
 
 export default {
   setup() {
     
     const currentUser = ref(null);
+    const userWsPerms = ref(null);
     const router = useRouter();
     const route = useRoute();
     const path = ref("");
@@ -22,7 +25,6 @@ export default {
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const showSharedPopup = ref(false);
-    const formattedDate = ref(null);
     const isModalOpened = ref(false);
     const shareWith = ref(null);
     const sharePerm = ref(null);
@@ -37,145 +39,61 @@ export default {
     const seconds = ref(0);
 
     const fetchUser = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          currentUser.value = data.user;
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await Utils.fetchUser(currentUser);
     }
 
     const fetchUserData = async (userId) => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-          body: JSON.stringify({ userId: userId }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          author.value = data;
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await WorkspaceUtils.fetchUserData(author, userId);
     }
-    
+
     const fetchWorkspace = async () => {
-      try {
-        const wsId = localStorage.getItem('workspace');
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace'+ (wsId?`/${wsId}`:''), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          workspace.value = data;
-          localStorage.setItem('workspace', data._id);
-          await arrangeItems();
-          getCurrentPath();
-
-          const pathArray = path.value.split('/');
-          const folder = pathArray.pop();
-          selectedFolder.value= '';
-          folders.value.forEach(item => {
-            if (item.name === folder && item.path === pathArray.join('/')) {
-              selectedFolder.value = item.name;
-            }
-          });
-          if (selectedFolder.value === '' && path.value !== '') {
-            existFolder.value = false;
-          } else {
-            existFolder.value = true;
-          }
-
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
     }
 
-    const arrangeItems = async () => {
-
-      const wsItems = workspace.value.items;
-      const wsFolders = await wsItems.filter(item => item.itemType === 'Folder');
-      const currentFolders = await wsItems.filter(item => item.itemType === 'Folder' && item.path === path.value);
-      const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar' && item.path === path.value);
-
-      const comparator = (a, b) => {
-        if (currentUser.value.favorites.includes(a._id) && !currentUser.value.favorites.includes(b._id)) {
-          return -1;
-        } else if (!currentUser.value.favorites.includes(a._id) && currentUser.value.favorites.includes(b._id)) {
-          return 1;
-        } else {
-          return new Date(b.modifiedDate).getTime() - new Date(a.modifiedDate).getTime();
-        }
-      }
-
-      wsFolders.sort(comparator);
-      otherItems.sort(comparator);
-
-      items.value = [];
-      items.value.push(...currentFolders);
-      items.value.push(...otherItems);
-
-      folders.value = wsFolders;
+    const formatDate = (date) => {
+      return Utils.formatDate(date);
     }
 
-    const getCurrentPath = () => {
+    const selectItem = async (item, direct) => {
+      await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author);
+    }
 
-      const pathArray = path.value.split('/');
+    const toggleLike = async (item) => {
+      await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders);
+    }
 
-      if (pathArray.length === 0) {
-        currentPath.value = '/';
-      } else if (pathArray.length <= 1) {
-        currentPath.value =  '/' + pathArray[0];
-      } else {
-        const lastTwoSegments = pathArray.slice(-2);
-        if (lastTwoSegments[0].length > 25) {
-          lastTwoSegments[0] = lastTwoSegments[0].substring(0, 25) + '...';
-        }
-        const path = (pathArray.length === 2 ? '/' : '.../') + lastTwoSegments.join('/');
-        currentPath.value = path;
-      }
+    const translateItemType = (item) => {
+      return Utils.translateItemType(item);
+    }
+
+    const translatePerm = (perm) => {
+      return Utils.translatePerm(perm);
+    }
+
+    const deleteItem = async (item) => {
+      await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar);
+    }
+
+    const selectImage = (item) => {
+      return Utils.selectImage(item);
+    }
+
+    const openNewItemModal = (itemType) => {
+      WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+    };
+
+    const closeNewItemModal = () => {
+      WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
+    };
+
+    const handleNewItemForm = async () => {
+      await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened);
     }
 
     const navigateToPreviousFolder = () => {
-      const pathArray = path.value.split('/');
-
-      if (pathArray.length > 1) {
-        path.value = pathArray.slice(0, -1).join('/');
-        router.push('/workspace/' + path.value);
-      } else {
-        path.value = '';
-        router.push('/workspace/');
-      }
+      WorkspaceUtils.navigateToPreviousFolder(path, router);
     }
-      
+
     const openModal = () => {
       isModalOpened.value = true;
       sharePerm.value = 'view';
@@ -196,121 +114,11 @@ export default {
       showSharedPopup.value = !showSharedPopup.value
     }
 
-    const toggleSidebar = () => {
-      showSidebar.value = !showSidebar.value;
-    }
-
-    const selectItem = async (item, direct) => {
-
-      if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
-        selectedFolder.value = item;
-        router.push({ name: item });
-        return;
-      }
-
-      if (item.itemType === 'Folder') {
-        if (selectedItem.value?._id === item._id || direct) {
-          router.push('/workspace' + (item.path? '/' + item.path : '') + '/' +  item.name);
-          return;
-        } else {
-          selectedItem.value = item;
-          return;
-        }
-      } else {
-        selectedItem.value = item;
-        selectedItemPerms.value = await verifyPerms(item);
-        showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
-        await findAuthor(item);
-        return;
-      }
-    }
-
     const closeSidebar = (event) => {
-      const sidebar = document.querySelector('.sidebar');
-      const modal = document.querySelector('.modal');
-      const fileContainers = Array.from(document.querySelectorAll('.item-container'));
-      const downloadButton = document.querySelector('.downloadButton');
-      const selectedItem = fileContainers.some(fileContainer => fileContainer.contains(event.target));
-      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedItem && !downloadButton) {
-        showSidebar.value = false;
-        author.value = null;
-      }
+      WorkspaceUtils.closeSidebar(event, showSidebar, author);
     };
 
-    const formatDate = (date) => {
-      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-      return new Date(date).toLocaleDateString('es-ES', options);
-    }
-
-    const deleteItem = async (item) => {
-      try {
-        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
-        if (!confirmDelete) return;
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, itemId: item._id }),
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          toggleSidebar();
-          selectedItem.value = null;
-          author.value = null;
-          await fetchWorkspace();
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    const toggleLike = async (item) => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/like', {
-          body: JSON.stringify({ itemId: item._id, workspace: workspace.value._id }),
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-        if (response.ok) {
-          await fetchUser();
-          await arrangeItems();
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else{
-          response.json().then((data) => { 
-            console.log(data.error);
-          })
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    const verifyPerms = async (item) => {
-      const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
-      if (wpPerm[1] === 2) {
-        const filePermLevel = { 'Owner': 3, 'Write': 2, 'Read': 1 }
-        const perm = item.profilePerms.map(x=>{
-          return {
-            "profile":workspace.profiles.find(y=>y._id==x.profile),
-            "permission": x.permission
-          }
-        }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
-        return perm;
-      } else {
-        return wpPerm[0];
-      }
-    }
-
-    const changePerms = async (perm, username) => {
+    const changePerms = async (perm, username) => { // TODO: Fix
       try { 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
           body: JSON.stringify({ username: username, fileId: selectedItem.value._id, perm: perm }),
@@ -340,95 +148,13 @@ export default {
           throw new Error("Error al cambiar permisos");
           })
         }
-
       } catch (error) {
         console.log(error);
-      }
-    }
-
-    const logout = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-        if (response.ok) {
-          router.push({ name: 'login' });
-        } else if (response.status === 401){
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    const translatePerm = (perm) => {
-      switch (perm) {
-        case 'owner':
-          return 'Propietario';
-        case 'write':
-          return 'Escritura';
-        case 'read':
-          return 'Lectura';
-        case 'view':
-          return 'Vista';
-        default:
-          return 'Ninguno';
-      }
-    }
-
-    const translateItemType = (item) => {
-      switch (item) {
-        case 'Notice':
-          return 'Anuncio';
-        case 'Calendar':
-          return 'Calendario';
-        case 'Note':
-          return 'Nota';
-        case 'Timer':
-          return 'Temporizador';
-        case 'File':
-          return 'Archivo';
-        case 'Folder':
-          return 'Carpeta';
-        default:
-          return 'Ninguno';
       }
     }
 
     const downloadFile = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
-          body: JSON.stringify({ workspace: workspace.value._id, fileId: selectedItem.value._id }),
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = selectedItem.value.name;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else {
-          response.json().then((data) => { 
-            console.log(data.error);
-          })
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await WorkspaceUtils.downloadFile(workspace, selectedItem);
     }
 
     const selectUploadFile = () => {
@@ -436,130 +162,11 @@ export default {
     };
 
     const uploadFile = async (event) => {
-      const file = event.target.files[0];
-      try {
-        const formData = new FormData();
-        formData.append('workspace', workspace.value._id);
-        formData.append('path', path.value);
-        formData.append('file', file);
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          method: 'POST',
-          body: formData,
-          credentials: "include",
-        });
-        if (response.ok) {
-          await fetchWorkspace();
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else{
-          response.json().then((data) => { 
-            console.log(data);
-          })
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
     }
 
-    const openNewItemModal = (itemType) => {
-      isNewItemModalOpened.value = true;
-      newItem.value.name = '';
-      newItem.value.itemType = itemType;
-      if (itemType == 'Timer') {
-        hours.value = 0;
-        minutes.value = 0;
-        seconds.value = 0;
-      } else if (itemType == 'Note') {
-        newItem.value.text = '';
-      } else if (itemType == 'Notice') {
-        newItem.value.text = '';
-        newItem.value.important = false;
-      }
-    };
-
-    const closeNewItemModal = () => {
-      isNewItemModalOpened.value = false;
-      newItem.value = {};
-      errorMessage.value = [];
-      hours.value = 0;
-      minutes.value = 0;
-      seconds.value = 0;
-    };
-
-    const handleNewItemForm = async () => {
-      try { 
-        const itemType = newItem.value.itemType;
-
-        if (itemType == 'Timer') {
-          newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
-        } else if (itemType == 'Note') {
-          newItem.value.text = newItem.value.text;
-        } else if (itemType == 'Notice') {
-          newItem.value.text = newItem.value.text;
-          newItem.value.important = newItem.value.important;
-        } 
-
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, path: path.value, item: newItem.value }),
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          closeNewItemModal();
-          await fetchWorkspace();
-          errorMessage.value = [];
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else if (response.status === 400 || response.status === 404) {
-          errorMessage.value = [];
-          response.json().then((data) => {
-            if (data.error) {
-              errorMessage.value.push(data.error);
-            } else {
-              data.errors.forEach((error) => {
-                errorMessage.value.push(error.msg);
-              });
-            }
-          throw new Error("Error al crear item");
-          })
-        }
-
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    const selectImage = (item) => {
-      if (item.itemType !== 'File') {
-        if (item.itemType === 'Note') {
-          return `/files/default.png`;
-        } else {
-          return `/files/${item.itemType.toLowerCase()}.png`;
-        }
-      } else {
-        switch (item.name.split('.').pop().toLowerCase()) {
-          case 'pdf':
-            return '/files/pdf.png';
-          case 'docx':
-            return '/files/docx.png';
-          case 'xlsx':
-            return '/files/xlsx.png';
-          case 'pptx':
-            return '/files/pptx.png';
-          default:
-            return '/files/default.png';
-        }
-      } 
-    }
-
-    const findAuthor = async (selectedItem) => {
-      const profile = selectedItem.profilePerms.find(y => y.permission == 'Owner').profile;
-      const userId = workspace.value.profiles.find(x => x.name == profile)?.users[0];
-      await fetchUserData(userId);
+    const logout = async () => {
+      await Utils.logout(router);
     }
 
     onBeforeMount(async () => {
@@ -569,12 +176,12 @@ export default {
         headers: { 'Content-Type': 'application/json' },
         credentials: "include",
         body: JSON.stringify({
-          username: "terry",
+          username: "marmarsol4",
           password: "12345678910aA@",
         })
       });
-      fetchUser();
-      fetchWorkspace();
+      await fetchUser();
+      await fetchWorkspace();
     });
     
     onMounted(() => {
@@ -606,8 +213,8 @@ export default {
       showSharedPopup,
       selectedItem,
       selectedItemPerms,
-      formattedDate,
       currentUser,
+      userWsPerms,
       isModalOpened,
       shareWith,
       sharePerm,
@@ -626,12 +233,10 @@ export default {
       clearModalFields,
       changePerms,
       selectItem,
-      toggleSidebar,
       toggleSharedPopup,
       toggleLike,
       formatDate,
       deleteItem,
-      verifyPerms,
       logout,
       downloadFile,
       selectUploadFile,
@@ -642,9 +247,7 @@ export default {
       closeNewItemModal,
       handleNewItemForm,
       selectImage,
-      getCurrentPath,
       navigateToPreviousFolder,
-      findAuthor,
     }
   }
 }   
@@ -678,7 +281,7 @@ export default {
         <li class="li-clickable">Gestionar perfil</li>
         <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
+        <li class="main-sidebar-subtitle">Workspace actual <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span></li>
 
         <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
         <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'notices'}">Anuncios</li>

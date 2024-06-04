@@ -1,21 +1,26 @@
 <script>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import Utils from '../utils/UtilsFunctions.js';
 
 export default {
   setup() {
 
     const router = useRouter();
     const route = useRoute();
-    const path = ref("");
+    const path = ref('');
 
     const currentUser = ref(null);
-    const userPerms = ref(null);
+    const userWsPerms = ref(null);
     const workspace = ref(null);
     const showMainSidebar = ref(false);
     const isNewItemModalOpened = ref(false);
     const errorMessage = ref([]);
     const newItem = ref({});
+
+    const fetchUser = async () => {
+      await Utils.fetchUser(currentUser);
+    }
 
     const fetchNotices = async () => {
       try {
@@ -32,7 +37,7 @@ export default {
           const data = await response.json();
           workspace.value = data;
           await arrangeNotices();
-          await fetchUser();
+          await verifyWsPerms();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -54,39 +59,26 @@ export default {
       workspace.value.notices = noticeItems;
     };
 
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          currentUser.value = data.user;
-          await verifyWsPerms();
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-  const verifyWsPerms = async () => {
-      const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
-      userPerms.value = wpPerm[0];
+    const verifyWsPerms = async () => {
+      await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
     }
 
-    onBeforeMount(() => {
-      path.value = "/" + route.name;
-      workspace.value = localStorage.getItem('workspace');
-      fetchNotices();
-    });
+    const verifyNoticePerms = async (item) => {
+      if (userWsPerms.value == 'Owner' || userWsPerms.value == 'Admin') {
+        return true;
+      } else if (userWsPerms.value == 'Write') {
+        const filePermLevel = { 'Owner': 3, 'Write': 2, 'Read': 1 }
+        const perm = item.profilePerms.map(x => {
+          return {
+            "profile": workspace.value.profiles.find(y=>y._id==x.profile),
+            "permission": x.permission
+          }
+        }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
+        return ['Owner', 'Write'].includes(perm);
+      } else {
+        return false;
+      }
+    }
 
     const selectItem = async (item) => {
       if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
@@ -103,9 +95,9 @@ export default {
     const openNewItemModal = (itemType) => {
       isNewItemModalOpened.value = true;
       newItem.value.name = '';
+      newItem.value.itemType = itemType;
 
       if (itemType === 'Notice') {
-        newItem.value.itemType = itemType;
         newItem.value.text = '';
         newItem.value.important = false;
       }
@@ -160,20 +152,46 @@ export default {
     }
     
     const translateItemType = (item) => {
-      switch (item) {
-        case 'Notice':
-          return 'Anuncio';
-        case 'Folder':
-          return 'Carpeta';
-        default:
-          return 'Ninguno';
-      }
+      return Utils.translateItemType(item);
     }
 
     const formatDate = (date) => {
-      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-      return new Date(date).toLocaleDateString('es-ES', options);
+      return Utils.formatDate(date);
     }
+
+    const deleteItem = async (itemId) => {
+      try {
+        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este anuncio?");
+        if (!confirmDelete) return;
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+          body: JSON.stringify({ workspace: workspace.value._id, itemId: itemId }),
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          await fetchNotices();
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const logout = async () => {
+      await Utils.logout(router);
+    }
+
+    onBeforeMount(() => {
+      path.value = "/" + route.name;
+      workspace.value = localStorage.getItem('workspace');
+      fetchUser();
+      fetchNotices();
+    });
 
     return {
       workspace,
@@ -183,7 +201,7 @@ export default {
       isNewItemModalOpened,
       errorMessage,
       newItem,
-      userPerms,
+      userWsPerms,
       fetchNotices,
       fetchUser,
       selectItem,
@@ -192,6 +210,9 @@ export default {
       handleNewItemForm,
       translateItemType,
       formatDate,
+      verifyNoticePerms,
+      deleteItem,
+      logout,
     };
   }
 }
@@ -232,7 +253,7 @@ export default {
       <li class="li-clickable">Gestionar workspaces</li>
 
       <li class="main-sidebar-subtitle">Workspace actual 
-        <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
+        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
       <li @click="selectItem('wsDetails')" :class="{ 'li-clickable': true }">Detalles del workspace</li>
@@ -271,7 +292,7 @@ export default {
           Ruta actual: {{ path }}</h2>
       </div>
 
-      <div v-if="['Owner', 'Admin', 'Write'].includes(userPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
+      <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
         <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
           <span class="material-symbols-outlined">add</span>
         </button>
@@ -284,11 +305,10 @@ export default {
       </div>
       <div class="items-container">
         <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
-
           <div style="display: flex; align-items: center;">
-            <h2 class="item-name"> {{ item?.notice?.name }}
-              <span v-if="item?.notice?.important" style="color: #c8373b; vertical-align: middle;" class="material-symbols-outlined">campaign</span>
-            </h2>
+            <h2 class="item-name"> {{ item?.notice?.name }}</h2>
+            <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
+            <span v-if="verifyNoticePerms(item?.notice?._id)" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
           </div>
 
           <h4 class="item-name" style="color: #525252">
@@ -353,7 +373,7 @@ export default {
   margin-right: 10px;
   text-align: left;
   word-wrap: break-word;
-  width: 98%;
+  width: 92%;
 }
 
 .text-container {
@@ -361,7 +381,7 @@ export default {
   margin: 0; 
   margin-left: 10px;
   word-wrap: break-word;
-  width: 98%;
+  width: 96%;
 }
 
 .main-sidebar {
@@ -504,4 +524,24 @@ export default {
   overflow: hidden;
 }
 
+.delete-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+  color: rgb(151, 47, 47);
+  font-size: 24px;
+}
+
+.important-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: rgb(151, 47, 47);
+  font-size: 24px;
+}
+
+.important-icon-left {
+  right: 35px; 
+}
 </style>
