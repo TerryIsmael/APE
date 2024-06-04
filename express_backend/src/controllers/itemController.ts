@@ -10,6 +10,8 @@ import Workspace from '../schemas/workspaceSchema.ts';
 import Item from '../schemas/itemSchema.ts';
 import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
 import { getUserPermission } from '../utils/permsFunctions.ts';
+import { randomInt } from 'crypto';
+import type { NextFunction } from 'express';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -128,6 +130,17 @@ export const changePerms = async (req: any, res: any) => {
     }
 };
 
+export const createFile = async (req: any, _: any, next: NextFunction) => {
+    try{
+        const item = new FileItem({ name: new mongoose.Types.ObjectId, path: "temp_path", itemType: ItemType.File, length: 0, uploadDate: new Date(), modifiedDate: new Date(), profilePerms: [{ profile: req.user._id, permission: Permission.Owner }] });
+        await item.save();
+        req.params.itemId = item.id;
+        next();
+    } catch (error) {
+        console.log(error);
+    }
+};
+
 export const downloadFile = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const fileId = req.body.fileId;
@@ -148,16 +161,19 @@ export const downloadFile = async (req: any, res: any) => {
             return;
         }
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
-          //const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
-          const encodedFileName = encodeURIComponent(file.name);
-          res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
-          res.setHeader('Content-Type', 'application/octet-stream');
-          // fileStream.on('finish', () => {
-          //   res.status(200).json({ success: true });
-          // });
-          console.log(res.headers)
-          res.status(200).json({ success: true });
-          //fileStream.pipe(res);
+            const encodedFileName = encodeURIComponent(file.name);
+            res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
+            res.setHeader('Content-Type', 'application/octet-stream');
+      
+            const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
+      
+            fileStream.on('error', (err) => {
+              res.status(500).json({ success: false, error: 'Error al leer el archivo' });
+            });
+      
+            fileStream.pipe(res).on('finish', () => {
+                
+            });
           
         } else {
             res.status(404).json({ success: false, error: 'El archivo no existe' });

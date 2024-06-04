@@ -13,7 +13,6 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         try {
             await user.validate();
         } catch (validationError) {
-            console.log("Falla en la validación");
             return res.status(400).json({ message: parseValidationError(validationError) });
         }
         user.password = codedPassword;

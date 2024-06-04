@@ -231,8 +231,9 @@ export default {
       const sidebar = document.querySelector('.sidebar');
       const modal = document.querySelector('.modal');
       const fileContainers = Array.from(document.querySelectorAll('.item-container'));
+      const downloadButton = document.querySelector('.downloadButton');
       const selectedItem = fileContainers.some(fileContainer => fileContainer.contains(event.target));
-      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedItem ) {
+      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedItem && !downloadButton) {
         showSidebar.value = false;
         author.value = null;
       }
@@ -411,13 +412,14 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
-          console.log(response.headers);
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = selectedItem.value.filename;
+          a.download = selectedItem.value.name;
+          document.body.appendChild(a);
           a.click();
+          document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
         } else if (response.status === 401) {
           router.push({ name: 'login' });
@@ -563,12 +565,12 @@ export default {
         headers: { 'Content-Type': 'application/json' },
         credentials: "include",
         body: JSON.stringify({
-          username: "marmarsol4",
+          username: "terry",
           password: "12345678910aA@",
         })
       });
-      fetchWorkspace();
       fetchUser();
+      fetchWorkspace();
     });
     
     onMounted(() => {
@@ -757,7 +759,7 @@ export default {
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
             <button v-if="['Owner'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+            <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedItem)">
               <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
               <span v-else class="material-symbols-outlined filled-heart">favorite</span>

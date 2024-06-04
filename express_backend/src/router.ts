@@ -4,12 +4,13 @@ import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace } from './controllers/workspaceController.ts';
-import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite} from './controllers/itemController.ts';
+import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile} from './controllers/itemController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
-import { validatePerm } from './middlewares/itemMiddleware.ts';
-import { uploadFileError } from './utils/uploadFileError.ts';
+import { validateFile, validatePerm } from './middlewares/itemMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
+import Item from './schemas/itemSchema.ts';
+import Workspace from './schemas/workspaceSchema.ts';
 
 dotenv.config();  
 const router = Router();
@@ -60,20 +61,21 @@ router.post('/file/download', isLogged, async (req: Request, res: Response) => {
    }
 });
 
-router.post('/file', isLogged, (req: Request, res: Response) => {
+router.post('/file', isLogged, createFile, uploader.single('file'), async (req: Request, res: Response) => {
     try {
-        uploader.single('file')(req, res, (err: any) => {
-            if (err instanceof uploadFileError) {
-                return res.status(400).json({ success: false, error:  'Error al subir el archivo' + err.message });
-            } else if (err) {
-                return res.status(500).json({ success: false, error:  'Error interno del servidor al subir el archivo. '+err });
-            } else {
-                return res.json({ success: true, message: 'Archivo subido con éxito', fileId: req.file?.filename });
-            }
+        const item = await Item.findOne({ _id: req.params.itemId }).exec();
+        if (!item) {
+            return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
         }
-        );
+        item.name = req.file?req.file.originalname:item.name;
+        item.path = req.file?req.body.path:"";
+        await item.save();
+        const workspace = await (await Workspace.findOne({ _id: req.body.workspace }).exec())?.populate('items');
+        workspace?.items.push(item._id);
+        await workspace?.save();
+        res.status(200).json({ success: true, message: 'Archivo subido exitosamente' });
     } catch (error) {
-        res.status(500).json({  success: false, error: 'Error interno del servidor al manejar la solicitud' });
+        res.status(500).json({ success: false, error: 'Error al subir el archivo. ' + error });
     }
 });
 

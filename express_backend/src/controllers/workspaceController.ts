@@ -4,6 +4,7 @@ import Workspace, { Profile } from '../schemas/workspaceSchema.ts';
 import User from '../schemas/userSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
+import fs from 'fs';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -49,6 +50,9 @@ export const createWorkspace = async (req: any, res: any) => {
       res.status(400).json({ error: parseValidationError(error) });
     }
     await workspace.save();
+    if (!fs.existsSync(`uploads/${workspace._id}`)) {
+      fs.mkdirSync(`uploads/${workspace._id}`, { recursive: true });
+    }
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(409).json({ error: error.message });
@@ -67,7 +71,6 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   } 
   const reqPerms = await getWSPermission(req.user._id, wsId);
   if (!([WSPermission.Owner, WSPermission.Admin].find(x => x == reqPerms))) {
-    console.log(await getWSPermission(req.user._id, wsId));
     res.status(401).json({ error: 'No estás autorizado para añadir usuarios a este workspace' });
     return;
   }
