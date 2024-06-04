@@ -31,59 +31,53 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 res.status(404).json({ error: 'No se ha encontrado la carpeta' });
                 return;
             } else {
-                const existingItem = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === itemData.name && item.itemType === itemData.itemType);
-                if (existingItem) {
-                    res.status(409).json({ error: 'Ya existe un item con ese nombre' });
+                let item;
+                try {
+                    switch (itemData.itemType) {
+                        case ItemType.Folder:
+                            item = new FolderItem();
+                            break;
+                        case ItemType.Timer:
+                            item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.remainingTime, initialDate: itemData.initialDate });
+                            break;
+                        case ItemType.Note:
+                            item = new NoteItem({ text: itemData.text });
+                            break;
+                        case ItemType.Notice:
+                            item = new NoticeItem({ text: itemData.text, important: itemData.important });
+                            break;
+                        case ItemType.Calendar:
+                            item = new CalendarItem({}); // TODO
+                            break;
+                        case ItemType.Event:
+                            item = new EventItem({ event: { initDate: itemData.initDate, finalDate: itemData.finalDate } });
+                            break;
+                        case ItemType.StudySession:
+                            item = new StudySessionItem({}); // TODO
+                            break;
+                        default:
+                            res.status(400).json({ error: 'Tipo de item no válido' });
+                            return;
+                    }
+                } catch (error) {
+                    res.status(400).json({ error: 'Los atributos del item no son válidos' });
                     return;
-                } else {
-                    let item;
-                    try {
-                        switch (itemData.itemType) {
-                            case ItemType.Folder:
-                                item = new FolderItem();
-                                break;
-                            case ItemType.Timer:
-                                item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.remainingTime, initialDate: itemData.initialDate });
-                                break;
-                            case ItemType.Note:
-                                item = new NoteItem({ text: itemData.text });
-                                break;
-                            case ItemType.Notice:
-                                item = new NoticeItem({ text: itemData.text, important: itemData.important });
-                                break;
-                            case ItemType.Calendar:
-                                item = new CalendarItem({}); // TODO
-                                break;
-                            case ItemType.Event:
-                                item = new EventItem({ event: { initDate: itemData.initDate, finalDate: itemData.finalDate } });
-                                break;
-                            case ItemType.StudySession:
-                                item = new StudySessionItem({}); // TODO
-                                break;
-                            default:
-                                res.status(400).json({ error: 'Tipo de item no válido' });
-                                return;
-                        }
-                    } catch (error) {
-                        res.status(400).json({ error: 'Los atributos del item no son válidos' });
-                        return;
-                    }
+                }
 
-                    item.name = itemData.name;
-                    item.path = path;
-                    item.itemType = itemData.itemType;
-                    item.uploadDate = new Date();
-                    item.modifiedDate = new Date();
-                    item.profilePerms = [{ profile: req.user._id, permission: Permission.Owner } as IProfilePerms];
-                    const perm = await getUserPermission(req.user._id, wsId);
-                    if (perm === Permission.Read || !perm) {
-                        res.status(401).json({ error: 'No estás autorizado para añadir items a este workspace' });
-                    } else {
-                        await item.save();
-                        workspace.items.push(item.id);
-                        await workspace.save();
-                        res.status(201).json(item);
-                    }
+                item.name = itemData.name;
+                item.path = path;
+                item.itemType = itemData.itemType;
+                item.uploadDate = new Date();
+                item.modifiedDate = new Date();
+                item.profilePerms = [{ profile: req.user._id, permission: Permission.Owner } as IProfilePerms];
+                const perm = await getUserPermission(req.user._id, wsId);
+                if (perm === Permission.Read || !perm) {
+                    res.status(401).json({ error: 'No estás autorizado para añadir items a este workspace' });
+                } else {
+                    await item.save();
+                    workspace.items.push(item.id);
+                    await workspace.save();
+                    res.status(201).json(item);
                 }
             }
         }
@@ -148,17 +142,17 @@ export const downloadFile = async (req: any, res: any) => {
             return;
         }
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
-          //const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
-          const encodedFileName = encodeURIComponent(file.name);
-          res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
-          res.setHeader('Content-Type', 'application/octet-stream');
-          // fileStream.on('finish', () => {
-          //   res.status(200).json({ success: true });
-          // });
-          console.log(res.headers)
-          res.status(200).json({ success: true });
-          //fileStream.pipe(res);
-          
+            //const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
+            const encodedFileName = encodeURIComponent(file.name);
+            res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
+            res.setHeader('Content-Type', 'application/octet-stream');
+            // fileStream.on('finish', () => {
+            //   res.status(200).json({ success: true });
+            // });
+            console.log(res.headers);
+            res.status(200).json({ success: true });
+            //fileStream.pipe(res);
+
         } else {
             res.status(404).json({ success: false, error: 'El archivo no existe' });
         }
@@ -191,7 +185,7 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
         await Item.deleteOne({ _id: itemId });
         await workspace.save();
         if (item.itemType === ItemType.File) {
-          fs.unlink(`uploads/${wsId}/${itemId}`, () => { });
+            fs.unlink(`uploads/${wsId}/${itemId}`, () => { });
         }
         res.status(200).json({ success: true });
     } catch (error: any) {
@@ -221,11 +215,11 @@ export const toggleFavorite = async (req: any, res: any) => {
         }
         const liked = user.favorites.includes(itemId);
         if (liked) {
-          (user.favorites as mongoose.Types.ObjectId[]) = user.favorites.filter((fav: mongoose.Types.ObjectId) => fav.toString() !== itemId);
+            (user.favorites as mongoose.Types.ObjectId[]) = user.favorites.filter((fav: mongoose.Types.ObjectId) => fav.toString() !== itemId);
         } else {
-          user.favorites.push(itemId);
+            user.favorites.push(itemId);
         }
-        await User.updateOne({ _id: loggedUser._id }, { $set: {favorites: user.favorites} });
+        await User.updateOne({ _id: loggedUser._id }, { $set: { favorites: user.favorites } });
         !liked ? res.json({ success: true, message: 'Item ' + itemId + ' marcado como favorito' }) : res.json({ success: true, message: 'Item ' + itemId + ' desmarcado como favorito' });
 
     } catch (error: any) {

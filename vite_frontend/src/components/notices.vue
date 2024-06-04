@@ -1,5 +1,5 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watchEffect, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 
 export default {
@@ -8,9 +8,11 @@ export default {
     const router = useRouter();
     const route = useRoute();
     const path = ref("");
+
     const currentUser = ref(null);
-    const showMainSidebar = ref(false);
+    const userPerms = ref(null);
     const workspace = ref(null);
+    const showMainSidebar = ref(false);
     const isNewItemModalOpened = ref(false);
     const errorMessage = ref([]);
     const newItem = ref({});
@@ -29,12 +31,27 @@ export default {
         if (response.ok) {
           const data = await response.json();
           workspace.value = data;
+          await arrangeNotices();
+          await fetchUser();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
       } catch (error) {
         console.log(error);
       }
+    };
+
+    const arrangeNotices = () => {
+      const noticeItems = workspace.value.notices;
+      noticeItems.sort((a, b) => {
+        const dateComparison = new Date(b.notice.uploadDate).getTime() - new Date(a.notice.uploadDate).getTime();
+        if (dateComparison === 0) {
+          return b.notice.important - a.notice.important;
+        } else {
+          return dateComparison;
+        }
+      });
+      workspace.value.notices = noticeItems;
     };
 
     const fetchUser = async () => {
@@ -50,6 +67,7 @@ export default {
         if (response.ok) {
           const data = await response.json();
           currentUser.value = data.user;
+          await verifyWsPerms();
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -57,6 +75,18 @@ export default {
         console.log(error);
       }
     };
+
+  const verifyWsPerms = async () => {
+      const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
+      const wpPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
+      userPerms.value = wpPerm[0];
+    }
+
+    onBeforeMount(() => {
+      path.value = "/" + route.name;
+      workspace.value = localStorage.getItem('workspace');
+      fetchNotices();
+    });
 
     const selectItem = async (item) => {
       if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
@@ -97,7 +127,7 @@ export default {
         } 
         
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, path: path.value, item: newItem.value }),
+          body: JSON.stringify({ workspace: workspace.value._id, path: '', item: newItem.value }),
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -124,7 +154,6 @@ export default {
           throw new Error("Error al crear item");
           })
         }
-
       } catch (error) {
         console.log(error);
       }
@@ -146,11 +175,6 @@ export default {
       return new Date(date).toLocaleDateString('es-ES', options);
     }
 
-    onBeforeMount(() => {
-      workspace.value = localStorage.getItem('workspace');
-      fetchNotices();
-    });
-
     return {
       workspace,
       currentUser,
@@ -159,6 +183,7 @@ export default {
       isNewItemModalOpened,
       errorMessage,
       newItem,
+      userPerms,
       fetchNotices,
       fetchUser,
       selectItem,
@@ -206,13 +231,13 @@ export default {
       <li class="li-clickable">Gestionar perfil</li>
       <li class="li-clickable">Gestionar workspaces</li>
 
-      <li class="main-sidebar-subtitle">Workspace actual <span @click="openNewItemModal('Folder')"
-          style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle"
-          class="material-symbols-outlined">add</span></li>
+      <li class="main-sidebar-subtitle">Workspace actual 
+        <span @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
+      </li>
 
       <li @click="selectItem('wsDetails')" :class="{ 'li-clickable': true }">Detalles del workspace</li>
-      <li @click="selectItem('notices')" :class="{ 'li-clickable': true }">Anuncios</li>
-      <li @click="selectItem('favorites')" :class="{ 'li-clickable': true, 'selected-folder': true }">Favoritos</li>
+      <li @click="selectItem('notices')" :class="{ 'li-clickable': true, 'selected-folder': true }">Anuncios</li>
+      <li @click="selectItem('favorites')" :class="{ 'li-clickable': true }">Favoritos</li>
 
       <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
         <div v-for="folder in workspace?.folders" :key="folder._id" style="word-wrap: break-word;">
@@ -246,7 +271,7 @@ export default {
           Ruta actual: {{ path }}</h2>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; width: 15%;">
+      <div v-if="['Owner', 'Admin', 'Write'].includes(userPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
         <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
           <span class="material-symbols-outlined">add</span>
         </button>
@@ -261,13 +286,16 @@ export default {
         <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
 
           <div style="display: flex; align-items: center;">
-            <h2 class="item-name"> {{ item?.name }}
-              <span v-if="item?.important" style="color: #c8373b; vertical-align: middle;" class="material-symbols-outlined">campaign</span>
+            <h2 class="item-name"> {{ item?.notice?.name }}
+              <span v-if="item?.notice?.important" style="color: #c8373b; vertical-align: middle;" class="material-symbols-outlined">campaign</span>
             </h2>
-            <h4 class="item-name" style="color: #525252">{{ formatDate(item?.uploadDate) }}</h4>
           </div>
 
-          <p class="text-container">{{ item?.text }}</p>
+          <h4 class="item-name" style="color: #525252">
+            Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
+          </h4>
+          <hr>          
+          <p class="text-container">{{ item?.notice?.text }}</p>
         </div>
       </div>
     </div>
@@ -325,11 +353,7 @@ export default {
   margin-right: 10px;
   text-align: left;
   word-wrap: break-word;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  width: 100%;
+  width: 98%;
 }
 
 .text-container {
@@ -337,11 +361,7 @@ export default {
   margin: 0; 
   margin-left: 10px;
   word-wrap: break-word;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  width: 99%;
+  width: 98%;
 }
 
 .main-sidebar {

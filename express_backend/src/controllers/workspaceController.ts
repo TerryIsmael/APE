@@ -5,6 +5,10 @@ import User from '../schemas/userSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
 import { ItemType, type IItem } from '../models/item.ts';
+import { Permission } from '../models/profilePerms.ts';
+import type { IProfilePerms } from '../models/profilePerms.ts';
+import type mongoose from 'mongoose';
+import type { IUser } from '../models/user.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -60,9 +64,17 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
       return;
     }
 
-    const notices = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
+    const notices : IItem[] = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
+    const noticesWithOwner : any[] = [];
+
+    for (let i = 0; i < notices.length; i++) {
+      const userId = ((notices[i] as unknown as IItem).profilePerms.find((profile: IProfilePerms) => profile.permission == Permission.Owner)?.profile as unknown as mongoose.Types.ObjectId).toString();
+      const owner = (await User.findById(userId).exec()) as IUser;
+      noticesWithOwner.push({ notice: notices[i], owner: { username: owner.username, email: owner.email }});
+    }
+
     const folders = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Folder);
-    res.status(200).json({_id: workspace._id, notices: notices, folders: folders, profiles: workspace.profiles, name: workspace.name});
+    res.status(200).json({_id: workspace._id, notices: noticesWithOwner, folders: folders, profiles: workspace.profiles, name: workspace.name});
     return;
 
   } catch (error: any) {
