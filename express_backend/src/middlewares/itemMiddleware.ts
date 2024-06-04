@@ -8,6 +8,7 @@ import Workspace from '../schemas/workspaceSchema.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
 import { WSPermission } from '../models/profile.ts';
 import { ItemType, type IItem } from '../models/item.ts';
+import fs from 'fs';
 
 export const validatePerm = [
     body('username').custom(async (value) => {
@@ -38,8 +39,10 @@ export const validatePerm = [
 ];
 
 export const validateFile = async (req : Request, res : Response, next : NextFunction) => {
-    const errors = await checkFile(req, req.file);
+    const errors = await checkFile(req);
     if (errors) {
+        req.file?fs.unlinkSync(req.file.path):null;
+        console.log(errors);
         res.status(400).json({ errors: errors });
     } else {
         next();
@@ -47,19 +50,15 @@ export const validateFile = async (req : Request, res : Response, next : NextFun
 };
 
 
-const checkFile = async (req: any, file: any) => {
+const checkFile = async (req: any) => {
     const wsId: string = req.body.workspace;
     const path = req.body.path ? req.body.path : "";
-    const user: IUser = req.user as IUser;
-    const userId = user?._id;
+    const userId = req.user._id;
   
     const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
       if (!workspace) {
         return 'No se ha encontrado el workspace';
       }
-      if (userId === undefined) {
-          return 'El campo userId es requerido';
-      } 
       const perm = await getWSPermission(userId, wsId)
       if (perm === WSPermission.Read || !perm) {
         return 'No tienes permiso para subir archivos a este workspace.';
@@ -73,9 +72,5 @@ const checkFile = async (req: any, file: any) => {
         return 'La ruta no es válida';
       }
   
-      if (file.originalname.includes('../')) {
-        return 'El nombre del archivo no puede contener "../"';
-      }
-  
-      return undefined; 
+      return undefined;
     }

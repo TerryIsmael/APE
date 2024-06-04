@@ -5,6 +5,7 @@ import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices } from './controllers/workspaceController.ts';
 import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile} from './controllers/itemController.ts';
+import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validateFile, validatePerm } from './middlewares/itemMiddleware.ts';
 import type { IUser } from './models/user.ts';
@@ -69,7 +70,7 @@ router.post('/file/download', isLogged, async (req: Request, res: Response) => {
    }
 });
 
-router.post('/file', isLogged, createFile, uploader.single('file'), async (req: Request, res: Response) => {
+router.post('/file', isLogged, createFile, uploader.single('file'), validateFile, async (req: Request, res: Response) => {
     try {
         const item = await Item.findOne({ _id: req.params.itemId }).exec();
         if (!item) {
@@ -141,6 +142,14 @@ router.post('/user/data', isLogged, async (req: Request, res: Response) => {
     }catch(error){
         res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
     }
+});
+
+router.post('/item/timer', isLogged, async (req: Request, res: Response) => {
+    try{
+       modifyTimer(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener el timer. ' + error });
+    }   
 });
 
 export default router;

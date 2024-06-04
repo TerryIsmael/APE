@@ -13,6 +13,12 @@ const storage = multer.diskStorage({
   
 export const uploader = multer({
   storage:storage,
+  fileFilter: (_, file, cb) => {
+    if (file.originalname.includes('../')) {
+      return 'El nombre del archivo no puede contener "../"';
+    }
+    return cb(null, true);
+  }
 });
 
 
