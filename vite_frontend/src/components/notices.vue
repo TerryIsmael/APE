@@ -19,7 +19,7 @@ export default {
     const newItem = ref({});
 
     const fetchUser = async () => {
-      await Utils.fetchUser(currentUser);
+      await Utils.fetchUser(currentUser, router);
     }
 
     const fetchNotices = async () => {

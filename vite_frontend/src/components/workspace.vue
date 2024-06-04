@@ -39,7 +39,7 @@ export default {
     const seconds = ref(0);
 
     const fetchUser = async () => {
-      await Utils.fetchUser(currentUser);
+      await Utils.fetchUser(currentUser, router);
     }
 
     const fetchUserData = async (userId) => {
@@ -47,7 +47,7 @@ export default {
     }
 
     const fetchWorkspace = async () => {
-      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
+      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
     }
 
     const formatDate = (date) => {
@@ -87,7 +87,7 @@ export default {
     };
 
     const handleNewItemForm = async () => {
-      await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened);
+      await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
     }
 
     const navigateToPreviousFolder = () => {
@@ -162,7 +162,7 @@ export default {
     };
 
     const uploadFile = async (event) => {
-      await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
+      await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
     }
 
     const logout = async () => {
@@ -176,7 +176,7 @@ export default {
         headers: { 'Content-Type': 'application/json' },
         credentials: "include",
         body: JSON.stringify({
-          username: "marmarsol4",
+          username: import.meta.env.VITE_USERNAME,
           password: "12345678910aA@",
         })
       });

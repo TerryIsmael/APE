@@ -1,6 +1,6 @@
 class UtilsFunctions {
 
-    static async fetchUser(currentUser) {
+    static async fetchUser(currentUser, router) {
         try {
           const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user', {
             method: 'GET',

@@ -24,7 +24,7 @@ class WorkspaceUtils {
         }
       }
     
-    static fetchWorkspace = async (workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms) => {
+    static fetchWorkspace = async (workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router) => {
         try {
           const wsId = localStorage.getItem('workspace');
           const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace'+ (wsId?`/${wsId}`:''), {
@@ -196,7 +196,7 @@ class WorkspaceUtils {
           this.toggleSidebar(showSidebar);
           selectedItem.value = null;
           author.value = null;
-          await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
+          await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -209,7 +209,7 @@ class WorkspaceUtils {
     showSidebar.value = !showSidebar.value;
   }
 
-  static handleNewItemForm = async (newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened) => {
+  static handleNewItemForm = async (newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router) => {
     try { 
       const itemType = newItem.value.itemType;
 
@@ -233,7 +233,7 @@ class WorkspaceUtils {
 
       if (response.ok) {
         this.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
@@ -335,7 +335,7 @@ class WorkspaceUtils {
     }
   }
 
-  static uploadFile = async (event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms) => {
+  static uploadFile = async (event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router) => {
     const file = event.target.files[0];
     try {
       const formData = new FormData();
@@ -348,7 +348,7 @@ class WorkspaceUtils {
         credentials: "include",
       });
       if (response.ok) {
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else{
