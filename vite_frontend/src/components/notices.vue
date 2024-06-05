@@ -331,8 +331,8 @@ export default {
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height: 30px; width: 300px; background-color: #f2f2f2; color: black;"/>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"/>
+            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
             <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
               Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
             </div>
@@ -367,6 +367,21 @@ export default {
   background-color: #F2F2F2;
   border-radius: 10px;
   position: relative;
+}
+
+.text-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px; 
+  width: 90%;  
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.textarea-input {
+  margin-top: 5px;
+  height: 200px;
+  resize: none;
 }
 
 .item-name {

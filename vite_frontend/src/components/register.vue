@@ -21,7 +21,6 @@ export default {
         return;
       }
       errorMessage.value = [];
-      console.log(user.value)
       fetch(import.meta.env.VITE_BACKEND_URL + "/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,7 +43,6 @@ export default {
             if (response.status === 500) {
               errorMessage.value.push("Error en el servidor. Inténtelo de nuevo más tarde.");
               response.json().then((data) => {
-                console.log(data.message);
               });
             }else{
               response.json().then((data) => {

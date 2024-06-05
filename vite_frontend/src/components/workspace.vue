@@ -26,7 +26,6 @@ export default {
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const isModalOpened = ref(false);
-    const shareWith = ref(null);
     const sharePerm = ref(null);
     const searchProfileTerm = ref('');
     const searchTypeProfile = ref('All');
@@ -107,7 +106,6 @@ export default {
     };
 
     const clearModalFields = () => {
-      shareWith.value = '';
       sharePerm.value = 'Read';
     };
 
@@ -115,10 +113,10 @@ export default {
       WorkspaceUtils.closeSidebar(event, showSidebar, author);
     };
 
-    const changePerms = async (perm, username) => { // TODO: Fix
+    const changePerms = async (perm, profileName) => {
       try { 
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          body: JSON.stringify({ username: username, fileId: selectedItem.value._id, perm: perm }),
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {
+          body: JSON.stringify({ profileName: profileName, fileId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -155,7 +153,7 @@ export default {
     return workspace.value.profiles.filter(profile => {
       const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
       const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-      const isNotOwner = profile._id !== ownerProfile;
+      const isNotOwner = profile.name !== ownerProfile;
 
       return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
     });
@@ -223,7 +221,6 @@ export default {
       currentUser,
       userWsPerms,
       isModalOpened,
-      shareWith,
       sharePerm,
       searchProfileTerm,
       searchTypeProfile,
@@ -453,17 +450,15 @@ export default {
 
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
             <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
-              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0] : profile.name }}</p>
+              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
 
-              <select v-model="sharePerm" class="text-input" style="width: 25%;">
+              <select v-model="sharePerm" @change="changePerms(sharePerm, profile.name).then(clearModalFields())" class="text-input" style="width: 25%;">
                 <option value="view">Vista</option>
                 <option value="read">Lectura</option>
                 <option value="write">Escritura</option>
               </select>
             </div>
           </div>
-
-          <button @click="changePerms(sharePerm, shareWith).then(clearModalFields())" style="margin-top:10px">Compartir</button>
         </div>
       </template>
     </Modal>
