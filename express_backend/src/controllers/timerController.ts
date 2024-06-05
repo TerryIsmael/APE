@@ -13,8 +13,9 @@ export const modifyTimer = async (req: any, res: any) => {
     if (Workspace.findById(wsId) === null) {
         return res.status(404).json({ success: false, error: 'Workspace no encontrado' });
     }
-    if ([Permission.Owner, Permission.Write].includes(await getUserPermission(req.user._id, req.body.workspace, timerId))) {
-        return res.status(403).json({ success: false, error: 'No tienes permisos para iniciar el timer' });
+    console.log(await getUserPermission(req.user._id, req.body.workspace, timerId));
+    if (![Permission.Owner, Permission.Write].includes(await getUserPermission(req.user._id, req.body.workspace, timerId))) {
+        return res.status(403).json({ success: false, error: 'No tienes permisos para modificar el timer' });
     }
     const timer = await TimerItem.findById(req.body.timerId).exec();
     if (!timer) {
@@ -35,7 +36,7 @@ export const modifyTimer = async (req: any, res: any) => {
             return res.status(400).json({ success: false, error: 'Acción no válida' });
     }
     if (result?.success === true){
-        sendMessageToWorkspace(wsId, { type: 'timerStopped', timer });
+        sendMessageToWorkspace(wsId, { type: 'timer', action, timer });
         res.status(result?.status).json({ success: true, message: result.message });
     }else{
         res.status(result?.status).json({ success: false, error: result?.error });

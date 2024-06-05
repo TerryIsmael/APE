@@ -14,8 +14,9 @@ onMounted(() => {
     console.log('Disconnected from server');
     setTimeout(() => {
       console.log('Attempting to reconnect...');
-      // Llama a la función connectWebSocket() si la defines en algún lugar
+      ws.value = new WebSocket('ws://localhost:3000');
     }, 3000);
+
   };
 
   ws.value.onerror = (error) => {

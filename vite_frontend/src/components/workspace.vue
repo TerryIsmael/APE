@@ -50,6 +50,7 @@ export default {
 
     const fetchWorkspace = async () => {
       await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+      ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
     }
 
     const formatDate = (date) => {
@@ -229,7 +230,7 @@ export default {
 </script>
  
 <template>
-
+  <button @click="$router.push('/test')"></button>
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
