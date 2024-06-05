@@ -1,7 +1,8 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
+import NoticeUtils from '../utils/NoticeFunctions.js';
 
 export default {
   setup() {
@@ -16,141 +17,42 @@ export default {
     const workspace = ref(null);
     const showMainSidebar = ref(false);
     const isNewItemModalOpened = ref(false);
-    const errorMessage = ref([]);
     const newItem = ref({});
+
+    const isModalOpened = ref(false);
+    const sharePerm = ref(null);
+    const searchProfileTerm = ref('');
+    const searchTypeProfile = ref('All');
+    const errorMessage = ref([]);
+    const selectedItem = ref(null);
+    const selectedItemPerms = ref(null);
 
     const fetchUser = async () => {
       await Utils.fetchUser(currentUser, router);
     }
 
-    const fetchNotices = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/notices', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-          body: JSON.stringify({ wsId: wsId.value })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          workspace.value = data;
-          await arrangeNotices();
-          await verifyWsPerms();
-          wsId.value = workspace.value._id;
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const fetchNotices = async () => {  
+      await NoticeUtils.fetchNotices(wsId, workspace, router, userWsPerms, currentUser);
     };
 
-    const arrangeNotices = () => {
-      const noticeItems = workspace.value.notices;
-      noticeItems.sort((a, b) => {
-        const dateComparison = new Date(b.notice.uploadDate).getTime() - new Date(a.notice.uploadDate).getTime();
-        if (dateComparison === 0) {
-          return b.notice.important - a.notice.important;
-        } else {
-          return dateComparison;
-        }
-      });
-      workspace.value.notices = noticeItems;
-    };
-
-    const verifyWsPerms = async () => {
-      await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
-    }
-
-    const verifyNoticePerms = async (item) => {
-      if (userWsPerms.value == 'Owner' || userWsPerms.value == 'Admin') {
-        return true;
-      } else if (userWsPerms.value == 'Write') {
-        const filePermLevel = { 'Owner': 3, 'Write': 2, 'Read': 1 }
-        const perm = item.profilePerms.map(x => {
-          return {
-            "profile": workspace.value.profiles.find(y=>y._id==x.profile),
-            "permission": x.permission
-          }
-        }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission,filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
-        return ['Owner', 'Write'].includes(perm);
-      } else {
-        return false;
-      }
+    const verifyNoticePerms = (item) => {
+      return NoticeUtils.verifyNoticePerms(item, userWsPerms, workspace, currentUser);
     }
 
     const selectItem = async (item) => {
-      if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
-        router.push('/workspace/' + item);
-        return;
-      }
-
-      if (item.itemType === 'Folder') {
-        router.push('/workspace' + (item.path ? '/' + item.path : '') + '/' + item.name);
-        return;
-      }
+      await NoticeUtils.selectItem(item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms);
     };
 
     const openNewItemModal = (itemType) => {
-      isNewItemModalOpened.value = true;
-      newItem.value.name = '';
-      newItem.value.itemType = itemType;
-
-      if (itemType === 'Notice') {
-        newItem.value.text = '';
-        newItem.value.important = false;
-      }
+      NoticeUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem);
     };
 
     const closeNewItemModal = () => {
-      isNewItemModalOpened.value = false;
-      newItem.value = {};
-      errorMessage.value = [];
+      NoticeUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage);
     };
 
     const handleNewItemForm = async () => {
-      try { 
-        const itemType = newItem.value.itemType;
-
-        if (itemType == 'Notice') {
-          newItem.value.text = newItem.value.text;
-          newItem.value.important = newItem.value.important;
-        } 
-        
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, path: '', item: newItem.value }),
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          closeNewItemModal();
-          await fetchNotices();
-          errorMessage.value = [];
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else if (response.status === 400 || response.status === 404) {
-          errorMessage.value = [];
-          response.json().then((data) => {
-            if (data.error) {
-              errorMessage.value.push(data.error);
-            } else {
-              data.errors.forEach((error) => {
-                errorMessage.value.push(error.msg);
-              });
-            }
-          throw new Error("Error al crear item");
-          })
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await NoticeUtils.handleNewItemForm(newItem, workspace, router, wsId, userWsPerms, currentUser, isNewItemModalOpened, errorMessage);
     }
     
     const translateItemType = (item) => {
@@ -162,26 +64,36 @@ export default {
     }
 
     const deleteItem = async (itemId) => {
-      try {
-        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este anuncio?");
-        if (!confirmDelete) return;
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-          body: JSON.stringify({ workspace: workspace.value._id, itemId: itemId }),
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
+      await NoticeUtils.deleteItem(itemId, workspace, router, wsId, userWsPerms, currentUser);
+    }
 
-        if (response.ok) {
-          await fetchNotices();
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const openModal = () => {
+      Utils.openModal(isModalOpened, sharePerm);
+    };
+
+    const closeModal = () => {
+      Utils.closeModal(isModalOpened, errorMessage, sharePerm);
+      console.log("Modal cerrado");
+    };
+
+    const clearModalFields = () => {
+      Utils.clearModalFields(sharePerm);
+    };
+
+    const getFilteredProfiles = computed(() => {
+      const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+      return workspace.value.profiles.filter(profile => {
+        const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+        const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+        const isNotOwner = profile.name !== ownerProfile;
+
+        return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+      });
+    });
+
+    const changePerms = async (perm, profileName, selectedItem) => {
+      await Utils.changePerms(perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser);
+      console.log("Permisos cambiados");
     }
 
     const logout = async () => {
@@ -204,6 +116,13 @@ export default {
       errorMessage,
       newItem,
       userWsPerms,
+      isModalOpened,
+      sharePerm,
+      searchProfileTerm,
+      searchTypeProfile,
+      getFilteredProfiles,
+      selectedItem,
+      selectedItemPerms,
       fetchNotices,
       fetchUser,
       selectItem,
@@ -214,6 +133,10 @@ export default {
       formatDate,
       verifyNoticePerms,
       deleteItem,
+      openModal,
+      closeModal,
+      clearModalFields,
+      changePerms,
       logout,
     };
   }
@@ -287,11 +210,8 @@ export default {
 
     <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
       <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span
-            class="material-symbols-outlined">arrow_back</span></button>
-        <h2
-          style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
-          Ruta actual: {{ path }}</h2>
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
       </div>
 
       <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
@@ -310,7 +230,8 @@ export default {
           <div style="display: flex; align-items: center;">
             <h2 class="item-name"> {{ item?.notice?.name }}</h2>
             <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
-            <span v-if="verifyNoticePerms(item?.notice?._id)" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined"@click="selectItem(item?.notice).then(openModal())"><span class="material-symbols-outlined">groups</span></span>
           </div>
 
           <h4 class="item-name" style="color: #525252">
@@ -338,6 +259,57 @@ export default {
             </div>
           </div>
           <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+      </template>
+    </Modal>
+
+    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
+      <template #header><strong>Cambiar visibilidad de anuncio</strong></template>
+      <template #content>
+        
+        <div v-if="selectedItem?.profilePerms.length === 1 && selectedItemPerms === 'Owner'">
+          <p>Este anuncio no es visible</p>
+        </div>
+
+        <div v-else>
+          <p>Compartido con:</p>
+          <table style="border-collapse: collapse; width: 100%; height: 100%;">
+            <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
+              <tr v-for="profilePerm in selectedItem?.profilePerms" :key="profilePerm._id" style="display: table-row;">
+                <td class="profilePerm-info"> {{ profilePerm.profile }} </td>
+                <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
+                <td class="profilePerm-info"> {{ translatePerm(profilePerm.Permission) }} </td>
+                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', profilePerm.profile)">close</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+      </template>
+      <template #footer>
+        <div style="margin-top:20px">
+
+          <div class="error" v-if="errorMessage.length !== 0">
+            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+          </div>
+
+          <p>Hacer visible para:</p>
+
+          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+            <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
+            <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
+              <option value="Individual">Individual</option>
+              <option value="Group">Grupo</option>
+              <option value="All">Todos</option>
+            </select>
+          </div>
+
+          <div v-for="profile in getFilteredProfiles" :key="profile._id">
+            <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+              <button @change="changePerms('Read', profile.name).then(clearModalFields())" class="change-perm-button">Añadir</button>
+            </div>
+          </div>
+        </div>
       </template>
     </Modal>
 </template>
@@ -378,10 +350,24 @@ export default {
   color: black;
 }
 
-.textarea-input {
+.text-input.textarea-input {
   margin-top: 5px;
   height: 200px;
   resize: none;
+}
+
+.text-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px; 
+  width: 90%;  
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.profilePerm-info {
+  padding: 0px; 
+  text-align: center;
 }
 
 .item-name {
@@ -517,6 +503,20 @@ export default {
   cursor: pointer;
 }
 
+.change-perm-button {
+  width: 25%; 
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
 .scrollable {
   scrollbar-color: #C8B1E4 transparent;
   scroll-behavior: smooth;
@@ -561,4 +561,14 @@ export default {
 .important-icon-left {
   right: 35px; 
 }
+
+.group-icon {
+  position: absolute;
+  top: 37px;
+  right: 10px;
+  color: rgb(151, 47, 47);
+  font-size: 24px;
+  cursor: pointer;
+} 
+
 </style>
