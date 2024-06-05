@@ -1,13 +1,15 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import WorkspaceUtils from '../utils/workspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
-import { Permission } from '../../../express_backend/src/models/profilePerms';
 
 export default {
-  setup() {
-    
+  props: {
+    ws: Object
+  },
+  setup(props) {
+    const ws = ref(null);
     const currentUser = ref(null);
     const userWsPerms = ref(null);
     const router = useRouter();
@@ -177,6 +179,7 @@ export default {
 
     onBeforeMount(async () => {
       path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+      ws.value = props.ws;
       await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
