@@ -103,6 +103,13 @@ router.delete('/item', isLogged, (req: Request, res: Response) => {
         res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
     }
 });
+router.put('/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+    try {
+        await changeWSPerms(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al guardar los permisos. ' + error });
+    }
+});
 
 router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
     try {
