@@ -42,7 +42,7 @@ class UtilsFunctions {
 
     static async verifyWsPerms(workspace, userWsPerms, currentUser) {
         const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-        const wsPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
+        const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x=>x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
         userWsPerms.value = wsPerm[0];
     }
 

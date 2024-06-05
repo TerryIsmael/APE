@@ -20,6 +20,7 @@ export const getWorkspace = async (req: any, res: any) => {
       const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
       await workspace?.populate('items');
       await workspace?.populate('profiles');
+      await workspace?.populate('profiles.users');
       res.status(200).json(workspace);
       return;
     } else {
@@ -31,6 +32,7 @@ export const getWorkspace = async (req: any, res: any) => {
       if (await getWSPermission(req.user._id, wsId)){
         await workspace.populate('items');
         await workspace.populate('profiles');
+        await workspace.populate('profiles.users');
         return res.status(200).json(workspace);
       } else {
         return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
@@ -58,9 +60,9 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
       return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
     } 
 
-    workspace.populate('items');
-    workspace.populate('profiles');
-    workspace.populate('profiles.users');
+    await workspace.populate('items');
+    await workspace.populate('profiles');
+    await workspace.populate('profiles.users');
     const notices : IItem[] = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
     const noticesWithOwner : any[] = [];
 

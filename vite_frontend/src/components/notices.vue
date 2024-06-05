@@ -12,6 +12,7 @@ export default {
 
     const currentUser = ref(null);
     const userWsPerms = ref(null);
+    const wsId = ref(null);
     const workspace = ref(null);
     const showMainSidebar = ref(false);
     const isNewItemModalOpened = ref(false);
@@ -30,7 +31,7 @@ export default {
             'Content-Type': 'application/json',
           },
           credentials: "include",
-          body: JSON.stringify({ wsId: workspace.value })
+          body: JSON.stringify({ wsId: wsId.value })
         });
 
         if (response.ok) {
@@ -38,6 +39,7 @@ export default {
           workspace.value = data;
           await arrangeNotices();
           await verifyWsPerms();
+          wsId.value = workspace.value._id;
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -188,7 +190,7 @@ export default {
 
     onBeforeMount(() => {
       path.value = "/" + route.name;
-      workspace.value = localStorage.getItem('workspace');
+      wsId.value = localStorage.getItem('workspace');
       fetchUser();
       fetchNotices();
     });
@@ -303,7 +305,7 @@ export default {
       <div v-if="workspace?.notices?.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
       </div>
-      <div class="items-container">
+      <div v-else class="items-container">
         <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
           <div style="display: flex; align-items: center;">
             <h2 class="item-name"> {{ item?.notice?.name }}</h2>

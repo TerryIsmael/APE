@@ -1,8 +1,9 @@
 <script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import WorkspaceUtils from '../utils/workspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
+import { Permission } from '../../../express_backend/src/models/profilePerms';
 
 export default {
   setup() {
@@ -24,16 +25,16 @@ export default {
           
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
-    const showSharedPopup = ref(false);
     const isModalOpened = ref(false);
     const shareWith = ref(null);
     const sharePerm = ref(null);
+    const searchProfileTerm = ref('');
+    const searchTypeProfile = ref('All');
     const errorMessage = ref([]);
 
     const isNewItemModalOpened = ref(false);
     const newItem = ref({});
     const fileInput = ref(null); 
-     
     const hours = ref(0);
     const minutes = ref(0);
     const seconds = ref(0);
@@ -96,7 +97,7 @@ export default {
 
     const openModal = () => {
       isModalOpened.value = true;
-      sharePerm.value = 'view';
+      sharePerm.value = 'Read';
     };
 
     const closeModal = () => {
@@ -107,12 +108,8 @@ export default {
 
     const clearModalFields = () => {
       shareWith.value = '';
-      sharePerm.value = 'view';
+      sharePerm.value = 'Read';
     };
-
-    const toggleSharedPopup = () => {
-      showSharedPopup.value = !showSharedPopup.value
-    }
 
     const closeSidebar = (event) => {
       WorkspaceUtils.closeSidebar(event, showSidebar, author);
@@ -153,6 +150,17 @@ export default {
       }
     }
 
+  const getFilteredProfiles = computed(() => {
+    const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+    return workspace.value.profiles.filter(profile => {
+      const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+      const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+      const isNotOwner = profile._id !== ownerProfile;
+
+      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+    });
+  });
+    
     const downloadFile = async () => {
       await WorkspaceUtils.downloadFile(workspace, selectedItem);
     }
@@ -210,7 +218,6 @@ export default {
       selectedFolder,
       showSidebar,
       showMainSidebar,
-      showSharedPopup,
       selectedItem,
       selectedItemPerms,
       currentUser,
@@ -218,6 +225,8 @@ export default {
       isModalOpened,
       shareWith,
       sharePerm,
+      searchProfileTerm,
+      searchTypeProfile,
       errorMessage,
       fileInput,
       isNewItemModalOpened,
@@ -228,12 +237,12 @@ export default {
       currentPath,
       path,
       existFolder,
+      getFilteredProfiles,
       openModal,
       closeModal,
       clearModalFields,
       changePerms,
       selectItem,
-      toggleSharedPopup,
       toggleLike,
       formatDate,
       deleteItem,
@@ -379,22 +388,22 @@ export default {
     <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
       <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
       <template #footer>
-        <div style="margin-top:20px">
 
+        <div style="margin-top: 20px">
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height: 30px; width: 300px; background-color: #f2f2f2; color: black;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
+            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
+            <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
               Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
             </div>
 
-            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center;">
-              <input v-model="hours" type="number" min="0" placeholder="Hor" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
-              :<input v-model="minutes" type="number" min="0" placeholder="Min" style="margin-top:5px; margin-right: 5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
-              :<input v-model="seconds" type="number" min="0" placeholder="Seg" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px ; margin-top: 5px; margin-right:5px; height:30px; width: 56px; background-color: #f2f2f2; color: black"/>
+            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
+              <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
+              :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
+              :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
             </div>
           </div>
           <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
@@ -405,7 +414,7 @@ export default {
       <template #header><strong>Compartir archivo</strong></template>
       <template #content>
         
-        <div v-if="selectedItem?.sharedWith.length === 0">
+        <div v-if="selectedItem?.profilePerms.length === 1 && selectedItemPerms === 'Owner'">
           <p>Este archivo no se ha compartido</p>
         </div>
 
@@ -413,11 +422,11 @@ export default {
           <p>Compartido con:</p>
           <table style="border-collapse: collapse; width: 100%; height: 100%;">
             <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
-              <tr v-for="shared in selectedItem?.sharedWith" :key="shared.user._id" style="display: table-row;">
-                <td style="padding: 0px; text-align: center;">{{ shared.user.username }}</td>
+              <tr v-for="profilePerm in selectedItem?.profilePerms" :key="profilePerm._id" style="display: table-row;">
+                <td class="profilePerm-info"> {{ profilePerm.profile }} </td>
                 <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
-                <td style="padding: 0px; text-align: center;">{{ translatePerm(shared.perm) }}</td>
-                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', shared.user.username)">close</td>
+                <td class="profilePerm-info"> {{ translatePerm(profilePerm.Permission) }} </td>
+                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', profilePerm.profile)">close</td>
               </tr>
             </tbody>
           </table>
@@ -431,12 +440,29 @@ export default {
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
 
-          <input type="text" v-model="shareWith" placeholder="Comparta con username" style="margin-right:5px; background-color: #f2f2f2; color: black"/>
-          <select v-model="sharePerm" style="background-color: #f2f2f2; color: black;">
-            <option value="view">Vista</option>
-            <option value="read">Lectura</option>
-            <option value="write">Escritura</option>
-          </select>
+          <p>Compartir con:</p>
+
+          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+            <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
+            <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
+              <option value="Individual">Individual</option>
+              <option value="Group">Grupo</option>
+              <option value="All">Todos</option>
+            </select>
+          </div>
+
+          <div v-for="profile in getFilteredProfiles" :key="profile._id">
+            <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0] : profile.name }}</p>
+
+              <select v-model="sharePerm" class="text-input" style="width: 25%;">
+                <option value="view">Vista</option>
+                <option value="read">Lectura</option>
+                <option value="write">Escritura</option>
+              </select>
+            </div>
+          </div>
+
           <button @click="changePerms(sharePerm, shareWith).then(clearModalFields())" style="margin-top:10px">Compartir</button>
         </div>
       </template>
@@ -469,6 +495,36 @@ export default {
   width: 150px;
   height: 175px;
   position: relative;
+}
+
+.text-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px; 
+  width: 90%;  
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.textarea-input {
+  margin-top: 5px;
+  height: 200px;
+  resize: none;
+}
+
+.timer-input {
+  margin-top: 5px;
+  margin-right: 5px;
+  height: 30px; 
+  width: 60px;
+  width: 20%;
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.profilePerm-info {
+  padding: 0px; 
+  text-align: center;
 }
 
 .absolute-heart {
