@@ -20,6 +20,7 @@ export const getWorkspace = async (req: any, res: any) => {
       const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
       await workspace?.populate('items');
       await workspace?.populate('profiles');
+      await workspace?.populate('profiles.users');
       res.status(200).json(workspace);
       return;
     } else {
@@ -31,6 +32,7 @@ export const getWorkspace = async (req: any, res: any) => {
       if (await getWSPermission(req.user._id, wsId)){
         await workspace.populate('items');
         await workspace.populate('profiles');
+        await workspace.populate('profiles.users');
         return res.status(200).json(workspace);
       } else {
         return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
@@ -58,9 +60,9 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
       return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
     } 
 
-    workspace.populate('items');
-    workspace.populate('profiles');
-    workspace.populate('profiles.users');
+    await workspace.populate('items');
+    await workspace.populate('profiles');
+    await workspace.populate('profiles.users');
     const notices : IItem[] = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
     const noticesWithOwner : any[] = [];
 
@@ -129,6 +131,36 @@ export const addUserToWorkspace = async (req: any, res: any) => {
     await workspace.save();
 
   res.status(201).json(workspace);
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+};
+
+export const changeWSPerms = async (req: any, res: any) => {
+  const { wsId, username, perm } = req.body;
+  try {
+      const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+      if (!workspace) {
+          res.status(404).json({ error: 'No se ha encontrado el workspace' });
+          return;
+      }
+      const reqPerm = await getWSPermission(req.user._id, wsId);
+      if (reqPerm !== WSPermission.Owner) {
+          res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
+          return;
+      }
+      const profile = workspace.profiles.find((profile: IProfile) => profile.name === username);
+      if (!profile) {
+          res.status(404).json({ error: 'El usuario no está en este workspace' });
+          return;
+      }
+      const profilePerms = workspace.profiles.filter((profile: IProfile) => profile.name !== username);
+      if (perm !== "None") {
+          //profilePerms.push({ name: username, WSPermission: perm });
+      }
+      workspace.profiles = profilePerms;
+      await workspace.save();
+      res.status(201).json(workspace);
   } catch (error: any) {
     res.status(404).json({ error: error.message });
   }

@@ -12,6 +12,7 @@ export default {
 
     const currentUser = ref(null);
     const userWsPerms = ref(null);
+    const wsId = ref(null);
     const workspace = ref(null);
     const showMainSidebar = ref(false);
     const isNewItemModalOpened = ref(false);
@@ -30,7 +31,7 @@ export default {
             'Content-Type': 'application/json',
           },
           credentials: "include",
-          body: JSON.stringify({ wsId: workspace.value })
+          body: JSON.stringify({ wsId: wsId.value })
         });
 
         if (response.ok) {
@@ -38,6 +39,7 @@ export default {
           workspace.value = data;
           await arrangeNotices();
           await verifyWsPerms();
+          wsId.value = workspace.value._id;
         } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
@@ -188,7 +190,7 @@ export default {
 
     onBeforeMount(() => {
       path.value = "/" + route.name;
-      workspace.value = localStorage.getItem('workspace');
+      wsId.value = localStorage.getItem('workspace');
       fetchUser();
       fetchNotices();
     });
@@ -303,7 +305,7 @@ export default {
       <div v-if="workspace?.notices?.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
       </div>
-      <div class="items-container">
+      <div v-else class="items-container">
         <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
           <div style="display: flex; align-items: center;">
             <h2 class="item-name"> {{ item?.notice?.name }}</h2>
@@ -329,8 +331,8 @@ export default {
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." style="border-radius: 5px; margin-right:5px;  margin-bottom: 5px; height: 30px; width: 300px; background-color: #f2f2f2; color: black;"/>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" style="border-radius: 5px; height: 100px; width: 300px; background-color: #f2f2f2; color: black; resize: none"></textarea>
+            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"/>
+            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
             <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
               Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
             </div>
@@ -365,6 +367,21 @@ export default {
   background-color: #F2F2F2;
   border-radius: 10px;
   position: relative;
+}
+
+.text-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px; 
+  width: 90%;  
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.textarea-input {
+  margin-top: 5px;
+  height: 200px;
+  resize: none;
 }
 
 .item-name {

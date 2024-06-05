@@ -133,7 +133,7 @@ class WorkspaceUtils {
 
     static verifyPerms = async (item, workspace, currentUser) => {
         const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-        const wsPerm = workspace.value.profiles.filter(profile => profile.users?.includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
+        const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x => x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
         if (wsPerm[1] === 2) {
           const filePermLevels = { 'Owner': 3, 'Write': 2, 'Read': 1 }
           const perm = item.profilePerms.map(x=>{
@@ -141,7 +141,7 @@ class WorkspaceUtils {
               "profile": workspace.profiles.find(y=>y._id==x.profile),
               "permission": x.permission
             }
-          }).filter(x => x.profile.users.includes(currentUser.value._id)).map(y => x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
+          }).filter(x => x.profile.users.map(x => x._id).includes(currentUser.value._id)).map(y => x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
           return perm;
         } else {
           return wsPerm[0];
@@ -351,7 +351,7 @@ class WorkspaceUtils {
         await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else{
+      } else {
         response.json().then((data) => { 
           console.log(data);
         })
