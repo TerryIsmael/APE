@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import type { IUser } from '../models/user.ts';
-import type { IProfile } from '../models/profile.ts';
+import { WSPermission, type IProfile } from '../models/profile.ts';
 import type { IProfilePerms } from '../models/profilePerms.ts';
 import { ItemType, type IItem } from '../models/item.ts';
 import { Permission } from '../models/profilePerms.ts';
@@ -9,7 +9,7 @@ import User from '../schemas/userSchema.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
 import Item from '../schemas/itemSchema.ts';
 import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
-import { getUserPermission } from '../utils/permsFunctions.ts';
+import { getUserPermission, getWSPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
@@ -87,7 +87,38 @@ export const addItemToWorkspace = async (req: any, res: any) => {
     }
 };
 
-export const changePerms = async (req: any, res: any) => {
+export const changeWSPerms = async (req: any, res: any) => {
+    const { wsId, username, perm } = req.body;
+    try {
+        const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+        if (!workspace) {
+            res.status(404).json({ error: 'No se ha encontrado el workspace' });
+            return;
+        }
+        const reqPerm = await getWSPermission(req.user._id, wsId);
+        if (reqPerm !== WSPermission.Owner) {
+            res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
+            return;
+        }
+        const profile = workspace.profiles.find((profile: IProfile) => profile.name === username);
+        if (!profile) {
+            res.status(404).json({ error: 'El usuario no está en este workspace' });
+            return;
+        }
+        const profilePerms = workspace.profiles.filter((profile: IProfile) => profile.name !== username);
+        if (perm !== "None") {
+            //profilePerms.push({ name: username, WSPermission: perm });
+        }
+        workspace.profiles = profilePerms;
+        await workspace.save();
+        res.status(201).json(workspace);
+    } catch (error: any) {
+        res.status(404).json({ error: error.message });
+    }
+
+}
+
+export const changeItemPerms = async (req: any, res: any) => {
     const { fileId, username, perm } = req.body;
     const wsId = req.body.workspace;
     try {

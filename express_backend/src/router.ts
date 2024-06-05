@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices } from './controllers/workspaceController.ts';
-import {addItemToWorkspace, changePerms, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile} from './controllers/itemController.ts';
+import {addItemToWorkspace, changeWSPerms, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms} from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validateFile, validatePerm } from './middlewares/itemMiddleware.ts';
@@ -104,9 +104,9 @@ router.delete('/item', isLogged, (req: Request, res: Response) => {
     }
 });
 
-router.put('/file/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
     try {
-        await changePerms(req, res);
+        await changeItemPerms(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al guardar el archivo. ' + error });
     }

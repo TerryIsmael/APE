@@ -7,10 +7,18 @@ import mongoose from 'mongoose';
 export async function getWSPermission(userId: any, workspaceId: any): Promise<WSPermission>{
     try {
         const result = await Workspace.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId.createFromHexString(workspaceId) } }, 
-            { $unwind: '$profiles' },
-            { $match: { 'profiles.users': userId } },
-            { $addFields: { 'profiles.wsPermLevel': { $function: {
+            { $match: { _id: mongoose.Types.ObjectId.createFromHexString(workspaceId) } },
+            {
+                $lookup: {
+                    from: 'profiles',
+                    localField: 'profiles',
+                    foreignField: '_id',
+                    as: 'populatedProfiles'
+                }
+            },
+            { $unwind: '$populatedProfiles' },
+            { $match: { 'populatedProfiles.users': userId } },
+            { $addFields: { 'populatedProfiles.wsPermLevel': { $function: {
                 body: function(profile : IProfile) {
                     enum WSPermission {
                         Read = 'Read',
@@ -20,11 +28,11 @@ export async function getWSPermission(userId: any, workspaceId: any): Promise<WS
                     }                    
                     const permissionHierarchy: { [key in WSPermission]: number } = {[WSPermission.Read]: 1,[WSPermission.Write]: 2,[WSPermission.Admin]: 3,[WSPermission.Owner]: 4};
                     return profile.wsPerm ? permissionHierarchy[profile.    wsPerm] : 0;
-                },args: ['$profiles'], lang: 'js' 
+                },args: ['$populatedProfiles'], lang: 'js' 
             } } } }, // Add numeric level of wsPerm
-            { $sort: { 'profiles.wsPermLevel': -1 } }, 
+            { $sort: { 'populatedProfiles.wsPermLevel': -1 } }, 
             { $limit: 1 },
-            { $project: { _id: 0, wsPerm: '$profiles.wsPerm' } }
+            { $project: { _id: 0, wsPerm: '$populatedProfiles.wsPerm' } }
         ]).exec();
         return result[0]?.wsPerm;
     } catch (err) {
@@ -40,14 +48,14 @@ export async function getItemPermission(userId: any, workspaceId: any, itemId: a
             { $unwind: '$items' }, 
             { $match: { 'items._id':  mongoose.Types.ObjectId.createFromHexString(itemId) } }, 
             { $unwind: '$profilePerms' },
-            { $lookup: { // Lookup para unir la colección de perfiles
-                from: 'profiles', // Nombre de la colección de perfiles
-                localField: 'profilePerms.profile', // Campo local para unir (referencia al perfil)
-                foreignField: '_id', // Campo externo para unir (identificador del perfil)
-                as: 'profile' // Alias para el resultado del lookup
+            { $lookup: { 
+                from: 'profiles', 
+                localField: 'profilePerms.profile', 
+                foreignField: '_id',  
+                as: 'populatedProfiles' 
             } },
-            { $unwind: '$profile' }, 
-            { $match: { 'profile.users': userId } }, 
+            { $unwind: '$populatedProfiles' }, 
+            { $match: { 'populatedProfiles.users': userId } }, 
             { $addFields: { 'itemPerm': { $function: {
                 body: function(itemPerm : Permission) {
                     enum Permission {

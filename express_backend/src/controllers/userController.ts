@@ -4,6 +4,8 @@ import type { Request, Response } from 'express';
 import Workspace from '../schemas/workspaceSchema.ts';
 import { ProfileType, WSPermission} from '../models/profile.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
+import Profile from '../schemas/profileSchema.ts';
+import fs from 'fs';
 
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -18,9 +20,11 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         user.password = codedPassword;
         await user.save();
         
-        const profile = { name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] };
+        const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] });
+        await profile.save();
         const workspace = new Workspace({ name: `Workspace de ${user.username}`, items: [], profiles: [profile], default: true });
         await workspace.save();
+        fs.mkdirSync(`./uploads/${workspace._id}`);
 
         return res.status(201).json({ message: 'Usuario registrado exitosamente' });
 

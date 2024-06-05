@@ -1,6 +1,7 @@
 import type { IProfile } from '../models/profile.ts';
 import { ProfileType, WSPermission } from '../models/profile.ts';
-import Workspace, { Profile } from '../schemas/workspaceSchema.ts';
+import Workspace from '../schemas/workspaceSchema.ts';
+import Profile from '../schemas/profileSchema.ts';
 import User from '../schemas/userSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
@@ -15,27 +16,24 @@ export const getWorkspace = async (req: any, res: any) => {
   try {
     const wsId = req.query.wsId;
     if (!wsId) {
-      const workspace = await Workspace.findOne({
-        default: true, profiles: {
-          $elemMatch: {
-            name: req.user._id.toString(),
-            wsPerm: WSPermission.Owner
-          }
-        }
-      }).populate('items');
+      const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
+      const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
+      await workspace?.populate('items');
+      await workspace?.populate('profiles');
       res.status(200).json(workspace);
       return;
     } else {
       const workspace = await Workspace.findOne({ _id: wsId });
-      if (workspace) {
-        if (workspace.profiles.find((profile: IProfile) => profile.name == req.user._id.toString())) {
-          workspace.populate('items');
-          res.status(200).json(workspace);
-        } else {
-          res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
-        }
+      if (!workspace) {
+        return res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      }
+
+      if (await getWSPermission(req.user._id, wsId)){
+        await workspace.populate('items');
+        await workspace.populate('profiles');
+        return res.status(200).json(workspace);
       } else {
-        res.status(404).json({ error: 'No se ha encontrado el workspace' });
+        return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
       }
     }
   } catch (error: any) {
@@ -51,20 +49,18 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
       return;
     }
 
-    const workspace = await Workspace.findOne({
-      _id: wsId,
-      profiles: {
-        $elemMatch: {
-          users: req.user._id,
-        }
-      }
-    }).populate('items');
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
 
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace / No estás autorizado para ver ese workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
+    if (!(await getWSPermission(req.user._id, wsId))) {
+      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+    } 
 
+    workspace.populate('items');
+    workspace.populate('profiles');
+    workspace.populate('profiles.users');
     const notices : IItem[] = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
     const noticesWithOwner : any[] = [];
 
