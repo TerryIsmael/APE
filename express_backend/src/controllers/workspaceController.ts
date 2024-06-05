@@ -123,20 +123,18 @@ export const addUserToWorkspace = async (req: any, res: any) => {
     return;
   }
 
-  const profiles = workspace.profiles.filter((profile: IProfile) => profile.name !== user._id.toString());
-    if (perm !== "None") {
-        workspace.profiles.push(new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: perm, users: [user] }));
-    }
-    workspace.profiles = profiles;
-    await workspace.save();
-
+  const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: perm, users: [user] });
+  await profile.save();
+  workspace.profiles.push(profile);
+  await workspace.save();
   res.status(201).json(workspace);
+  
   } catch (error: any) {
     res.status(404).json({ error: error.message });
   }
 };
 
-export const changeWSPerms = async (req: any, res: any) => {
+export const changeWSPerms = async (req: any, res: any) => { // TODO
   const { wsId, username, perm } = req.body;
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
