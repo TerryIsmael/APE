@@ -1,20 +1,19 @@
 import { body, validationResult } from 'express-validator';
 import  Item  from '../schemas/itemSchema.ts';
-import User from '../schemas/userSchema.ts';
 import type { Request, Response, NextFunction } from 'express';
 import { Permission } from '../models/profilePerms.ts';
-import type { IUser } from '../models/user.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
 import { WSPermission } from '../models/profile.ts';
 import { ItemType, type IItem } from '../models/item.ts';
 import fs from 'fs';
+import Profile from '../schemas/profileSchema.ts';
 
 export const validatePerm = [
-    body('username').custom(async (value) => {
-        const user = await User.findOne({ username: value});
-        if (!user) {
-            return Promise.reject('El usuario no existe');
+    body('profileName').custom(async (value) => {
+        const profile = await Profile.findOne({ name: value });
+        if (!profile) {
+            return Promise.reject('El perfil no existe');
         }
     }),
     

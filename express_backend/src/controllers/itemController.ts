@@ -89,6 +89,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
 
 export const changeItemPerms = async (req: any, res: any) => {
     const { itemId, profileName, perm } = req.body;
+
     const wsId = req.body.workspace;
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items').populate('profiles').populate('profiles.users');
@@ -112,15 +113,19 @@ export const changeItemPerms = async (req: any, res: any) => {
             return;
         }
         const itemPerm = await getUserPermission(req.user._id, wsId, itemId);
-        if (!itemPerm || !(itemPerm !== Permission.Owner)) {
+        if (!itemPerm || (itemPerm !== Permission.Owner)) {
             res.status(401).json({ error: 'No tienes permiso para cambiar permisos' });
             return;
         }
         const profilePerms = item.profilePerms.filter((profilePerm: IProfilePerms) => profilePerm.profile.toString() !== profile._id.toString());
         if (perm !== "None") {
-            item.profilePerms.push({ profile: profile, permission: perm });
+            profilePerms.push({ profile: profile, permission: perm }); // TODO: Fix addition of profile perms
         }
+
+        console.log(profilePerms[0]);
+        console.log(profilePerms[1]);
         item.profilePerms = profilePerms;
+        await item.save();
         await workspace.save();
         res.status(201).json(item);
     } catch (error: any) {

@@ -73,7 +73,6 @@ export default {
 
     const closeModal = () => {
       Utils.closeModal(isModalOpened, errorMessage, sharePerm);
-      console.log("Modal cerrado");
     };
 
     const clearModalFields = () => {
@@ -81,7 +80,7 @@ export default {
     };
 
     const getFilteredProfiles = computed(() => {
-      const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+      const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
       return workspace.value.profiles.filter(profile => {
         const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
         const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
@@ -91,9 +90,8 @@ export default {
       });
     });
 
-    const changePerms = async (perm, profileName, selectedItem) => {
-      await Utils.changePerms(perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser);
-      console.log("Permisos cambiados");
+    const changePerms = async (perm, profileName) => {
+      await NoticeUtils.changePerms(perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage);
     }
 
     const logout = async () => {
@@ -123,6 +121,7 @@ export default {
       getFilteredProfiles,
       selectedItem,
       selectedItemPerms,
+      errorMessage,
       fetchNotices,
       fetchUser,
       selectItem,
@@ -231,7 +230,7 @@ export default {
             <h2 class="item-name"> {{ item?.notice?.name }}</h2>
             <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
             <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
-            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined"@click="selectItem(item?.notice).then(openModal())"><span class="material-symbols-outlined">groups</span></span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => selectItem(item?.notice).then(() => openModal())"><span class="material-symbols-outlined">groups</span></span>
           </div>
 
           <h4 class="item-name" style="color: #525252">
@@ -266,7 +265,7 @@ export default {
       <template #header><strong>Cambiar visibilidad de anuncio</strong></template>
       <template #content>
         
-        <div v-if="selectedItem?.profilePerms.length === 1 && selectedItemPerms === 'Owner'">
+        <div v-if="selectedItem?.profilePerms?.length === 1 && selectedItemPerms === 'Owner'">
           <p>Este anuncio no es visible</p>
         </div>
 
@@ -306,7 +305,7 @@ export default {
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
             <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
               <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              <button @change="changePerms('Read', profile.name).then(clearModalFields())" class="change-perm-button">Añadir</button>
+              <button @click="() => changePerms('Read', profile.name).then(() => clearModalFields())" class="change-perm-button">Añadir</button>
             </div>
           </div>
         </div>

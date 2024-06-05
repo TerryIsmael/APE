@@ -88,10 +88,8 @@ class NoticeFunctions {
         router.push('/workspace' + (item.path ? '/' + item.path : '') + '/' + item.name);
         return;
       }
-
       selectedItem.value = item;
       selectedItemPerms.value = this.verifyNoticePerms(item, userWsPerms, workspace, currentUser);
-
       return;
   };
 
@@ -154,10 +152,10 @@ class NoticeFunctions {
       }
   };
 
-  static changePerms = async (perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser) => {
+  static changePerms = async (perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage) => {
       try { 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {
-          body: JSON.stringify({ profileName: profileName, fileId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
+          body: JSON.stringify({ profileName: profileName, itemId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -167,7 +165,7 @@ class NoticeFunctions {
 
         if (response.ok) {
           await this.fetchNotices(wsId, workspace, router, userWsPerms, currentUser);
-          selectedItem.value = workspace.value.items.find(file => file._id === selectedItem.value._id);
+          selectedItem.value = workspace.value.notices.find(item => item.notice._id === selectedItem.value._id).notice;
           errorMessage.value = [];
         } else if (response.status === 401) {
           router.push({ name: 'login' });
