@@ -95,18 +95,15 @@ export default {
     }
 
     const openModal = () => {
-      isModalOpened.value = true;
-      sharePerm.value = 'Read';
+      Utils.openModal(isModalOpened, sharePerm);
     };
 
     const closeModal = () => {
-      isModalOpened.value = false;
-      errorMessage.value = [];
-      clearModalFields();
+      Utils.closeModal(isModalOpened, errorMessage, sharePerm);
     };
 
     const clearModalFields = () => {
-      sharePerm.value = 'Read';
+      Utils.clearModalFields(sharePerm);
     };
 
     const closeSidebar = (event) => {
@@ -114,50 +111,19 @@ export default {
     };
 
     const changePerms = async (perm, profileName) => {
-      try { 
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {
-          body: JSON.stringify({ profileName: profileName, fileId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          await fetchWorkspace();
-          selectedItem.value = workspace.value.items.find(file => file._id === selectedItem.value._id);
-          errorMessage.value = [];
-        } else if (response.status === 401) {
-          router.push({ name: 'login' });
-        } else if (response.status === 400 || response.status === 404) {
-          errorMessage.value = [];
-          response.json().then((data) => {
-            if (data.error) {
-              errorMessage.value.push(data.error);
-            } else {
-              data.errors.forEach((error) => {
-                errorMessage.value.push(error.msg);
-              });
-            }
-          throw new Error("Error al cambiar permisos");
-          })
-        }
-      } catch (error) {
-        console.log(error);
-      }
+      await WorkspaceUtils.changePerms(perm, profileName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
     }
 
-  const getFilteredProfiles = computed(() => {
-    const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
-    return workspace.value.profiles.filter(profile => {
-      const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-      const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-      const isNotOwner = profile.name !== ownerProfile;
+    const getFilteredProfiles = computed(() => {
+      const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+      return workspace.value.profiles.filter(profile => {
+        const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+        const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+        const isNotOwner = profile.name !== ownerProfile;
 
-      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+        return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+      });
     });
-  });
     
     const downloadFile = async () => {
       await WorkspaceUtils.downloadFile(workspace, selectedItem);
@@ -370,7 +336,7 @@ export default {
           <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-            <button v-if="['Owner'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
+            <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
             <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedItem)">
               <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
@@ -453,9 +419,8 @@ export default {
               <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
 
               <select v-model="sharePerm" @change="changePerms(sharePerm, profile.name).then(clearModalFields())" class="text-input" style="width: 25%;">
-                <option value="view">Vista</option>
-                <option value="read">Lectura</option>
-                <option value="write">Escritura</option>
+                <option value="Read">Lectura</option>
+                <option value="Write">Escritura</option>
               </select>
             </div>
           </div>
