@@ -8,7 +8,7 @@ wsServer.on('connection', (ws) => {
 
   let workspaceId: string | undefined;
 
-  ws.on('message', (message) => {  
+  ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message.toString());
     if (parsedMessage.type === 'workspaceIdentification') {
       workspaceId = parsedMessage.workspaceId;
@@ -46,8 +46,10 @@ function sendMessageToWorkspace(workspaceId: string, message: any) {
   if (workspaceConnections) {
     for (const ws of workspaceConnections) {
       ws.send(JSON.stringify(message));
+      console.log('Mensaje enviado a un cliente conectado al workspace', workspaceId);
     }
   }
+  console.log('Mensaje enviado a todos los clientes conectados al workspace', workspaceId);
 }
 
 export { wsServer, sendMessageToWorkspace };

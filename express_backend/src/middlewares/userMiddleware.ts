@@ -4,6 +4,6 @@ export function isLogged(req: Request & { isAuthenticated: () => boolean }, res:
     if (req.isAuthenticated()) {
         return next();
     } else {
-        res.status(401).json({ message: 'No estás autenticado' });
+        res.status(401).json({ error: 'No estás autenticado' });
     }
 }
