@@ -123,7 +123,7 @@ class WorkspaceUtils {
     } else {
       selectedItem.value = item;
       selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
-      showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
+      showSidebar.value = true;
       await this.findAuthor(selectedItem, author, router);
       userItemPerms.value = {};
       selectedItem.value.profilePerms.forEach(profilePerm => {
