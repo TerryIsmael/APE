@@ -129,11 +129,6 @@ class WorkspaceUtils {
       selectedItem.value.profilePerms.forEach(profilePerm => {
         userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
       });
-      console.log(selectedItem.value.profilePerms)
-      console.log(selectedItem.value.profilePerms[0].profile._id)
-      console.log(selectedItem.value.profilePerms[0].permission)
-      console.log("AQUI")
-      console.log(userItemPerms.value);
       return;
     }
   };
@@ -380,7 +375,7 @@ class WorkspaceUtils {
 
       if (response.ok) {
         await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-        selectedItem.value = workspace.value.items.find(file => file._id === selectedItem.value._id);
+        selectedItem.value = workspace.value.items.find(item => item._id === selectedItem.value._id);
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
@@ -401,7 +396,6 @@ class WorkspaceUtils {
       console.log(error);
     }
   };
-  
 }
 
 export default WorkspaceUtils;

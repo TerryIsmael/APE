@@ -142,7 +142,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   }
 };
 
-export const changeWSPerms = async (req: any, res: any) => { // TODO
+export const changeWSPerms = async (req: any, res: any) => {
   const { wsId, profileId, perm } = req.body;
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');

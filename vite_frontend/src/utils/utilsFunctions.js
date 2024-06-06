@@ -110,18 +110,13 @@ class UtilsFunctions {
     } 
   };
 
-  static openModal = (isModalOpened, sharePerm) => {
+  static openModal = (isModalOpened) => {
     isModalOpened.value = true;
-    sharePerm.value = 'None';
   };
 
-  static closeModal = (isModalOpened, errorMessage, sharePerm) => {
+  static closeModal = (isModalOpened, errorMessage) => {
     isModalOpened.value = false;
     errorMessage.value = [];
-    this.clearModalFields(sharePerm);
-  };
-
-  static clearModalFields = (sharePerm) => {
   };
 
 }

@@ -29,7 +29,6 @@ export default {
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const isModalOpened = ref(false);
-    const sharePerm = ref(null);
     const searchProfileTerm = ref('');
     const searchTypeProfile = ref('All');
     const errorMessage = ref([]);
@@ -95,15 +94,11 @@ export default {
     }
 
     const openModal = () => {
-      Utils.openModal(isModalOpened, sharePerm);
+      Utils.openModal(isModalOpened);
     };
 
     const closeModal = () => {
-      Utils.closeModal(isModalOpened, errorMessage, sharePerm);
-    };
-
-    const clearModalFields = () => {
-      Utils.clearModalFields(sharePerm);
+      Utils.closeModal(isModalOpened, errorMessage);
     };
 
     const closeSidebar = (event) => {
@@ -116,13 +111,20 @@ export default {
 
     const getFilteredProfiles = computed(() => {
       const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
-      return workspace.value.profiles.filter(profile => {
+      const profiles = workspace.value.profiles.filter(profile => {
         const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
         const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
         const isNotOwner = profile._id !== ownerProfile._id;
 
         return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
       });
+
+      const orderedProfiles = [];
+      const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+      const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+      orderedProfiles.push(...inProfilePerms);
+      orderedProfiles.push(...notInProfilePerms);
+      return orderedProfiles; 
     });
     
     const downloadFile = async () => {
@@ -141,7 +143,7 @@ export default {
       await Utils.logout(router);
     }
 
-    const checkuserItemPerms = (profileId) => {
+    const checkDictUserItemPerms = (profileId) => {
       if (!userItemPerms.value[profileId]) {
         userItemPerms.value[profileId] = 'None';
       }
@@ -195,7 +197,6 @@ export default {
       userWsPerms,
       userItemPerms,
       isModalOpened,
-      sharePerm,
       searchProfileTerm,
       searchTypeProfile,
       errorMessage,
@@ -211,7 +212,6 @@ export default {
       getFilteredProfiles,
       openModal,
       closeModal,
-      clearModalFields,
       changePerms,
       selectItem,
       toggleLike,
@@ -228,7 +228,7 @@ export default {
       handleNewItemForm,
       selectImage,
       navigateToPreviousFolder,
-      checkuserItemPerms
+      checkDictUserItemPerms
     }
   }
 }   
@@ -388,14 +388,13 @@ export default {
       <template #header><strong>Compartir archivo</strong></template>
       <template #content>  
         <div style="margin-top:20px">
-
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
 
           <p>Compartir con:</p>
 
-          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
             <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
             <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
               <option value="Individual">Individual</option>
@@ -405,10 +404,10 @@ export default {
           </div>
 
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
-            <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
               <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              {{ checkuserItemPerms(profile._id) }}
-              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id).then(clearModalFields())" class="text-input" style="width: 25%;">
+              {{ checkDictUserItemPerms(profile._id) }}
+              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
                 <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
                 <option value="Read">Lectura</option>
                 <option value="Write">Escritura</option>
@@ -417,9 +416,7 @@ export default {
           </div>
         </div>
       </template>
-      <template #footer>
-       
-      </template>
+      <template #footer></template>
     </Modal>
   </div>
 </template>

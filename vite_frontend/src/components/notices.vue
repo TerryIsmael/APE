@@ -23,12 +23,12 @@ export default {
     const newItem = ref({});
 
     const isModalOpened = ref(false);
-    const sharePerm = ref(null);
     const searchProfileTerm = ref('');
     const searchTypeProfile = ref('All');
     const errorMessage = ref([]);
     const selectedItem = ref(null);
     const selectedItemPerms = ref(null);
+    const userItemPerms = ref(null);
 
     const fetchUser = async () => {
       await Utils.fetchUser(currentUser, router);
@@ -43,7 +43,7 @@ export default {
     }
 
     const selectItem = async (item) => {
-      await NoticeUtils.selectItem(item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms);
+      await NoticeUtils.selectItem(item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms, userItemPerms);
     };
 
     const openNewItemModal = (itemType) => {
@@ -71,30 +71,58 @@ export default {
     }
 
     const openModal = () => {
-      Utils.openModal(isModalOpened, sharePerm);
+      Utils.openModal(isModalOpened);
     };
 
     const closeModal = () => {
-      Utils.closeModal(isModalOpened, errorMessage, sharePerm);
-    };
-
-    const clearModalFields = () => {
-      Utils.clearModalFields(sharePerm);
+      Utils.closeModal(isModalOpened, errorMessage);
     };
 
     const getFilteredProfiles = computed(() => {
       const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
-      return workspace.value.profiles.filter(profile => {
+      const profiles = workspace.value.profiles.filter(profile => {
         const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
         const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
         const isNotOwner = profile._id !== ownerProfile;
 
         return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
       });
+
+      const orderedProfiles = [];
+      const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
+      const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
+      orderedProfiles.push(...inProfilePerms);
+      orderedProfiles.push(...notInProfilePerms);
+      return orderedProfiles; 
     });
 
-    const changePerms = async (perm, profileName) => {
-      await NoticeUtils.changePerms(perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage);
+    const changePerms = async (perm, profileId) => {
+      await NoticeUtils.changePerms(perm, profileId, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage);
+    }
+
+    const checkDictUserItemPerms = (profileId) => {
+      if (!userItemPerms.value[profileId]) {
+        userItemPerms.value[profileId] = 'None';
+      }
+    }
+
+    const toggleDictPerm = (profileId) => {
+      const perm = userItemPerms.value[profileId];
+      if (perm == 'None') {
+        userItemPerms.value[profileId] = 'Read';
+      } else {
+        userItemPerms.value[profileId] = 'None';
+      }
+    }
+
+    const updatePermission = async (profileId, newPerm) => {
+      toggleDictPerm(profileId);
+      await changePerms(newPerm, profileId);
+    }
+
+    const handleSelectItem = async (item) => {
+      await selectItem(item);
+      openModal();
     }
 
     const logout = async () => {
@@ -127,13 +155,13 @@ export default {
       newItem,
       userWsPerms,
       isModalOpened,
-      sharePerm,
       searchProfileTerm,
       searchTypeProfile,
       getFilteredProfiles,
       selectedItem,
       selectedItemPerms,
       errorMessage,
+      userItemPerms,
       fetchNotices,
       fetchUser,
       selectItem,
@@ -146,8 +174,9 @@ export default {
       deleteItem,
       openModal,
       closeModal,
-      clearModalFields,
-      changePerms,
+      checkDictUserItemPerms,
+      updatePermission,
+      handleSelectItem,
       logout,
     };
   }
@@ -242,7 +271,7 @@ export default {
             <h2 class="item-name"> {{ item?.notice?.name }}</h2>
             <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
             <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
-            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => selectItem(item?.notice).then(() => openModal())"><span class="material-symbols-outlined">groups</span></span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
           </div>
 
           <h4 class="item-name" style="color: #525252">
@@ -276,36 +305,14 @@ export default {
     <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
       <template #header><strong>Cambiar visibilidad de anuncio</strong></template>
       <template #content>
-        
-        <div v-if="selectedItem?.profilePerms?.length === 1 && selectedItemPerms === 'Owner'">
-          <p>Este anuncio no es visible</p>
-        </div>
-
-        <div v-else>
-          <p>Compartido con:</p>
-          <table style="border-collapse: collapse; width: 100%; height: 100%;">
-            <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
-              <tr v-for="profilePerm in selectedItem?.profilePerms" :key="profilePerm._id" style="display: table-row;">
-                <td class="profilePerm-info"> {{ profilePerm.profile.name }} </td>
-                <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
-                <td class="profilePerm-info"> {{ translatePerm(profilePerm.Permission) }} </td>
-                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', profilePerm.profile)">close</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-      </template>
-      <template #footer>
         <div style="margin-top:20px">
-
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
 
           <p>Hacer visible para:</p>
 
-          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
+          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
             <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
             <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
               <option value="Individual">Individual</option>
@@ -317,10 +324,14 @@ export default {
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
             <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
               <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              <button @click="() => changePerms('Read', profile.name).then(() => clearModalFields())" class="change-perm-button">Añadir</button>
+              {{ checkDictUserItemPerms(profile._id) }}
+              <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
+              <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
             </div>
           </div>
         </div>
+      </template><template #footer>
+
       </template>
     </Modal>
 </template>
@@ -526,6 +537,10 @@ export default {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
+}
+
+.remove-perm-button {
+  background-color: rgb(177, 54, 54);
 }
 
 .scrollable {

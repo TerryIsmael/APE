@@ -79,7 +79,7 @@ class NoticeFunctions {
       }
   };
 
-  static selectItem = async (item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms) => {
+  static selectItem = async (item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms, userItemPerms) => {
       if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
         router.push('/workspace/' + item);
         return;
@@ -90,6 +90,10 @@ class NoticeFunctions {
       }
       selectedItem.value = item;
       selectedItemPerms.value = this.verifyNoticePerms(item, userWsPerms, workspace, currentUser);
+      userItemPerms.value = {};
+      selectedItem.value.profilePerms.forEach(profilePerm => {
+        userItemPerms.value[profilePerm.profile] = profilePerm.permission;
+      });
       return;
   };
 
@@ -152,10 +156,10 @@ class NoticeFunctions {
       }
   };
 
-  static changePerms = async (perm, profileName, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage) => {
+  static changePerms = async (perm, profileId, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage) => {
       try { 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {
-          body: JSON.stringify({ profileName: profileName, itemId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
+          body: JSON.stringify({ profileId: profileId, itemId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
