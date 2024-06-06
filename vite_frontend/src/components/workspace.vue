@@ -40,6 +40,8 @@ export default {
     const minutes = ref(0);
     const seconds = ref(0);
 
+    const selectedFolderPerms = ref(null);
+
     const fetchUser = async () => {
       await Utils.fetchUser(currentUser, router);
     }
@@ -104,6 +106,10 @@ export default {
     const closeSidebar = (event) => {
       WorkspaceUtils.closeSidebar(event, showSidebar, author);
     };
+
+    const showFolderDetails = async () => {
+      await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser);
+    }
 
     const changePerms = async (perm, profileId) => {
       await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
@@ -228,7 +234,8 @@ export default {
       handleNewItemForm,
       selectImage,
       navigateToPreviousFolder,
-      checkDictUserItemPerms
+      checkDictUserItemPerms,
+      showFolderDetails,
     }
   }
 }   
@@ -298,6 +305,9 @@ export default {
       </div>
 
       <div style="display: flex; justify-content: flex-end; width: 15%;">
+        <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()" >
+          <span class="material-symbols-outlined">info</span>
+        </button>
         <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
           <span class="material-symbols-outlined">create_new_folder</span>
         </button>

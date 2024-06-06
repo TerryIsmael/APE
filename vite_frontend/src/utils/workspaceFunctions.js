@@ -155,6 +155,13 @@ class WorkspaceUtils {
     await this.fetchUserData(author, userId, router);
   };
 
+  static showFolderDetails = async (selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser) => {
+    selectedItem.value = folders.value.find(item => item.name === selectedFolder.value);
+    selectedItemPerms.value = await this.verifyPerms(selectedItem.value, workspace, currentUser);
+    await this.findAuthor(selectedItem, author, router);
+    showSidebar.value = true;
+  };
+
   static toggleLike = async (item, workspace, router, currentUser, path, items, folders) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/like', {
