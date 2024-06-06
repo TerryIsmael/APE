@@ -10,8 +10,8 @@ import fs from 'fs';
 import Profile from '../schemas/profileSchema.ts';
 
 export const validatePerm = [
-    body('profileName').custom(async (value) => {
-        const profile = await Profile.findOne({ name: value });
+    body('profileId').custom(async (value) => {
+        const profile = await Profile.findOne({ _id: value });
         if (!profile) {
             return Promise.reject('El perfil no existe');
         }
@@ -20,7 +20,7 @@ export const validatePerm = [
     body('itemId').custom(async (value) => {
         const item = await Item.findOne({ _id: value});
         if (!item) {
-            return Promise.reject('El archivo no existe');
+            return Promise.reject('El item no existe');
         }
     }),
 

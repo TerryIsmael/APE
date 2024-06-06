@@ -5,6 +5,9 @@ import Utils from '../utils/UtilsFunctions.js';
 import NoticeUtils from '../utils/NoticeFunctions.js';
 
 export default {
+  props: {
+    ws: Object
+  },
   setup() {
 
     const router = useRouter();
@@ -84,7 +87,7 @@ export default {
       return workspace.value.profiles.filter(profile => {
         const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
         const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-        const isNotOwner = profile.name !== ownerProfile;
+        const isNotOwner = profile._id !== ownerProfile;
 
         return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
       });
@@ -98,9 +101,18 @@ export default {
       await Utils.logout(router);
     }
 
-    onBeforeMount(() => {
+    onBeforeMount(async () => {
       path.value = "/" + route.name;
       wsId.value = localStorage.getItem('workspace');
+      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
+        body: JSON.stringify({
+          username: import.meta.env.VITE_USERNAME,
+          password: "12345678910aA@",
+        })
+      });
       fetchUser();
       fetchNotices();
     });
@@ -274,7 +286,7 @@ export default {
           <table style="border-collapse: collapse; width: 100%; height: 100%;">
             <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
               <tr v-for="profilePerm in selectedItem?.profilePerms" :key="profilePerm._id" style="display: table-row;">
-                <td class="profilePerm-info"> {{ profilePerm.profile }} </td>
+                <td class="profilePerm-info"> {{ profilePerm.profile.name }} </td>
                 <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
                 <td class="profilePerm-info"> {{ translatePerm(profilePerm.Permission) }} </td>
                 <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', profilePerm.profile)">close</td>

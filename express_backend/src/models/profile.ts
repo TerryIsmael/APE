@@ -1,4 +1,5 @@
 import mongoose from '../config/mongoose.ts';  
+import type { IUser } from './user.ts';
 
 export enum ProfileType {
     Individual = 'Individual',
@@ -16,6 +17,6 @@ export interface IProfile extends mongoose.Document {
     _id: mongoose.Types.ObjectId;
     profileType: ProfileType;
     name: string;
-    users: mongoose.Types.ObjectId[];
+    users: Array<mongoose.PopulatedDoc<IUser>> | Array<mongoose.Types.ObjectId>;
     wsPerm: WSPermission;
 }

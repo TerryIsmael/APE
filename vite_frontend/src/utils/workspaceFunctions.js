@@ -2,7 +2,7 @@ import Utils from './UtilsFunctions.js';
 
 class WorkspaceUtils {
 
-  static fetchUserData = async (author, userId) => {
+  static fetchUserData = async (author, userId, router) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/data', {
         method: 'POST',
@@ -55,9 +55,7 @@ class WorkspaceUtils {
         } else {
           existFolder.value = true;
         }
-
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
-
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       }
@@ -107,7 +105,7 @@ class WorkspaceUtils {
     }
   };
 
-  static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author) => {
+  static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms) => {
     if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
       selectedFolder.value = item;
       router.push({ name: item });
@@ -126,7 +124,16 @@ class WorkspaceUtils {
       selectedItem.value = item;
       selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
       showSidebar.value = true; // TODO: Gestionar mostrar detalles de una carpeta
-      await this.findAuthor(selectedItem, workspace, author);
+      await this.findAuthor(selectedItem, author, router);
+      userItemPerms.value = {};
+      selectedItem.value.profilePerms.forEach(profilePerm => {
+        userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
+      });
+      console.log(selectedItem.value.profilePerms)
+      console.log(selectedItem.value.profilePerms[0].profile._id)
+      console.log(selectedItem.value.profilePerms[0].permission)
+      console.log("AQUI")
+      console.log(userItemPerms.value);
       return;
     }
   };
@@ -148,10 +155,9 @@ class WorkspaceUtils {
     }
   };
 
-  static findAuthor = async (selectedItem, workspace, author) => {
-    const profile = selectedItem.value.profilePerms.find(y => y.permission == 'Owner').profile;
-    const userId = workspace.value.profiles.find(x => x.name == profile)?.users[0];
-    await this.fetchUserData(author, userId);
+  static findAuthor = async (selectedItem, author, router) => {
+    const userId = selectedItem.value.profilePerms.find(y => y.permission == 'Owner').profile.users[0];
+    await this.fetchUserData(author, userId, router);
   };
 
   static toggleLike = async (item, workspace, router, currentUser, path, items, folders) => {
@@ -361,10 +367,10 @@ class WorkspaceUtils {
     }
   };
 
-  static changePerms = async (perm, profileName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router) => {
+  static changePerms = async (perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try { 
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {
-        body: JSON.stringify({ profileName: profileName, fileId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
+        body: JSON.stringify({ profileId: profileId, itemId: selectedItem.value._id, perm: perm, workspace: workspace.value._id }),
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

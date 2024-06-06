@@ -12,6 +12,7 @@ export default {
     const ws = ref(null);
     const currentUser = ref(null);
     const userWsPerms = ref(null);
+    const userItemPerms = ref(null);
     const router = useRouter();
     const route = useRoute();
     const path = ref("");
@@ -24,7 +25,7 @@ export default {
     const selectedItemPerms = ref(null);
     const selectedFolder = ref('');
     const existFolder = ref(false); 
-          
+      
     const showSidebar = ref(false);
     const showMainSidebar = ref(false);
     const isModalOpened = ref(false);
@@ -44,10 +45,6 @@ export default {
       await Utils.fetchUser(currentUser, router);
     }
 
-    const fetchUserData = async (userId) => {
-      await WorkspaceUtils.fetchUserData(author, userId);
-    }
-
     const fetchWorkspace = async () => {
       await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
       ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
@@ -58,7 +55,7 @@ export default {
     }
 
     const selectItem = async (item, direct) => {
-      await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author);
+      await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
     }
 
     const toggleLike = async (item) => {
@@ -113,8 +110,8 @@ export default {
       WorkspaceUtils.closeSidebar(event, showSidebar, author);
     };
 
-    const changePerms = async (perm, profileName) => {
-      await WorkspaceUtils.changePerms(perm, profileName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+    const changePerms = async (perm, profileId) => {
+      await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
     }
 
     const getFilteredProfiles = computed(() => {
@@ -122,7 +119,7 @@ export default {
       return workspace.value.profiles.filter(profile => {
         const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
         const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-        const isNotOwner = profile.name !== ownerProfile;
+        const isNotOwner = profile._id !== ownerProfile._id;
 
         return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
       });
@@ -142,6 +139,12 @@ export default {
 
     const logout = async () => {
       await Utils.logout(router);
+    }
+
+    const checkuserItemPerms = (profileId) => {
+      if (!userItemPerms.value[profileId]) {
+        userItemPerms.value[profileId] = 'None';
+      }
     }
 
     onBeforeMount(async () => {
@@ -190,6 +193,7 @@ export default {
       selectedItemPerms,
       currentUser,
       userWsPerms,
+      userItemPerms,
       isModalOpened,
       sharePerm,
       searchProfileTerm,
@@ -224,6 +228,7 @@ export default {
       handleNewItemForm,
       selectImage,
       navigateToPreviousFolder,
+      checkuserItemPerms
     }
   }
 }   
@@ -381,28 +386,7 @@ export default {
 
     <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
       <template #header><strong>Compartir archivo</strong></template>
-      <template #content>
-        
-        <div v-if="selectedItem?.profilePerms.length === 1 && selectedItemPerms === 'Owner'">
-          <p>Este archivo no se ha compartido</p>
-        </div>
-
-        <div v-else>
-          <p>Compartido con:</p>
-          <table style="border-collapse: collapse; width: 100%; height: 100%;">
-            <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
-              <tr v-for="profilePerm in selectedItem?.profilePerms" :key="profilePerm._id" style="display: table-row;">
-                <td class="profilePerm-info"> {{ profilePerm.profile }} </td>
-                <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
-                <td class="profilePerm-info"> {{ translatePerm(profilePerm.Permission) }} </td>
-                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', profilePerm.profile)">close</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-      </template>
-      <template #footer>
+      <template #content>  
         <div style="margin-top:20px">
 
           <div class="error" v-if="errorMessage.length !== 0">
@@ -423,14 +407,18 @@ export default {
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
             <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between;">
               <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-
-              <select v-model="sharePerm" @change="changePerms(sharePerm, profile.name).then(clearModalFields())" class="text-input" style="width: 25%;">
+              {{ checkuserItemPerms(profile._id) }}
+              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id).then(clearModalFields())" class="text-input" style="width: 25%;">
+                <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
                 <option value="Read">Lectura</option>
                 <option value="Write">Escritura</option>
               </select>
             </div>
           </div>
         </div>
+      </template>
+      <template #footer>
+       
       </template>
     </Modal>
   </div>

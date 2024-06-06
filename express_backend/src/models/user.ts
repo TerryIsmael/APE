@@ -1,4 +1,5 @@
 import mongoose from '../config/mongoose.ts';
+import type { IItem } from './item.ts';
 
 export interface IUser extends mongoose.Document {
   _id: mongoose.Types.ObjectId;
@@ -7,5 +8,5 @@ export interface IUser extends mongoose.Document {
   surnames: string;
   password: string;
   email: string;
-  favorites: mongoose.Types.ObjectId[];
+  favorites: Array<mongoose.Types.ObjectId> | Array<mongoose.PopulatedDoc<IItem>>;
 }

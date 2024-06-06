@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 import fs from 'fs';
 import type { IUser } from '../models/user.ts';
 import { type IProfile } from '../models/profile.ts';
@@ -11,6 +11,7 @@ import Item from '../schemas/itemSchema.ts';
 import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
+import Profile from '../schemas/profileSchema.ts';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -70,7 +71,8 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 item.itemType = itemData.itemType;
                 item.uploadDate = new Date();
                 item.modifiedDate = new Date();
-                item.profilePerms = [{ profile: req.user._id, permission: Permission.Owner } as IProfilePerms];
+                const profile = await Profile.findOne({ name: req.user._id });
+                item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
                 const perm = await getUserPermission(req.user._id, wsId);
                 if (perm === Permission.Read || !perm) {
                     res.status(401).json({ error: 'No estás autorizado para añadir items a este workspace' });
@@ -88,16 +90,16 @@ export const addItemToWorkspace = async (req: any, res: any) => {
 };
 
 export const changeItemPerms = async (req: any, res: any) => {
-    const { itemId, profileName, perm } = req.body;
+    const { itemId, profileId, perm } = req.body;
 
     const wsId = req.body.workspace;
     try {
-        const workspace = await Workspace.findOne({ _id: wsId }).populate('items').populate('profiles').populate('profiles.users');
+        const workspace = await Workspace.findOne({ _id: wsId }).populate('items').populate('profiles').populate('profiles.users').populate('items.profilePerms.profile');
         if (!workspace) {
             res.status(404).json({ error: 'No se ha encontrado el workspace' });
             return;
         }
-        const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === itemId);
+        const item = await Item.findOne({ _id: itemId }).populate('profilePerms.profile');
         if (!item) {
             res.status(404).json({ error: 'No se ha encontrado el item' });
             return;
@@ -107,7 +109,7 @@ export const changeItemPerms = async (req: any, res: any) => {
             res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este item' });
             return;
         }
-        const profile = workspace.profiles.find((profile: IProfile) => profile.name === profileName);
+        const profile  = workspace.profiles.find(profile => profile && profile._id.toString() === profileId) as IProfile;
         if (!profile) {
             res.status(404).json({ error: 'El perfil no existe en el workspace' });
             return;
@@ -117,25 +119,34 @@ export const changeItemPerms = async (req: any, res: any) => {
             res.status(401).json({ error: 'No tienes permiso para cambiar permisos' });
             return;
         }
-        const profilePerms = item.profilePerms.filter((profilePerm: IProfilePerms) => profilePerm.profile.toString() !== profile._id.toString());
+        const profilePerms = item.profilePerms.filter((profilePerm: IProfilePerms) =>{
+            return profilePerm.profile?._id.toString() !== profile._id.toString();
+
+        });
         if (perm !== "None") {
-            profilePerms.push({ profile: profile, permission: perm }); // TODO: Fix addition of profile perms
+            const newProfilePerm = item.profilePerms.create({
+                profile: profile._id,
+                permission: perm
+            });
+            profilePerms.push(newProfilePerm); // TODO: Fix addition of profile perms
         }
 
         console.log(profilePerms[0]);
         console.log(profilePerms[1]);
-        item.profilePerms = profilePerms;
+        item.profilePerms = profilePerms as Types.DocumentArray<IProfilePerms>;
         await item.save();
+        console.log(item.profilePerms);
         await workspace.save();
         res.status(201).json(item);
     } catch (error: any) {
-        res.status(404).json({ error: error.message });
+        res.status(404).json({ error: error.message }); //Cambiar a 500
     }
 };
 
 export const createFile = async (req: any, _: any, next: NextFunction) => {
     try{
-        const item = new FileItem({ name: new mongoose.Types.ObjectId, path: "temp_path", itemType: ItemType.File, length: 0, uploadDate: new Date(), modifiedDate: new Date(), profilePerms: [{ profile: req.user._id, permission: Permission.Owner }] });
+        const profile = await Profile.findOne({ name: req.user._id });
+        const item = new FileItem({ name: new mongoose.Types.ObjectId, path: "temp_path", itemType: ItemType.File, length: 0, uploadDate: new Date(), modifiedDate: new Date(), profilePerms: [{ profile: profile?._id, permission: Permission.Owner }] });
         await item.save();
         req.params.itemId = item.id;
         next();
@@ -173,11 +184,8 @@ export const downloadFile = async (req: any, res: any) => {
             fileStream.on('error', (_) => {
               res.status(500).json({ success: false, error: 'Error al leer el archivo' });
             });
-      
             fileStream.pipe(res).on('finish', () => {
-                
             });
-          
         } else {
             res.status(404).json({ success: false, error: 'El archivo no existe' });
         }
@@ -240,7 +248,7 @@ export const toggleFavorite = async (req: any, res: any) => {
         }
         const liked = user.favorites.includes(itemId);
         if (liked) {
-            (user.favorites as mongoose.Types.ObjectId[]) = user.favorites.filter((fav: mongoose.Types.ObjectId) => fav.toString() !== itemId);
+            user.favorites  = user.favorites.filter((fav: mongoose.Types.ObjectId | mongoose.PopulatedDoc<IItem>) => fav instanceof mongoose.Types.ObjectId && fav.toString() !== itemId);
         } else {
             user.favorites.push(itemId);
         }

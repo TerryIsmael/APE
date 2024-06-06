@@ -14,7 +14,7 @@ const profilePermSchema = new mongoose.Schema<IProfilePerms>({
         validate: {
             validator: async function(value: mongoose.Types.ObjectId) {
                 const existingProfile = await mongoose.model<IProfile>('Profile').findById(value);
-                return !existingProfile;
+                return existingProfile;
             },
             message: "Este perfil no existe"
         }

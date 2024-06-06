@@ -8,7 +8,7 @@ import { getWSPermission } from '../utils/permsFunctions.ts';
 import { ItemType, type IItem } from '../models/item.ts';
 import { Permission } from '../models/profilePerms.ts';
 import type { IProfilePerms } from '../models/profilePerms.ts';
-import type mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
 
@@ -19,6 +19,7 @@ export const getWorkspace = async (req: any, res: any) => {
       const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
       const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
       await workspace?.populate('items');
+      await workspace?.populate('items.profilePerms.profile');
       await workspace?.populate('profiles');
       await workspace?.populate('profiles.users');
       res.status(200).json(workspace);
@@ -39,7 +40,7 @@ export const getWorkspace = async (req: any, res: any) => {
       }
     }
   } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -63,11 +64,17 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     await workspace.populate('items');
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
-    const notices : IItem[] = (workspace.items as unknown as IItem[]).filter((item: IItem) => item.itemType == ItemType.Notice);
+
+    const notices = (workspace.items as mongoose.PopulatedDoc<IItem>[]).filter(
+      (item): item is IItem => item instanceof mongoose.Document && item.itemType === ItemType.Notice
+    );
+
     const noticesWithOwner : any[] = [];
 
     for (let i = 0; i < notices.length; i++) {
-      const userId = ((notices[i] as unknown as IItem).profilePerms.find((profile: IProfilePerms) => profile.permission == Permission.Owner)?.profile as unknown as mongoose.Types.ObjectId).toString();
+      const profileId = (((notices[i] as unknown as IItem).profilePerms.find((profilePerm: IProfilePerms) => profilePerm.permission == Permission.Owner)?.profile as unknown as IProfile) as unknown as mongoose.Types.ObjectId).toString();
+      const profile = await Profile.findOne({ _id: profileId });
+      const userId = (await profile?.populate('users'))?.users[0];
       const owner = (await User.findById(userId).exec()) as IUser;
       noticesWithOwner.push({ notice: notices[i], owner: { username: owner.username, email: owner.email }});
     }
@@ -77,7 +84,8 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     return;
 
   } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    console.log(error);
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -125,7 +133,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
 
   const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: perm, users: [user] });
   await profile.save();
-  workspace.profiles.push(profile);
+  workspace.profiles.push(profile._id);
   await workspace.save();
   res.status(201).json(workspace);
   
@@ -135,7 +143,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
 };
 
 export const changeWSPerms = async (req: any, res: any) => { // TODO
-  const { wsId, username, perm } = req.body;
+  const { wsId, profileId, perm } = req.body;
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
       if (!workspace) {
@@ -147,17 +155,15 @@ export const changeWSPerms = async (req: any, res: any) => { // TODO
           res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
           return;
       }
-      const profile = workspace.profiles.find((profile: IProfile) => profile.name === username);
+      const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id === profileId);
       if (!profile) {
           res.status(404).json({ error: 'El usuario no está en este workspace' });
           return;
       }
-      const profilePerms = workspace.profiles.filter((profile: IProfile) => profile.name !== username);
-      if (perm !== "None") {
-          //profilePerms.push({ name: username, WSPermission: perm });
+      if (profile instanceof mongoose.Document) {
+        profile.wsPerm = perm;
+        profile.save();
       }
-      workspace.profiles = profilePerms;
-      await workspace.save();
       res.status(201).json(workspace);
   } catch (error: any) {
     res.status(404).json({ error: error.message });

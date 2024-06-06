@@ -112,7 +112,7 @@ class UtilsFunctions {
 
   static openModal = (isModalOpened, sharePerm) => {
     isModalOpened.value = true;
-    sharePerm.value = 'Read';
+    sharePerm.value = 'None';
   };
 
   static closeModal = (isModalOpened, errorMessage, sharePerm) => {
@@ -122,7 +122,6 @@ class UtilsFunctions {
   };
 
   static clearModalFields = (sharePerm) => {
-    sharePerm.value = 'Read';
   };
 
 }

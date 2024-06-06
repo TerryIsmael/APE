@@ -25,14 +25,17 @@ const profileSchema = new mongoose.Schema<IProfile>({
         ref: 'User',
         required: [true, 'El usuario es obligatorio'],
         validate: {
-            validator: async function(this: IUser, value: mongoose.Types.ObjectId[]) {
-              
+            validator: async function(this: IUser, value: (mongoose.Types.ObjectId | mongoose.PopulatedDoc<IUser>)[]) {
                 if (Array.isArray(value)) {
                     for (const v of value) {
-                        const existingUser = await mongoose.model<IUser>('User').findById(v);
-                        if (!existingUser) return false;
+                        if (v instanceof mongoose.Types.ObjectId) {
+                            const existingUser = await mongoose.model<IUser>('User').findById(v);
+                            if (!existingUser) return false;
+                        } else {
+                            return true;
+                        }
                     }
-                    return true;
+                    return true; 
                 } else {
                     return false;
                 }

@@ -1,4 +1,5 @@
-import type { IProfile } from "./profile.ts";
+import type mongoose from "mongoose";
+import type { IProfile } from "./profile";
 
 export enum Permission {
     Read = "Read",
@@ -7,6 +8,6 @@ export enum Permission {
 }
 
 export interface IProfilePerms {
-    profile: IProfile;
+    profile: mongoose.PopulatedDoc<IProfile> | mongoose.Types.ObjectId;
     permission: Permission;
 }
