@@ -176,7 +176,6 @@ class NoticeFunctions {
         } else if (response.status === 400 || response.status === 404) {
           errorMessage.value = [];
           response.json().then((data) => {
-            console.log(data);
             if (data.error) {
               errorMessage.value.push(data.error);
             } else {

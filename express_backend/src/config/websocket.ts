@@ -15,6 +15,13 @@ wsServer.on('connection', (ws) => {
       if (!workspaceId) {
         return;
       }
+      const keysWithSearchValue = Object.keys(connectionsByWorkspace).filter(key => connectionsByWorkspace.get(key)?.includes(ws));
+      for (const key of keysWithSearchValue) {
+        const index = connectionsByWorkspace.get(key)?.indexOf(ws);
+        if (index && index !== -1) {
+          connectionsByWorkspace.get(key)?.splice(index, 1);
+        }
+      }
       if (!connectionsByWorkspace.has(workspaceId)) {
         connectionsByWorkspace.set(workspaceId, []);
       }
@@ -46,10 +53,9 @@ function sendMessageToWorkspace(workspaceId: string, message: any) {
   if (workspaceConnections) {
     for (const ws of workspaceConnections) {
       ws.send(JSON.stringify(message));
-      console.log('Mensaje enviado a un cliente conectado al workspace', workspaceId);
+      //console.log('Mensaje enviado a un cliente conectado al workspace', workspaceId); 
     }
   }
-  console.log('Mensaje enviado a todos los clientes conectados al workspace', workspaceId);
 }
 
 export { wsServer, sendMessageToWorkspace };

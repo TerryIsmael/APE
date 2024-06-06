@@ -41,7 +41,6 @@ export const validateFile = async (req : Request, res : Response, next : NextFun
     const errors = await checkFile(req);
     if (errors) {
         req.file?fs.unlinkSync(req.file.path):null;
-        console.log(errors);
         res.status(400).json({ errors: errors });
     } else {
         next();

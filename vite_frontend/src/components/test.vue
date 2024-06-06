@@ -16,7 +16,5 @@ const myItem = {
 </script>
 
 <template>
-<Timer :item="myItem" :ws="ws" :workspace="'66602b13fbe4a2613d036271'">
-
-</Timer>
+<Timer :item="myItem" :ws="ws" :workspace="'66602b13fbe4a2613d036271'"/>
 </template>

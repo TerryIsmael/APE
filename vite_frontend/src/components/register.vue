@@ -46,7 +46,6 @@ export default {
               });
             }else{
               response.json().then((data) => {
-                console.log(data);
                 if (data.message) {
                   errorMessage.value.push(...data.message);
                   
