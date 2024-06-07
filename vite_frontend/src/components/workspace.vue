@@ -7,8 +7,8 @@ import Utils from '../utils/UtilsFunctions.js';
 
 const props = defineProps({
   ws: {
-      ws: Object,
-      required: true
+    ws: Object,
+    required: true
   },
 });
 
@@ -22,13 +22,13 @@ const path = ref("");
 const workspaceId = ref(null);
 const workspace = ref({});
 const currentPath = ref('');
-const items = ref([]); 
+const items = ref([]);
 const folders = ref([]);
 const author = ref(null);
 const selectedItem = ref(null);
 const selectedItemPerms = ref(null);
 const selectedFolder = ref('');
-const existFolder = ref(false); 
+const existFolder = ref(false);
 const routedItem = ref(null);
 const showSidebar = ref(false);
 const showMainSidebar = ref(false);
@@ -39,7 +39,7 @@ const errorMessage = ref([]);
 
 const isNewItemModalOpened = ref(false);
 const newItem = ref({});
-const fileInput = ref(null); 
+const fileInput = ref(null);
 const hours = ref(0);
 const minutes = ref(0);
 const seconds = ref(0);
@@ -134,7 +134,7 @@ const getFilteredProfiles = computed(() => {
   const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
   orderedProfiles.push(...inProfilePerms);
   orderedProfiles.push(...notInProfilePerms);
-  return orderedProfiles; 
+  return orderedProfiles;
 });
 
 const downloadFile = async () => {
@@ -165,7 +165,6 @@ const handleRightClick = (event, item) => {
 
 const modifyItem = async (item) => {
   await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-
 }
 
 const startDrag = (evt, item) => {
@@ -177,13 +176,13 @@ const startDrag = (evt, item) => {
 const onDrop = async (evt, folder, back) => {
   const itemId = evt.dataTransfer.getData('itemId')
   const item = items.value.find((item) => item._id == itemId);
-  if (back){
+  if (back) {
     const path = item.path.split('/').slice(0, -1).join('/');
     item.path = path;
     await modifyItem(item);
   } else {
     if (item._id === folder._id) return;
-    item.path = folder.path+"/"+folder.name;
+    item.path = folder.path + "/" + folder.name;
     await modifyItem(item);
   }
 };
@@ -205,8 +204,26 @@ const getItemBindings = (item, index) => {
   return {};
 };
 
+const initPath = () => {
+  const pathArray = path.value.split('/');
+  if (pathArray[pathArray.length - 2] == "i") {
+    workspace.value.items.forEach(item => {
+      if (item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
+        routedItem.value = item;
+        path.value = pathArray.slice(0, pathArray.length - 2).join('/');
+        showMainSidebar.value = false;
+      } else {
+        routedItem.value = "Not found";
+      }
+    });
+  } else {
+    routedItem.value = null;
+  }
+  showSidebar.value = false;
+}
+
 onBeforeMount(async () => {
-  path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+  path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   ws.value = props.ws;
   await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
     method: 'POST',
@@ -219,14 +236,7 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchWorkspace();
-  const pathArray = path.value.split('/');
-  if( pathArray[pathArray.length - 2] == "i"){
-    workspace.value.items.forEach(item => {
-      if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
-        routedItem.value = item;
-      }
-    });
-  }
+  initPath();
 });
 
 onMounted(() => {
@@ -242,230 +252,281 @@ onUnmounted(() => {
 watch(
   () => route.params.path,
   () => {
-    path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+    path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
     selectedFolder.value = path.value;
     fetchWorkspace();
     const pathArray = path.value.split('/');
-    if( pathArray[pathArray.length - 2] == "i"){
-      workspace.value.items.forEach(item => {
-        if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
-          routedItem.value = item;
-        }
-      });
-    }else{
-      routedItem.value = null;
-    }
-    showSidebar.value = false;
+    initPath();
   }
 );
 
 </script>
- 
+
 <template>
-  {{ fileInput }}
-  <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
+  <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId"
+    :path="path"></Timer>
+  <div v-if="routedItem == 'Not found'">
+    <div class="main-content"
+      style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+      <h1 @click="$router.push('/workspace/')"
+        style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ workspace?.name }}
+      </h1>
+    </div>
+    <h2>No se encuentra el item. Puede que haya sido movido o eliminado.</h2>
+  </div>
+
   <div v-if="!routedItem">
-  <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
-    <div class="main-sidebar" :class="{'show' : showMainSidebar}">
+    <div class="main-content"
+      style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+      <h1 @click="$router.push('/workspace/')"
+        style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ workspace?.name }}
+      </h1>
+    </div>
 
-      <div :class="{'main-sidebar-toggle':true, 'main-sidebar-toggle-opened':showMainSidebar}">
-        <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined" style="z-index: 1002">chevron_right</span>
-        <span v-else @click="showMainSidebar = false" class="material-symbols-outlined" style="z-index: 1002">chevron_left</span>
+    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+        <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+          <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span
+              class="material-symbols-outlined">arrow_back</span></button>
+          <div
+            style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
+            <h2 style="margin-right: 1%">Ruta actual:</h2>
+            <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
+            <h2 v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index"
+              v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; width: 15%;">
+          <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
+            <span class="material-symbols-outlined">info</span>
+          </button>
+          <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
+            <span class="material-symbols-outlined">create_new_folder</span>
+          </button>
+          <div class="dropdown">
+            <button style="max-height: 50px;" @click="openDropdown">
+              <span class="material-symbols-outlined">add</span>
+            </button>
+            <div style="z-index: 1002;" class="dropdown-content">
+              <div @click="openNewItemModal('Notice')">Anuncio</div>
+              <div @click="openNewItemModal('Calendar')">Calendario</div>
+              <div @click="openNewItemModal('Note')">Nota</div>
+              <div @click="openNewItemModal('Timer')">Temporizador</div>
+              <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
+              <div @click="selectUploadFile" value="File">Archivo</div>
+            </div>
+          </div>
+        </div>
       </div>
+      <div class="main-content container">
+        <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
+        <div v-if="existFolder && items.length === 0">
+          <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
+        </div>
 
-      <ul style="height: 85%; min-height: 85%;">
-        <div style="display:flex; width: 50px; height: 50px;">
-          <div style="margin-left: 35%"><img class="logo-img" src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
-          <div style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
-              <div style="text-align: center;">
+        <div class="items-container" v-else>
+          <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)"
+            draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event, item)"
+            v-bind="getItemBindings(item)">
+            <div>
+              <div v-if="currentUser?.favorites?.includes(item._id)">
+                <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                <span v-if="currentUser?.favorites?.includes(item._id)"
+                  class="material-symbols-outlined filled-heart absolute-heart">favorite</span>
+              </div>
+              <div v-else>
+                <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+              </div>
+              <div style="display:flex; align-items: center;">
+                <p class="item-name">{{ item.name }} </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main sidebar -->
+        <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
+        <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
+
+          <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
+            <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
+              style="z-index: 1002">chevron_right</span>
+            <span v-else @click="showMainSidebar = false" class="material-symbols-outlined"
+              style="z-index: 1002">chevron_left</span>
+          </div>
+
+          <ul style="height: 85%; min-height: 85%;">
+            <div style="display:flex; width: 50px; height: 50px;">
+              <div style="margin-left: 35%"><img class="logo-img"
+                  src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
+              <div
+                style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
+                <div style="text-align: center;">
                   <p style="margin: 0; font-weight: bold;">APE</p>
                   <p style="margin: 0;">{{ currentUser?.username }}</p>
+                </div>
               </div>
-          </div>
+            </div>
+
+            <li @click="$router.push('/workspace/')"
+              style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: flex; align-items: center; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer;">
+              <span style="vertical-align: middle; margin-right: 8px;" class="material-symbols-outlined">home</span>
+              <p
+                style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                {{ workspace?.name }} </p>
+            </li>
+
+            <button class="change-workspace-button">Cambiar</button>
+            <li class="main-sidebar-title">Inicio</li>
+            <li class="li-clickable">Gestionar perfil</li>
+            <li class="li-clickable">Gestionar workspaces</li>
+
+            <li class="main-sidebar-subtitle">Workspace actual
+              <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')"
+                style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle"
+                class="material-symbols-outlined">add</span>
+            </li>
+
+            <li @click="selectItem('wsDetails', true)"
+              :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'wsDetails' }">Detalles del workspace
+            </li>
+            <li @click="selectItem('notices', true)"
+              :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'notices' }">Anuncios</li>
+            <li @click="selectItem('favorites', true)"
+              :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'favorites' }">Favoritos</li>
+
+            <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
+              <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
+                <li @click="selectItem(folder, true)"
+                  :class="{ 'li-clickable': true, 'selected-folder': selectedFolder === folder.name }"> {{ folder.name
+                  }}
+                </li>
+              </div>
+            </div>
+
+          </ul>
+          <ul style="height: 5%;">
+            <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span
+                  class="material-symbols-outlined">logout</span></button> </li>
+          </ul>
         </div>
-        
-        <li @click="$router.push('/workspace/')" style="font-weight: bolder; text-align: left; margin-left: 5%; margin-right: 5%; margin-bottom: 1%; margin-top: 3%; word-wrap: break-word; display: flex; align-items: center; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer;">
-          <span style="vertical-align: middle; margin-right: 8px;" class="material-symbols-outlined">home</span> 
-          <p style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"> {{ workspace?.name }} </p> 
-        </li>        
 
-        <button class="change-workspace-button">Cambiar</button>
-        <li class = "main-sidebar-title">Inicio</li>
-        <li class="li-clickable">Gestionar perfil</li>
-        <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual 
-          <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
-        </li>
+        <!-- Modal de nuevo item -->
+        <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
+          <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>
+          <template #footer>
 
-        <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
-        <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'notices'}">Anuncios</li>
-        <li @click="selectItem('favorites', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'favorites'}">Favoritos</li>
-        
-        <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
-          <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-            <li @click="selectItem(folder, true)" :class="{'li-clickable': true, 'selected-folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
-          </div>
+            <div style="margin-top: 20px">
+              <div class="error" v-if="errorMessage.length !== 0">
+                <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+              </div>
+              <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"
+                style="margin-bottom: 5px;" />
+              <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..."
+                class="text-input textarea-input"></textarea>
+              <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..."
+                maxlength="1000" class="text-input textarea-input"></textarea>
+              <div v-if="newItem.itemType == 'Notice'"
+                style="display: flex; justify-content: center; align-items: center;">
+                Prioritario: <input type="checkbox" v-model="newItem.important"
+                  style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
+              </div>
+
+              <div v-if="newItem.itemType == 'Timer'"
+                style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
+                <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input"
+                  style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;" />
+                :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input" />
+                :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input"
+                  style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;" />
+              </div>
+            </div>
+            <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+          </template>
+        </Modal>
+
+        <!-- Sidebar de detalles -->
+        <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar">
         </div>
+        <div class="sidebar" :class="{ 'show': showSidebar }">
+          <ul>
+            <li style="margin-bottom: 2px;"> Archivo: </li>
+            <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
+            <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
+            <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+            <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
+            <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
 
-      </ul>
-      <ul style="height: 5%;">
-        <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
-      </ul>
-  </div>
-  
-  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }} 
-      </h1>
-  </div>
-
-  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-
-    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
-          <h2 style="margin-right: 1%">Ruta actual:</h2> 
-          <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-          <h2 v-for="(folder,index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({},index)">/{{ folder }}</h2>
+            <li style="display: inline-flex; justify-content: space-around; width: 90%;">
+              <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span
+                  class="material-symbols-outlined">groups</span></button>
+              <button class="downloadButton"
+                v-if="['Owner', 'Admin', 'Write', 'Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'"
+                @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+              <button @click="toggleLike(selectedItem)">
+                <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)"
+                  class="material-symbols-outlined">favorite</span>
+                <span v-else class="material-symbols-outlined filled-heart">favorite</span>
+              </button>
+              <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span
+                  class="material-symbols-outlined">delete</span></button>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; width: 15%;">
-        <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()" >
-          <span class="material-symbols-outlined">info</span>
-        </button>
-        <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
-          <span class="material-symbols-outlined">create_new_folder</span>
-        </button>
-        <div class="dropdown">
-          <button style="max-height: 50px;" @click="openDropdown">
-            <span class="material-symbols-outlined">add</span>
-          </button>
-          <div style="z-index: 1002;" class="dropdown-content">
-            <div @click="openNewItemModal('Notice')">Anuncio</div>
-            <div @click="openNewItemModal('Calendar')">Calendario</div>
-            <div @click="openNewItemModal('Note')">Nota</div>
-            <div @click="openNewItemModal('Timer')">Temporizador</div>
-            <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-            <div @click="selectUploadFile" value="File">Archivo</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-content container">
-      <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
-      <div v-if="existFolder && items.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
-      </div>
-
-      <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event,item)" v-bind="getItemBindings(item)">
-          <div>
-            <div v-if="currentUser?.favorites?.includes(item._id)">
-              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-            </div>
-            <div v-else>
-              <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            </div>
-            <div style="display:flex; align-items: center;">
-              <p class="item-name">{{ item.name }} </p>
-            </div>
-          </div>
-        </div>
-    </div>
-    
-    <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
-      <div class="sidebar" :class="{ 'show': showSidebar }">
-        <ul>
-          <li style="margin-bottom: 2px;"> Archivo: </li>
-          <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
-          <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-          <li style="margin-top: 2px;"> ({{ author?.email }})</li>
-          <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
-          <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
-
-          <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-            <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
-            <button @click="toggleLike(selectedItem)">
-              <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
-              <span v-else class="material-symbols-outlined filled-heart">favorite</span>
-            </button>
-            <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-      <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
-      <template #footer>
-
-        <div style="margin-top: 20px">
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
-              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
+      <!-- Modal de permisos -->
+      <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
+        <template #header><strong>Compartir archivo</strong></template>
+        <template #content>
+          <div style="margin-top:20px">
+            <div class="error" v-if="errorMessage.length !== 0">
+              <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
             </div>
 
-            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
-              <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
-              :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
-              :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
-            </div>
-          </div>
-          <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-      </template>
-    </Modal>
+            <p>Compartir con:</p>
 
-    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
-      <template #header><strong>Compartir archivo</strong></template>
-      <template #content>  
-        <div style="margin-top:20px">
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-
-          <p>Compartir con:</p>
-
-          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
-            <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
-            <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
-              <option value="Individual">Individual</option>
-              <option value="Group">Grupo</option>
-              <option value="All">Todos</option>
-            </select>
-          </div>
-
-          <div v-for="profile in getFilteredProfiles" :key="profile._id">
-            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              {{ checkDictUserItemPerms(profile._id) }}
-              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
-                <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
-                <option value="Read">Lectura</option>
-                <option value="Write">Escritura</option>
+            <div
+              style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
+              <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input"
+                style="width: 70%;" />
+              <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
+                <option value="Individual">Individual</option>
+                <option value="Group">Grupo</option>
+                <option value="All">Todos</option>
               </select>
             </div>
+
+            <div v-for="profile in getFilteredProfiles" :key="profile._id">
+              <div
+                style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
+                <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username :
+                  profile.name }}</p>
+                {{ checkDictUserItemPerms(profile._id) }}
+                <select v-model="userItemPerms[profile._id]"
+                  @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
+                  <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
+                  <option value="Read">Lectura</option>
+                  <option value="Write">Escritura</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-      </template>
-      <template #footer></template>
-    </Modal>
+        </template>
+        <template #footer></template>
+      </Modal>
+    </div>
   </div>
-</div>
 </template>
 
 <style scoped>
-
 .container {
   display: flex;
   align-items: center;
@@ -494,9 +555,9 @@ watch(
 .text-input {
   border-radius: 5px;
   margin-bottom: 5px;
-  height: 30px; 
-  width: 90%;  
-  background-color: #f2f2f2; 
+  height: 30px;
+  width: 90%;
+  background-color: #f2f2f2;
   color: black;
 }
 
@@ -509,10 +570,10 @@ watch(
 .timer-input {
   margin-top: 5px;
   margin-right: 5px;
-  height: 30px; 
+  height: 30px;
   width: 60px;
   width: 20%;
-  background-color: #f2f2f2; 
+  background-color: #f2f2f2;
   color: black;
 }
 
@@ -572,21 +633,21 @@ watch(
   display: none;
 }
 
-.sidebar.show + .sidebar-overlay {
+.sidebar.show+.sidebar-overlay {
   display: block;
 }
 
 .sidebar ul {
-  list-style-type: none; 
-  padding: 0; 
+  list-style-type: none;
+  padding: 0;
 }
 
 .sidebar ul li {
   padding: 0 10px;
   margin: 15px 0;
-  word-wrap: break-word; 
-  display: -webkit-box; 
-  -webkit-line-clamp: 4; 
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -617,7 +678,7 @@ watch(
   display: none;
 }
 
-.sidebar.show + .sidebar-overlay {
+.sidebar.show+.sidebar-overlay {
   display: block;
 }
 
@@ -647,7 +708,7 @@ watch(
   display: none;
 }
 
-.main-sidebar.show + .main-sidebar-overlay {
+.main-sidebar.show+.main-sidebar-overlay {
   display: block;
 }
 
@@ -666,10 +727,10 @@ watch(
 }
 
 .main-sidebar-title {
-  text-align: left; 
-  margin-left: 5%; 
-  margin-top: 3%; 
-  font-weight: bolder; 
+  text-align: left;
+  margin-left: 5%;
+  margin-top: 3%;
+  font-weight: bolder;
   word-wrap: break-word;
 }
 
@@ -681,19 +742,19 @@ watch(
 }
 
 .li-clickable {
-  text-align: left; 
-  margin-left: 10%; 
+  text-align: left;
+  margin-left: 10%;
   cursor: pointer;
-  word-wrap: break-word; 
-  display: -webkit-box; 
-  -webkit-line-clamp: 1; 
-  -webkit-box-orient: vertical; 
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .main-sidebar ul {
-  list-style-type: none; 
-  padding: 0; 
+  list-style-type: none;
+  padding: 0;
 }
 
 .main-sidebar ul li {
@@ -720,7 +781,7 @@ watch(
 }
 
 .selected-folder {
-  margin-left: 10%; 
+  margin-left: 10%;
   border-radius: 8px;
   width: 80%;
   padding: 0.6em 1.2em;
@@ -728,17 +789,17 @@ watch(
   font-weight: 500;
   font-family: inherit;
   background-color: #C8B1E4;
-  color:black;
+  color: black;
   text-align: left;
   cursor: pointer;
-  word-wrap: break-word; 
-  display: -webkit-box; 
-  -webkit-line-clamp: 1; 
-  -webkit-box-orient: vertical; 
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.logo-img{
+.logo-img {
   width: 50px;
   height: 50px;
 }
@@ -752,7 +813,7 @@ watch(
   font-weight: 500;
   font-family: inherit;
   background-color: #C8B1E4;
-  color:black;
+  color: black;
   cursor: pointer;
 }
 
@@ -767,7 +828,7 @@ watch(
   position: absolute;
   background-color: #f9f9f9;
   min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
   padding: 12px 16px;
   z-index: 1;
 }
