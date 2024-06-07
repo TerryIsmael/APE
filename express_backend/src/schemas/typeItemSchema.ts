@@ -15,7 +15,7 @@ export const noteSchema = new mongoose.Schema<INote>({
 export const noticeSchema = new mongoose.Schema<INotice>({
     text: { 
         type: String, 
-        required: [true, "El texto de la nota es obligatorio"],
+        required: [true, "El texto del anuncio es obligatorio"],
         validate: {  
             validator: (value: string) => value.trim().length > 0 && value.trim().length <= 1000,
             message: `El texto del anuncio no puede estar vacío y no puede superar los 1000 caracteres`

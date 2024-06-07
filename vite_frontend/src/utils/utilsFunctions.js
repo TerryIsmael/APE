@@ -1,5 +1,3 @@
-import { computed } from 'vue';
-
 class UtilsFunctions {
 
   static async fetchUser(currentUser, router) {
@@ -119,9 +117,17 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
-  static clearErrorMessage = (errorMessage) => {
+  static parseErrorMessage = (data, errorMessage) => {
     errorMessage.value = [];
+    if (data.error) {
+      errorMessage.value.push(data.error);
+    } else if (data.errors) {
+      data.errors.forEach((error) => {
+        errorMessage.value.push(error);
+      });
+    }
   };
+
 }
 
 export default UtilsFunctions;
