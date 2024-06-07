@@ -44,6 +44,42 @@ export const getWorkspace = async (req: any, res: any) => {
   }
 };
 
+export const getWorkspaceFavs = async (req: any, res: any) => {
+  try {
+    const wsId = req.body.wsId;
+    const workspace = await Workspace.findOne({ _id: wsId });
+    
+    if (!workspace) {
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
+    }
+
+    if (await getWSPermission(req.user._id, wsId)){
+      await workspace.populate('items');
+      await workspace.populate('items.profilePerms.profile');
+      await workspace.populate('profiles');
+      await workspace.populate('profiles.users');
+
+      const folders = (workspace.items as mongoose.PopulatedDoc<IItem>[]).filter(
+        (item): item is IItem => item instanceof mongoose.Document && item.itemType === ItemType.Folder
+      );
+
+      const favItems = (workspace.items as mongoose.PopulatedDoc<IItem>[]).filter(
+        (item): item is IItem => item instanceof mongoose.Document && req.user.favorites.includes(item._id)
+      );
+      workspace.items = favItems;
+      await workspace.populate('items');
+      await workspace.populate('items.profilePerms.profile');
+      await workspace.populate('profiles');
+      await workspace.populate('profiles.users');
+      return res.status(200).json({ workspace: workspace, folders: folders });
+    } else {
+      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getWorkspaceNotices = async (req: any, res: any) => {
   try {
     const wsId = req.body.wsId;

@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import Timer from './Timer.vue';
+import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 
@@ -19,17 +19,14 @@ const userItemPerms = ref(null);
 const router = useRouter();
 const route = useRoute();
 const path = ref("");
-const workspaceId = ref(null);
 const workspace = ref({});
-const currentPath = ref('');
 const items = ref([]); 
 const folders = ref([]);
 const author = ref(null);
 const selectedItem = ref(null);
 const selectedItemPerms = ref(null);
-const selectedFolder = ref('');
-const existFolder = ref(false); 
-const routedItem = ref(null);
+const selectedFolder = ref('favorites');
+  
 const showSidebar = ref(false);
 const showMainSidebar = ref(false);
 const isModalOpened = ref(false);
@@ -39,19 +36,16 @@ const errorMessage = ref([]);
 
 const isNewItemModalOpened = ref(false);
 const newItem = ref({});
-const fileInput = ref(null); 
 const hours = ref(0);
 const minutes = ref(0);
 const seconds = ref(0);
-
-const selectedFolderPerms = ref(null);
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
 }
 
 const fetchWorkspace = async () => {
-  await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+  await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
   ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
 }
 
@@ -63,8 +57,12 @@ const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
 }
 
+const handleRightClick = (event, item) => {
+  selectItem(item, false);
+}
+
 const toggleLike = async (item) => {
-  await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders);
+  await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
 }
 
 const translateItemType = (item) => {
@@ -76,7 +74,7 @@ const translatePerm = (perm) => {
 }
 
 const deleteItem = async (item) => {
-  await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar);
+  await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar);
 }
 
 const selectImage = (item) => {
@@ -92,12 +90,8 @@ const closeNewItemModal = () => {
 };
 
 const handleNewItemForm = async () => {
-  await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-}
-
-const navigateToPreviousFolder = () => {
-  WorkspaceUtils.navigateToPreviousFolder(path, router);
-}
+  await FavoriteUtils.handleNewItemForm(newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds);
+};
 
 const openModal = () => {
   Utils.openModal(isModalOpened);
@@ -111,12 +105,8 @@ const closeSidebar = (event) => {
   WorkspaceUtils.closeSidebar(event, showSidebar, author);
 };
 
-const showFolderDetails = async () => {
-  await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser);
-}
-
 const changePerms = async (perm, profileId) => {
-  await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  await FavoriteUtils.changePerms(perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
 }
 
 const getFilteredProfiles = computed(() => {
@@ -141,14 +131,6 @@ const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, selectedItem);
 }
 
-const selectUploadFile = () => {
-  fileInput.value.click();
-};
-
-const uploadFile = async (event) => {
-  await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-}
-
 const logout = async () => {
   await Utils.logout(router);
 }
@@ -159,14 +141,10 @@ const checkDictUserItemPerms = (profileId) => {
   }
 }
 
-const handleRightClick = (event, item) => {
-  selectItem(item, false);
-};
-
 onBeforeMount(async () => {
-  path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-  ws.value = props.ws;
-  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+    path.value = "/" + route.name;
+    ws.value = props.ws;
+    await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: "include",
@@ -177,88 +155,19 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchWorkspace();
-  const pathArray = path.value.split('/');
-  if( pathArray[pathArray.length - 2] == "i"){
-    workspace.value.items.forEach(item => {
-      if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
-        routedItem.value = item;
-      }
-    });
-  }
 });
 
 onMounted(() => {
-  selectedFolder.value = path.value;
-  workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', closeSidebar);
-});
-
-watch(
-  () => route.params.path,
-  () => {
-    path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-    selectedFolder.value = path.value;
-    fetchWorkspace();
-    const pathArray = path.value.split('/');
-    if( pathArray[pathArray.length - 2] == "i"){
-      workspace.value.items.forEach(item => {
-        if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
-          routedItem.value = item;
-        }
-      });
-    }else{
-      routedItem.value = null;
-    }
-    showSidebar.value = false;
-  }
-);
-
-const startDrag = (evt, item) => {
-  evt.dataTransfer.setData('itemId', item._id);
-  evt.dataTransfer.dropEffect = 'move';
-  evt.dataTransfer.effectAllowed = 'move';
-};
-
-const onDrop = (evt, folder, back) => {
-  const itemId = evt.dataTransfer.getData('itemId')
-  const item = items.value.find((item) => item._id == itemId);
-  if (back){
-    const path = item.path.split('/').slice(0, -1).join('/');
-    item.path = path;
-    console.log("Nuevo path-> ",item.path)
-  }else{
-    if (item._id === folder._id) return;
-    item.path = folder.path+"/"+folder.name;
-    console.log("Nuevo path-> ",item.path)
-  }
-};
-
-const getItemBindings = (item, index) => {
-  if (item.itemType === 'Folder') {
-    return {
-      onDrop: (event) => onDrop(event, item),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }else if (index === 0){
-    return {
-      onDrop: (event) => onDrop(event, item, true),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }
-  return {};
-}
-
+}); 
 </script>
  
 <template>
-  <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
-  <div v-if="!routedItem">
+  <button @click="$router.push('/test')"></button>
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
@@ -282,7 +191,7 @@ const getItemBindings = (item, index) => {
           <span style="vertical-align: middle; margin-right: 8px;" class="material-symbols-outlined">home</span> 
           <p style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"> {{ workspace?.name }} </p> 
         </li>        
-
+        
         <button class="change-workspace-button">Cambiar</button>
         <li class = "main-sidebar-title">Inicio</li>
         <li class="li-clickable">Gestionar perfil</li>
@@ -292,13 +201,13 @@ const getItemBindings = (item, index) => {
           <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
         </li>
 
-        <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
-        <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'notices'}">Anuncios</li>
-        <li @click="selectItem('favorites', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'favorites'}">Favoritos</li>
+        <li @click="selectItem('wsDetails', true)" class="li-clickable">Detalles del workspace</li>
+        <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
+        <li @click="selectItem('favorites', true)" class="li-clickable selected-folder">Favoritos</li>
         
         <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
           <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-            <li @click="selectItem(folder, true)" :class="{'li-clickable': true, 'selected-folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
+            <li @click="selectItem(folder, true)" class="li-clickable"> {{ folder.name }}</li>
           </div>
         </div>
 
@@ -319,54 +228,22 @@ const getItemBindings = (item, index) => {
 
     <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
       <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
-          <h2 style="margin-right: 1%">Ruta actual:</h2> 
-          <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-          <h2 v-for="(folder,index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({},index)">/{{ folder }}</h2>
-        </div>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; width: 15%;">
-        <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()" >
-          <span class="material-symbols-outlined">info</span>
-        </button>
-        <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
-          <span class="material-symbols-outlined">create_new_folder</span>
-        </button>
-        <div class="dropdown">
-          <button style="max-height: 50px;" @click="openDropdown">
-            <span class="material-symbols-outlined">add</span>
-          </button>
-          <div style="z-index: 1002;" class="dropdown-content">
-            <div @click="openNewItemModal('Notice')">Anuncio</div>
-            <div @click="openNewItemModal('Calendar')">Calendario</div>
-            <div @click="openNewItemModal('Note')">Nota</div>
-            <div @click="openNewItemModal('Timer')">Temporizador</div>
-            <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-            <div @click="selectUploadFile" value="File">Archivo</div>
-          </div>
-        </div>
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
       </div>
     </div>
     <div class="main-content container">
-      <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
-      <div v-if="existFolder && items.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
+      <div v-if="items.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
       </div>
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event,item)" v-bind="getItemBindings(item)">
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
           <div>
-            <div v-if="currentUser?.favorites?.includes(item._id)">
-              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-            </div>
-            <div v-else>
-              <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            </div>
-            <div style="display:flex; align-items: center;">
-              <p class="item-name">{{ item.name }} </p>
-            </div>
+            <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+          </div>
+          <div style="display:flex; align-items: center;">
+            <p class="item-name">{{ item.name }} </p>
           </div>
         </div>
     </div>
@@ -403,17 +280,6 @@ const getItemBindings = (item, index) => {
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
             <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
-              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
-            </div>
-
-            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
-              <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
-              :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
-              :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
-            </div>
           </div>
           <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
       </template>
@@ -454,11 +320,9 @@ const getItemBindings = (item, index) => {
       <template #footer></template>
     </Modal>
   </div>
-</div>
 </template>
 
 <style scoped>
-
 .container {
   display: flex;
   align-items: center;
@@ -489,22 +353,6 @@ const getItemBindings = (item, index) => {
   margin-bottom: 5px;
   height: 30px; 
   width: 90%;  
-  background-color: #f2f2f2; 
-  color: black;
-}
-
-.textarea-input {
-  margin-top: 5px;
-  height: 200px;
-  resize: none;
-}
-
-.timer-input {
-  margin-top: 5px;
-  margin-right: 5px;
-  height: 30px; 
-  width: 60px;
-  width: 20%;
   background-color: #f2f2f2; 
   color: black;
 }
@@ -747,32 +595,6 @@ const getItemBindings = (item, index) => {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
-}
-
-.dropdown {
-  position: relative;
-  display: inline-block;
-  color: black;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f9f9f9;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  padding: 12px 16px;
-  z-index: 1;
-}
-
-.dropdown-content div {
-  display: block;
-  padding: 5px;
-  cursor: pointer;
-}
-
-.dropdown:hover .dropdown-content {
-  display: block;
 }
 
 .scrollable {
