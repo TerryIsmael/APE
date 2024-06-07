@@ -12,6 +12,8 @@ import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, St
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
+import type { IEvent, INote, INotice, ITimer } from '../models/typeItem.ts';
+import { parseValidationError } from '../utils/errorParser.ts';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -85,10 +87,65 @@ export const addItemToWorkspace = async (req: any, res: any) => {
             }
         }
     } catch (error: any) {
-        res.status(404).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
+export const editItem = async (req: any, res: any) => {
+    const wsId = req.body.workspace;
+    const itemData = req.body.item;
+    try {
+        const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
+        if (!workspace) {
+            res.status(404).json({ error: 'No se ha encontrado el workspace' });
+            return;
+        }
+        const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === itemData._id);
+        if (!item) {
+            res.status(404).json({ error: 'No se ha encontrado el item' });
+            return;
+        }
+        const perm = await getUserPermission(req.user._id, wsId, itemData._id);
+        if (!perm || perm !== Permission.Owner) {
+            res.status(401).json({ error: 'No estás autorizado para editar este item' });
+            return;
+        }
+        item.name = itemData.name;
+        item.modifiedDate = new Date();
+        switch (item.itemType) {
+            case ItemType.Timer:
+                (item as ITimer).duration = itemData.duration;
+                (item as ITimer).remainingTime = itemData.remainingTime;
+                (item as ITimer).initialDate = itemData.initialDate;
+                break;
+            case ItemType.Note:
+                (item as INote).text = itemData.text;
+                break;
+            case ItemType.Notice:
+                (item as INotice).text = itemData.text;
+                (item as INotice).important = itemData.important;
+                break;
+            case ItemType.Event:
+                (item as IEvent).initDate = itemData.initDate;
+                (item as IEvent).finalDate = itemData.finalDate;
+                break;
+            default:
+                break;
+        }
+        try{
+            item.validateSync();
+        } catch (error) {
+            res.status(400).json({ error: parseValidationError(error) });
+            return;
+        }
+       
+        
+        await item.save();
+        res.status(200).json(item);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
 export const changeItemPerms = async (req: any, res: any) => {
     const { itemId, profileId, perm } = req.body;
 
@@ -136,7 +193,7 @@ export const changeItemPerms = async (req: any, res: any) => {
         await workspace.save();
         res.status(201).json(item);
     } catch (error: any) {
-        res.status(404).json({ error: error.message }); //Cambiar a 500
+        res.status(500).json({ error: error.message }); 
     }
 };
 

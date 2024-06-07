@@ -15,7 +15,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         try {
             await user.validate();
         } catch (validationError) {
-            return res.status(400).json({ message: parseValidationError(validationError) });
+            return res.status(400).json({ error: parseValidationError(validationError) });
         }
         user.password = codedPassword;
         await user.save();
@@ -29,7 +29,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         return res.status(201).json({ message: 'Usuario registrado exitosamente' });
 
     } catch (error) {
-        return res.status(500).json({ message: 'Error en el servidor:' + error });
+        return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
 
@@ -38,10 +38,10 @@ export const fetchUserData = async (req: any, res: Response): Promise<Response> 
         const userId = req.body.userId;
         const user = await User.findOne({ _id: userId });
         if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
         return res.status(200).json({"username": user.username, "email": user.email});
     } catch (error) {
-        return res.status(500).json({ message: 'Error en el servidor:' + error });
+        return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
