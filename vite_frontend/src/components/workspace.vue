@@ -163,11 +163,6 @@ const handleRightClick = (event, item) => {
   selectItem(item, false);
 };
 
-const modifyItem = async (item) => {
-  await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  
-}
-
 onBeforeMount(async () => {
   path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
   ws.value = props.ws;
@@ -221,43 +216,6 @@ watch(
     showSidebar.value = false;
   }
 );
-
-const startDrag = (evt, item) => {
-  evt.dataTransfer.setData('itemId', item._id);
-  evt.dataTransfer.dropEffect = 'move';
-  evt.dataTransfer.effectAllowed = 'move';
-};
-
-const onDrop = async (evt, folder, back) => {
-  const itemId = evt.dataTransfer.getData('itemId')
-  const item = items.value.find((item) => item._id == itemId);
-  if (back){
-    const path = item.path.split('/').slice(0, -1).join('/');
-    item.path = path;
-    await modifyItem(item);
-  }else{
-    if (item._id === folder._id) return;
-    item.path = folder.path+"/"+folder.name;
-    await modifyItem(item);
-  }
-};
-
-const getItemBindings = (item, index) => {
-  if (item.itemType === 'Folder') {
-    return {
-      onDrop: (event) => onDrop(event, item),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }else if (index === 0){
-    return {
-      onDrop: (event) => onDrop(event, item, true),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }
-  return {};
-}
 
 </script>
  
@@ -326,11 +284,7 @@ const getItemBindings = (item, index) => {
     <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
       <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
         <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
-          <h2 style="margin-right: 1%">Ruta actual:</h2> 
-          <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-          <h2 v-for="(folder,index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({},index)">/{{ folder }}</h2>
-        </div>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ currentPath }}</h2>
       </div>
 
       <div style="display: flex; justify-content: flex-end; width: 15%;">
@@ -362,7 +316,7 @@ const getItemBindings = (item, index) => {
       </div>
 
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event,item)" v-bind="getItemBindings(item)">
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
           <div>
             <div v-if="currentUser?.favorites?.includes(item._id)">
               <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
