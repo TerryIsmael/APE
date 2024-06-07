@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs } from './controllers/workspaceController.ts';
-import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms } from './controllers/itemController.ts';
+import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validateFile, validatePerm } from './middlewares/itemMiddleware.ts';
@@ -104,6 +104,14 @@ router.post('/item', isLogged, (req: Request, res: Response) => {
     }
 });
 
+router.put('/item', isLogged, (req: Request, res: Response) => {
+    try {
+        editItem(req, res);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
+    }
+});
+
 router.delete('/item', isLogged, (req: Request, res: Response) => {
     try {
         deleteItemFromWorkspace(req, res);
@@ -145,7 +153,7 @@ router.put('/item/like', isLogged, async (req: Request, res: Response) => {
 
 router.get('/user', isLogged, async (req: Request, res: Response) => {
     try{
-        res.json({ success: true, user: req.user });
+        res.status(200).json({ success: true, user: req.user });
     }catch(error){
         res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
     }
