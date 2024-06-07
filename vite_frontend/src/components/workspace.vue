@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Timer from './Timer.vue';
 import WorkspaceUtils from '../utils/workspaceFunctions.js';
