@@ -36,7 +36,7 @@ const fetchUser = async () => {
 }
 
 const fetchNotices = async () => {  
-  await NoticeUtils.fetchNotices(wsId, workspace, router, userWsPerms, currentUser);
+  await NoticeUtils.fetchNotices(wsId, workspace, router, userWsPerms, currentUser, errorMessage);
 };
 
 const verifyNoticePerms = (item) => {
@@ -68,7 +68,7 @@ const formatDate = (date) => {
 }
 
 const deleteItem = async (itemId) => {
-  await NoticeUtils.deleteItem(itemId, workspace, router, wsId, userWsPerms, currentUser);
+  await NoticeUtils.deleteItem(itemId, workspace, router, wsId, userWsPerms, currentUser, errorMessage);
 }
 
 const openModal = () => {
@@ -83,7 +83,7 @@ const getFilteredProfiles = computed(() => {
   const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-    const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+    const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
     const isNotOwner = profile._id !== ownerProfile;
 
     return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
@@ -146,10 +146,56 @@ onBeforeMount(async () => {
   fetchNotices();
 });
 
-
 </script>
 
 <template>
+  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+    <h1 @click="$router.push('/workspace/')"
+      style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+      <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+      {{ workspace?.name }}
+    </h1>
+  </div>
+
+  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
+      </div>
+
+      <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
+        <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="main-content container">
+      <div v-if="workspace?.notices?.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
+      </div>
+      <div v-else class="items-container">
+        <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
+          <div style="display: flex; align-items: center;">
+            <h2 class="item-name"> {{ item?.notice?.name }}</h2>
+            <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
+            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
+          </div>
+
+          <h4 class="item-name" style="color: #525252">
+            Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
+          </h4>
+          <hr>          
+          <p class="text-container">{{ item?.notice?.text }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main sidebar -->
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
   <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
 
@@ -199,107 +245,61 @@ onBeforeMount(async () => {
 
     </ul>
     <ul style="height: 5%;">
-      <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span
-            class="material-symbols-outlined">logout</span></button> </li>
+      <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout">
+        <span class="material-symbols-outlined">logout</span></button> 
+      </li>
     </ul>
   </div>
 
-  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-    <h1 @click="$router.push('/workspace/')"
-      style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
-      <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-      {{ workspace?.name }}
-    </h1>
-  </div>
-
-  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-
-    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
-      </div>
-
-      <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
-        <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
-          <span class="material-symbols-outlined">add</span>
-        </button>
-      </div>
-    </div>
-    
-    <div class="main-content container">
-      <div v-if="workspace?.notices?.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
-      </div>
-      <div v-else class="items-container">
-        <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
-          <div style="display: flex; align-items: center;">
-            <h2 class="item-name"> {{ item?.notice?.name }}</h2>
-            <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
-            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
-            <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
-          </div>
-
-          <h4 class="item-name" style="color: #525252">
-            Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
-          </h4>
-          <hr>          
-          <p class="text-container">{{ item?.notice?.text }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <!-- Modal de nuevo item --> 
   <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-      <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
-      <template #footer>
-        <div style="margin-top:20px">
+    <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
+    <template #footer>
+      <div style="margin-top:20px">
 
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"/>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
-              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
-            </div>
-          </div>
-          <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-      </template>
-    </Modal>
-
-    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
-      <template #header><strong>Cambiar visibilidad de anuncio</strong></template>
-      <template #content>
-        <div style="margin-top:20px">
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-
-          <p>Hacer visible para:</p>
-
-          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
-            <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
-            <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
-              <option value="Individual">Individual</option>
-              <option value="Group">Grupo</option>
-              <option value="All">Todos</option>
-            </select>
-          </div>
-
-          <div v-for="profile in getFilteredProfiles" :key="profile._id">
-            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              {{ checkDictUserItemPerms(profile._id) }}
-              <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
-              <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
-            </div>
+        <div class="error" v-if="errorMessage.length !== 0">
+          <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+        </div>
+          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"/>
+          <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
+          <div v-if="newItem.itemType == 'Notice'" style="display:flex; justify-content: center; align-items: center">
+            Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
           </div>
         </div>
-      </template><template #footer>
+        <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+    </template>
+  </Modal>
 
-      </template>
-    </Modal>
+  <!-- Modal de permisos -->
+  <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
+    <template #header><strong>Cambiar visibilidad de anuncio</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0"  style="width: 60%;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top:20px">
+        <p>Hacer visible para:</p>
+        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
+          <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
+          <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
+            <option value="Individual">Individual</option>
+            <option value="Group">Grupo</option>
+            <option value="All">Todos</option>
+          </select>
+        </div>
+
+        <div v-for="profile in getFilteredProfiles" :key="profile._id">
+          <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
+            <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+            {{ checkDictUserItemPerms(profile._id) }}
+            <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
+            <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>

@@ -2,7 +2,7 @@ import Utils from './UtilsFunctions.js';
 
 class WorkspaceUtils {
 
-  static fetchUserData = async (author, userId, router) => {
+  static fetchUserData = async (author, userId, router, errorMessage) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user/data', {
         method: 'POST',
@@ -18,13 +18,21 @@ class WorkspaceUtils {
         author.value = data;
       } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else {
+        response.json().then((data) => { 
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al obtener datos del autor");
+          }
+        })
       }
     } catch (error) {
       console.log(error);
     }
   };
   
-  static fetchWorkspace = async (workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router) => {
+  static fetchWorkspace = async (workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try {
       const wsId = localStorage.getItem('workspace');
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace'+ (wsId?`/${wsId}`:''), {
@@ -58,6 +66,14 @@ class WorkspaceUtils {
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else {
+        response.json().then((data) => { 
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al obtener datos del workspace");
+          }
+        })
       }
     } catch (error) {
       console.log(error);
@@ -126,7 +142,7 @@ class WorkspaceUtils {
       selectedItem.value = item;
       selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
       showSidebar.value = true;
-      await this.findAuthor(selectedItem, author, router);
+      await this.findAuthor(selectedItem, author, router, errorMessage);
       userItemPerms.value = {};
       selectedItem.value.profilePerms.forEach(profilePerm => {
         userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
@@ -152,19 +168,19 @@ class WorkspaceUtils {
     }
   };
 
-  static findAuthor = async (selectedItem, author, router) => {
+  static findAuthor = async (selectedItem, author, router, errorMessage) => {
     const userId = selectedItem.value.profilePerms.find(y => y.permission == 'Owner').profile.users[0];
-    await this.fetchUserData(author, userId, router);
+    await this.fetchUserData(author, userId, router, errorMessage);
   };
 
-  static showFolderDetails = async (selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser) => {
+  static showFolderDetails = async (selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser, errorMessage) => {
     selectedItem.value = folders.value.find(item => item.name === selectedFolder.value);
     selectedItemPerms.value = await this.verifyPerms(selectedItem.value, workspace, currentUser);
-    await this.findAuthor(selectedItem, author, router);
+    await this.findAuthor(selectedItem, author, router, errorMessage);
     showSidebar.value = true;
   };
 
-  static toggleLike = async (item, workspace, router, currentUser, path, items, folders) => {
+  static toggleLike = async (item, workspace, router, currentUser, path, items, folders, errorMessage) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/like', {
         body: JSON.stringify({ itemId: item._id, workspace: workspace.value._id }),
@@ -179,9 +195,13 @@ class WorkspaceUtils {
           await this.arrangeItems(workspace, path, currentUser, items, folders);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else{
+      } else {
         response.json().then((data) => { 
-          console.log(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al marcar/desmarcar como favorito el item");
+          }
         })
       }
     } catch (error) {
@@ -189,7 +209,7 @@ class WorkspaceUtils {
     }
   };
 
-  static deleteItem = async (item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar) => {
+  static deleteItem = async (item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar, errorMessage) => {
     try {
       const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
       if (!confirmDelete) return;
@@ -206,9 +226,17 @@ class WorkspaceUtils {
         this.toggleSidebar(showSidebar);
         selectedItem.value = null;
         author.value = null;
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else {
+        response.json().then((data) => { 
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al eliminar item");
+          }
+        })
       }
     } catch (error) {
       console.log(error);
@@ -242,20 +270,16 @@ class WorkspaceUtils {
 
       if (response.ok) {
         this.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
-        errorMessage.value = [];
         response.json().then((data) => {
-          if (data.error) {
-            errorMessage.value.push(data.error);
-          } else if (data.errors) {
-              data.errors.forEach((error) => {
-                errorMessage.value.push(error);
-              });
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
           } else {
+            errorMessage.value = [];
             throw new Error("Error al crear item");
           }
         })
@@ -265,8 +289,7 @@ class WorkspaceUtils {
     }
   };
 
-  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage) => {
-    errorMessage.value = [];
+  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds) => {
     isNewItemModalOpened.value = true;
     newItem.value.name = '';
     newItem.value.itemType = itemType;
@@ -283,9 +306,9 @@ class WorkspaceUtils {
   };
 
   static closeNewItemModal = (isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds) => {
+    errorMessage.value = [];
     isNewItemModalOpened.value = false;
     newItem.value = {};
-    errorMessage.value = [];
     hours.value = 0;
     minutes.value = 0;
     seconds.value = 0;
@@ -314,7 +337,7 @@ class WorkspaceUtils {
     }
   };
 
-  static downloadFile = async (workspace, selectedItem) => {
+  static downloadFile = async (workspace, selectedItem, errorMessage) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
         body: JSON.stringify({ workspace: workspace.value._id, fileId: selectedItem.value._id }),
@@ -338,7 +361,11 @@ class WorkspaceUtils {
         router.push({ name: 'login' });
       } else {
         response.json().then((data) => { 
-          console.log(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al descargar archivo");
+          }
         })
       }
     } catch (error) {
@@ -360,13 +387,16 @@ class WorkspaceUtils {
         credentials: "include",
       });
       if (response.ok) {
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
         response.json().then((data) => { 
-          errorMessage.value.push(data.errors);
-          console.log(data);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al subir archivo");
+          }
         })
       }
     } catch (error) {
@@ -386,7 +416,7 @@ class WorkspaceUtils {
       });
 
       if (response.ok) {
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
         selectedItem.value = workspace.value.items.find(item => item._id === selectedItem.value._id);
         errorMessage.value = [];
       } else if (response.status === 401) {
@@ -394,22 +424,20 @@ class WorkspaceUtils {
       } else if (response.status === 400 || response.status === 404) {
         errorMessage.value = [];
         response.json().then((data) => {
-          if (data.error) {
-            errorMessage.value.push(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
           } else {
-            data.errors.forEach((error) => {
-              errorMessage.value.push(error.msg);
-            });
+            throw new Error("Error al cambiar permisos");
           }
-        throw new Error("Error al cambiar permisos");
         })
       }
     } catch (error) {
       console.log(error);
     }
   };
+
   static modifyItem = async (item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
-    try{
+    try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
         body: JSON.stringify({ workspace: workspace.value._id, item: item }),
         method: 'PUT',
@@ -420,21 +448,17 @@ class WorkspaceUtils {
       });
 
       if (response.ok) {
-        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
-        errorMessage.value = [];
         response.json().then((data) => {
-          if (data.error) {
-            errorMessage.value.push(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
           } else {
-            data.errors.forEach((error) => {
-              errorMessage.value.push(error.msg);
-            });
+            throw new Error("Error al modificar item");
           }
-        throw new Error("Error al modificar item");
         })
       }
     } catch (error) {
