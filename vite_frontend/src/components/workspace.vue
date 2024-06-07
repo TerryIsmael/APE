@@ -159,6 +159,10 @@ const checkDictUserItemPerms = (profileId) => {
   }
 }
 
+const handleRightClick = (event, item) => {
+  selectItem(item, false);
+};
+
 onBeforeMount(async () => {
   path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
   ws.value = props.ws;
@@ -199,15 +203,25 @@ watch(
     path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
     selectedFolder.value = path.value;
     fetchWorkspace();
+    const pathArray = path.value.split('/');
+    if( pathArray[pathArray.length - 2] == "i"){
+      workspace.value.items.forEach(item => {
+        if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
+          routedItem.value = item;
+        }
+      });
+    }else{
+      routedItem.value = null;
+    }
+    showSidebar.value = false;
   }
 );
 
 </script>
  
 <template>
-  <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId"></Timer>
+  <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
   <div v-if="!routedItem">
-  <button @click="$router.push('/test')"></button>
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
@@ -300,16 +314,18 @@ watch(
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
-          <div v-if="currentUser?.favorites?.includes(item._id)">
-            <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-          </div>
-          <div v-else>
-            <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-          </div>
-          <div style="display:flex; align-items: center;">
-            <p class="item-name">{{ item.name }} </p>
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event,item)">
+          <div>
+            <div v-if="currentUser?.favorites?.includes(item._id)">
+              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+            </div>
+            <div v-else>
+              <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+            </div>
+            <div style="display:flex; align-items: center;">
+              <p class="item-name">{{ item.name }} </p>
+            </div>
           </div>
         </div>
     </div>

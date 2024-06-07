@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeMount, onBeforeUnmount, defineProps, computed, defineComponent, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 const props = defineProps({
     item: {
@@ -13,9 +14,14 @@ const props = defineProps({
     ws: {
         type: Object,
         required: true
+    },
+    path: {
+        type: String,
+        required: true
     }
 });
 
+const router = useRouter();
 const workspace = ref(props.workspace);
 const ws = ref(props.ws);
 const item = ref(props.item);
@@ -82,6 +88,13 @@ const resetTimer = (notify) => {
     item.value.remainingTime = item.value.duration;
 };
 
+const navigateToPreviousItem = () => {
+    console.log(props.path);
+    const pathArray = props.path.split('/');
+    const newRoute = pathArray.slice(0,pathArray.indexOf('i')).join('/');
+    console.log(newRoute);
+    router.push("/workspace"+(newRoute == ""?'/'+newRoute:''))
+};
 
 
 onMounted( async () => {
@@ -115,6 +128,7 @@ watch(() => props.ws, (newWs) => {
 
 <template>
     <div>
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousItem()"><span class="material-symbols-outlined">arrow_back</span></button>
         <h1>Timer {{ item.name }}</h1>
         <p class="timer-text"> {{ timer }}</p>
         <div class="button-bar">

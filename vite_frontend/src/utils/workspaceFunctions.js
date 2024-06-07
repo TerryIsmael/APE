@@ -112,24 +112,24 @@ class WorkspaceUtils {
       return;
     }
 
-    if (item.itemType === 'Folder') {
-      if (selectedItem.value?._id === item._id || direct) {
+    if (direct){
+      if (item.itemType === 'Folder') {
         router.push('/workspace' + (item.path? '/' + item.path : '') + '/' +  item.name);
         return;
       } else {
-        selectedItem.value = item;
+        router.push('/workspace' + (item.path? '/' + item.path : '') + '/i/' +  item.name);
         return;
       }
-    } else {
+    } else{
       selectedItem.value = item;
-      selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
-      showSidebar.value = true;
-      await this.findAuthor(selectedItem, author, router);
-      userItemPerms.value = {};
-      selectedItem.value.profilePerms.forEach(profilePerm => {
-        userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
-      });
-      return;
+        selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
+        showSidebar.value = true;
+        await this.findAuthor(selectedItem, author, router);
+        userItemPerms.value = {};
+        selectedItem.value.profilePerms.forEach(profilePerm => {
+          userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
+        });
+        return;
     }
   };
 
