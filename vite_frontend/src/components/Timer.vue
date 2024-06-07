@@ -89,10 +89,8 @@ const resetTimer = (notify) => {
 };
 
 const navigateToPreviousItem = () => {
-    console.log(props.path);
     const pathArray = props.path.split('/');
     const newRoute = pathArray.slice(0,pathArray.indexOf('i')).join('/');
-    console.log(newRoute);
     router.push("/workspace"+(newRoute == ""?'/'+newRoute:''))
 };
 

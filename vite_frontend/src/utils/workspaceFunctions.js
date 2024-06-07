@@ -119,7 +119,7 @@ class WorkspaceUtils {
         return;
       } else {
         errorMessage.value = [];
-        router.push('/workspace' + (item.path? '/' + item.path : '') + '/i/' +  item.name);
+        router.push('/workspace' + (item.path? '/' + item.path : '') + '/i/' +  item._id);
         return;
       }
     } else {
