@@ -222,7 +222,6 @@ class WorkspaceUtils {
   static handleNewItemForm = async (newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router) => {
     try { 
       const itemType = newItem.value.itemType;
-
       if (itemType == 'Timer') {
         newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
       } else if (itemType == 'Note') {
