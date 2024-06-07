@@ -1,242 +1,166 @@
-<script>
+<script setup>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 
-export default {
-  props: {
-    ws: Object
-  },
-  setup(props) {
-    const ws = ref(null);
-    const currentUser = ref(null);
-    const userWsPerms = ref(null);
-    const userItemPerms = ref(null);
-    const router = useRouter();
-    const route = useRoute();
-    const path = ref("");
-    const workspace = ref({});
-    const currentPath = ref('');
-    const items = ref([]); 
-    const folders = ref([]);
-    const author = ref(null);
-    const selectedItem = ref(null);
-    const selectedItemPerms = ref(null);
-    const selectedFolder = ref('');
-    const existFolder = ref(false); 
-      
-    const showSidebar = ref(false);
-    const showMainSidebar = ref(false);
-    const isModalOpened = ref(false);
-    const searchProfileTerm = ref('');
-    const searchTypeProfile = ref('All');
-    const errorMessage = ref([]);
+  const props = defineProps({
+    ws: {
+        ws: Object,
+        required: true
+    },
+  });
 
-    const isNewItemModalOpened = ref(false);
-    const newItem = ref({});
-    const fileInput = ref(null); 
-    const hours = ref(0);
-    const minutes = ref(0);
-    const seconds = ref(0);
-
-    const fetchUser = async () => {
-      await Utils.fetchUser(currentUser, router);
-    }
-
-    const fetchWorkspace = async () => {
-      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-      ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
-    }
-
-    const formatDate = (date) => {
-      return Utils.formatDate(date);
-    }
-
-    const selectItem = async (item, direct) => {
-      await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
-    }
-
-    const toggleLike = async (item) => {
-      await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders);
-    }
-
-    const translateItemType = (item) => {
-      return Utils.translateItemType(item);
-    }
-
-    const translatePerm = (perm) => {
-      return Utils.translatePerm(perm);
-    }
-
-    const deleteItem = async (item) => {
-      await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar);
-    }
-
-    const selectImage = (item) => {
-      return Utils.selectImage(item);
-    }
-
-    const openNewItemModal = (itemType) => {
-      WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
-    };
-
-    const closeNewItemModal = () => {
-      WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-    };
-
-    const handleNewItemForm = async () => {
-      await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-    }
-
-    const navigateToPreviousFolder = () => {
-      WorkspaceUtils.navigateToPreviousFolder(path, router);
-    }
-
-    const openModal = () => {
-      Utils.openModal(isModalOpened);
-    };
-
-    const closeModal = () => {
-      Utils.closeModal(isModalOpened, errorMessage);
-    };
-
-    const closeSidebar = (event) => {
-      WorkspaceUtils.closeSidebar(event, showSidebar, author);
-    };
-
-    const showFolderDetails = async () => {
-      await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser);
-    }
-
-    const changePerms = async (perm, profileId) => {
-      await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-    }
-
-    const getFilteredProfiles = computed(() => {
-      const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
-      const profiles = workspace.value.profiles.filter(profile => {
-        const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-        const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-        const isNotOwner = profile._id !== ownerProfile._id;
-
-        return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
-      });
-
-      const orderedProfiles = [];
-      const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-      const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-      orderedProfiles.push(...inProfilePerms);
-      orderedProfiles.push(...notInProfilePerms);
-      return orderedProfiles; 
-    });
+  const ws = ref(null);
+  const currentUser = ref(null);
+  const userWsPerms = ref(null);
+  const userItemPerms = ref(null);
+  const router = useRouter();
+  const route = useRoute();
+  const path = ref("");
+  const workspace = ref({});
+  const items = ref([]); 
+  const folders = ref([]);
+  const author = ref(null);
+  const selectedItem = ref(null);
+  const selectedItemPerms = ref(null);
+  const selectedFolder = ref('favorites');
     
-    const downloadFile = async () => {
-      await WorkspaceUtils.downloadFile(workspace, selectedItem);
-    }
+  const showSidebar = ref(false);
+  const showMainSidebar = ref(false);
+  const isModalOpened = ref(false);
+  const searchProfileTerm = ref('');
+  const searchTypeProfile = ref('All');
+  const errorMessage = ref([]);
 
-    const selectUploadFile = () => {
-      fileInput.value.click();
-    };
+  const isNewItemModalOpened = ref(false);
+  const newItem = ref({});
+  const hours = ref(0);
+  const minutes = ref(0);
+  const seconds = ref(0);
 
-    const uploadFile = async (event) => {
-      await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-    }
+  const fetchUser = async () => {
+    await Utils.fetchUser(currentUser, router);
+  }
 
-    const logout = async () => {
-      await Utils.logout(router);
-    }
+  const fetchWorkspace = async () => {
+    await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+  }
 
-    const checkDictUserItemPerms = (profileId) => {
-      if (!userItemPerms.value[profileId]) {
-        userItemPerms.value[profileId] = 'None';
-      }
-    }
+  const formatDate = (date) => {
+    return Utils.formatDate(date);
+  }
 
-    onBeforeMount(async () => {
-      path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-      ws.value = props.ws;
-      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({
-          username: import.meta.env.VITE_USERNAME,
-          password: "12345678910aA@",
-        })
-      });
-      await fetchUser();
-      await fetchWorkspace();
+  const selectItem = async (item, direct) => {
+    await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
+  }
+
+  const toggleLike = async (item) => {
+    await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
+  }
+
+  const translateItemType = (item) => {
+    return Utils.translateItemType(item);
+  }
+
+  const translatePerm = (perm) => {
+    return Utils.translatePerm(perm);
+  }
+
+  const deleteItem = async (item) => {
+    await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar);
+  }
+
+  const selectImage = (item) => {
+    return Utils.selectImage(item);
+  }
+
+  const openNewItemModal = (itemType) => {
+    WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+  };
+
+  const closeNewItemModal = () => {
+    WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
+  };
+
+  const handleNewItemForm = async () => {
+    await FavoriteUtils.handleNewItemForm(newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds);
+  };
+
+  const openModal = () => {
+    Utils.openModal(isModalOpened);
+  };
+
+  const closeModal = () => {
+    Utils.closeModal(isModalOpened, errorMessage);
+  };
+
+  const closeSidebar = (event) => {
+    WorkspaceUtils.closeSidebar(event, showSidebar, author);
+  };
+
+  const changePerms = async (perm, profileId) => {
+    await FavoriteUtils.changePerms(perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
+  }
+
+  const getFilteredProfiles = computed(() => {
+    const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+    const profiles = workspace.value.profiles.filter(profile => {
+      const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+      const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+      const isNotOwner = profile._id !== ownerProfile._id;
+
+      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
     });
-    
-    onMounted(() => {
-      selectedFolder.value = path.value;
-      document.addEventListener('click', closeSidebar);
-    });
 
-    onUnmounted(() => {
-      document.removeEventListener('click', closeSidebar);
-    });
-    
-    watch(
-      () => route.params.path,
-      () => {
-        path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-        selectedFolder.value = path.value;
-        fetchWorkspace();
-      }
-    );
+    const orderedProfiles = [];
+    const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+    const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+    orderedProfiles.push(...inProfilePerms);
+    orderedProfiles.push(...notInProfilePerms);
+    return orderedProfiles; 
+  });
+  
+  const downloadFile = async () => {
+    await WorkspaceUtils.downloadFile(workspace, selectedItem);
+  }
 
-    return {
-      workspace,
-      folders,
-      items,
-      author,
-      selectedFolder,
-      showSidebar,
-      showMainSidebar,
-      selectedItem,
-      selectedItemPerms,
-      currentUser,
-      userWsPerms,
-      userItemPerms,
-      isModalOpened,
-      searchProfileTerm,
-      searchTypeProfile,
-      errorMessage,
-      fileInput,
-      isNewItemModalOpened,
-      newItem,
-      hours,
-      minutes,
-      seconds,
-      currentPath,
-      path,
-      existFolder,
-      getFilteredProfiles,
-      openModal,
-      closeModal,
-      changePerms,
-      selectItem,
-      toggleLike,
-      formatDate,
-      deleteItem,
-      logout,
-      downloadFile,
-      selectUploadFile,
-      uploadFile,
-      translatePerm,
-      translateItemType,
-      openNewItemModal,
-      closeNewItemModal,
-      handleNewItemForm,
-      selectImage,
-      navigateToPreviousFolder,
-      checkDictUserItemPerms,
-      showFolderDetails,
+  const logout = async () => {
+    await Utils.logout(router);
+  }
+
+  const checkDictUserItemPerms = (profileId) => {
+    if (!userItemPerms.value[profileId]) {
+      userItemPerms.value[profileId] = 'None';
     }
   }
-}   
+
+  onBeforeMount(async () => {
+      path.value = "/" + route.name;
+      ws.value = props.ws;
+      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
+      body: JSON.stringify({
+        username: import.meta.env.VITE_USERNAME,
+        password: "12345678910aA@",
+      })
+    });
+    await fetchUser();
+    await fetchWorkspace();
+  });
+  
+  onMounted(() => {
+    document.addEventListener('click', closeSidebar);
+  });
+
+  onUnmounted(() => {
+    document.removeEventListener('click', closeSidebar);
+  });
+  
 </script>
  
 <template>
@@ -264,7 +188,7 @@ export default {
           <span style="vertical-align: middle; margin-right: 8px;" class="material-symbols-outlined">home</span> 
           <p style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"> {{ workspace?.name }} </p> 
         </li>        
-
+        
         <button class="change-workspace-button">Cambiar</button>
         <li class = "main-sidebar-title">Inicio</li>
         <li class="li-clickable">Gestionar perfil</li>
@@ -274,13 +198,13 @@ export default {
           <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
         </li>
 
-        <li @click="selectItem('wsDetails', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'wsDetails'}">Detalles del workspace</li>
-        <li @click="selectItem('notices', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'notices'}">Anuncios</li>
-        <li @click="selectItem('favorites', true)" :class="{'li-clickable': true, 'selected-folder':selectedFolder == 'favorites'}">Favoritos</li>
+        <li @click="selectItem('wsDetails', true)" class="li-clickable">Detalles del workspace</li>
+        <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
+        <li @click="selectItem('favorites', true)" class="li-clickable selected-folder">Favoritos</li>
         
         <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
           <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-            <li @click="selectItem(folder, true)" :class="{'li-clickable': true, 'selected-folder': selectedFolder === folder.name}"> {{ folder.name }}</li>
+            <li @click="selectItem(folder, true)" class="li-clickable"> {{ folder.name }}</li>
           </div>
         </div>
 
@@ -301,45 +225,19 @@ export default {
 
     <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
       <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ currentPath }}</h2>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; width: 15%;">
-        <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()" >
-          <span class="material-symbols-outlined">info</span>
-        </button>
-        <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
-          <span class="material-symbols-outlined">create_new_folder</span>
-        </button>
-        <div class="dropdown">
-          <button style="max-height: 50px;" @click="openDropdown">
-            <span class="material-symbols-outlined">add</span>
-          </button>
-          <div style="z-index: 1002;" class="dropdown-content">
-            <div @click="openNewItemModal('Notice')">Anuncio</div>
-            <div @click="openNewItemModal('Calendar')">Calendario</div>
-            <div @click="openNewItemModal('Note')">Nota</div>
-            <div @click="openNewItemModal('Timer')">Temporizador</div>
-            <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-            <div @click="selectUploadFile" value="File">Archivo</div>
-          </div>
-        </div>
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
       </div>
     </div>
     <div class="main-content container">
-      <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
-      <div v-if="existFolder && items.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
+      <div v-if="items.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
       </div>
       <div class="items-container" v-else>
         <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
-          <div v-if="currentUser?.favorites?.includes(item._id)">
+          <div>
             <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
             <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-          </div>
-          <div v-else>
-            <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
           </div>
           <div style="display:flex; align-items: center;">
             <p class="item-name">{{ item.name }} </p>
@@ -379,17 +277,6 @@ export default {
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
             <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
-              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
-            </div>
-
-            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
-              <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
-              :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
-              :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
-            </div>
           </div>
           <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
       </template>
@@ -433,7 +320,6 @@ export default {
 </template>
 
 <style scoped>
-
 .container {
   display: flex;
   align-items: center;
@@ -464,22 +350,6 @@ export default {
   margin-bottom: 5px;
   height: 30px; 
   width: 90%;  
-  background-color: #f2f2f2; 
-  color: black;
-}
-
-.textarea-input {
-  margin-top: 5px;
-  height: 200px;
-  resize: none;
-}
-
-.timer-input {
-  margin-top: 5px;
-  margin-right: 5px;
-  height: 30px; 
-  width: 60px;
-  width: 20%;
   background-color: #f2f2f2; 
   color: black;
 }
@@ -722,32 +592,6 @@ export default {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
-}
-
-.dropdown {
-  position: relative;
-  display: inline-block;
-  color: black;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f9f9f9;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  padding: 12px 16px;
-  z-index: 1;
-}
-
-.dropdown-content div {
-  display: block;
-  padding: 5px;
-  cursor: pointer;
-}
-
-.dropdown:hover .dropdown-content {
-  display: block;
 }
 
 .scrollable {
