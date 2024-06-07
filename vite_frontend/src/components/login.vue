@@ -1,74 +1,60 @@
-<script>
+<script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
-export default {
-  
-    setup() {  
+const user = ref({
+    username: '',
+    password: '',
+});
 
-    const user = ref({
-        username: '',
-        password: '',
-    });
+const router = useRouter();
+const error = ref('');
 
-    const router = useRouter();
-    const error = ref('');
-
-    const login = () => {
-      error.value = '';
-      fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({
-          username: user.value.username,
-          password: user.value.password,
-        })
-      }).then(response => {
-            if (response.status === 200) {
-              router.push('/workspace/');
-            } else if (response.status === 401){
-              logout();
-              login();
-            }else{
-                error.value = 'Error al iniciar sesión';
-            }
-        }).catch(error => {
-                error.value = 'Error al iniciar sesión';
-        })
-    };
-
-    const logout = async () => {
-      try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-        });
-        if (response.ok) {
-          router.push({ name: 'login' });
+const login = () => {
+  error.value = '';
+  fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: "include",
+    body: JSON.stringify({
+      username: user.value.username,
+      password: user.value.password,
+    })
+  }).then(response => {
+        if (response.status === 200) {
+          router.push('/workspace/');
         } else if (response.status === 401){
-          router.push({ name: 'login' });
+          logout();
+          login();
+        }else{
+            error.value = 'Error al iniciar sesión';
         }
-      } catch (error) {
-        console.log(error);
-      }
-    }
+    }).catch(error => {
+            error.value = 'Error al iniciar sesión';
+    })
+};
 
-    return {
-        user,
-        error,
-        login,
-        logout,
+const logout = async () => {
+  try {
+    const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: "include",
+    });
+    if (response.ok) {
+      router.push({ name: 'login' });
+    } else if (response.status === 401){
+      router.push({ name: 'login' });
     }
+  } catch (error) {
+    console.log(error);
   }
 }   
 </script>
  
 <template>
-
   <div class="container">
     <div class="login-container">      
     <h2><span class="gradient-text">Inicio de sesión</span></h2>
