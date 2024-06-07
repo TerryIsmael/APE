@@ -216,10 +216,9 @@ const initPath = () => {
         routedItem.value = item;
         path.value = pathArray.slice(0, pathArray.length - 2).join('/');
         showMainSidebar.value = false;
-      } else {
-        routedItem.value = "Not found";
-      }
+      } 
     });
+    if (!routedItem.value) routedItem.value = 'Not found';
   } else {
     routedItem.value = null;
   }
@@ -263,12 +262,12 @@ watch(
     initPath();
   }
 );
-
 </script>
 
 <template>
   <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId"
     :path="path"></Timer>
+
   <div v-if="routedItem == 'Not found'">
     <div class="main-content"
       style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
