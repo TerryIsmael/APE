@@ -1,186 +1,151 @@
-<script>
+<script setup>
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
 import NoticeUtils from '../utils/NoticeFunctions.js';
 
-export default {
-  props: {
-    ws: Object
-  },
-  setup() {
+const props = defineProps({
+    ws: {
+        ws: Object,
+        required: true
+    },
+});
 
-    const router = useRouter();
-    const route = useRoute();
-    const path = ref('');
+const router = useRouter();
+const route = useRoute();
+const path = ref('');
 
-    const currentUser = ref(null);
-    const userWsPerms = ref(null);
-    const wsId = ref(null);
-    const workspace = ref(null);
-    const showMainSidebar = ref(false);
-    const isNewItemModalOpened = ref(false);
-    const newItem = ref({});
+const currentUser = ref(null);
+const userWsPerms = ref(null);
+const wsId = ref(null);
+const workspace = ref(null);
+const showMainSidebar = ref(false);
+const isNewItemModalOpened = ref(false);
+const newItem = ref({});
 
-    const isModalOpened = ref(false);
-    const searchProfileTerm = ref('');
-    const searchTypeProfile = ref('All');
-    const errorMessage = ref([]);
-    const selectedItem = ref(null);
-    const selectedItemPerms = ref(null);
-    const userItemPerms = ref(null);
+const isModalOpened = ref(false);
+const searchProfileTerm = ref('');
+const searchTypeProfile = ref('All');
+const errorMessage = ref([]);
+const selectedItem = ref(null);
+const selectedItemPerms = ref(null);
+const userItemPerms = ref(null);
 
-    const fetchUser = async () => {
-      await Utils.fetchUser(currentUser, router);
-    }
+const fetchUser = async () => {
+  await Utils.fetchUser(currentUser, router);
+}
 
-    const fetchNotices = async () => {  
-      await NoticeUtils.fetchNotices(wsId, workspace, router, userWsPerms, currentUser);
-    };
+const fetchNotices = async () => {  
+  await NoticeUtils.fetchNotices(wsId, workspace, router, userWsPerms, currentUser);
+};
 
-    const verifyNoticePerms = (item) => {
-      return NoticeUtils.verifyNoticePerms(item, userWsPerms, workspace, currentUser);
-    }
+const verifyNoticePerms = (item) => {
+  return NoticeUtils.verifyNoticePerms(item, userWsPerms, workspace, currentUser);
+}
 
-    const selectItem = async (item) => {
-      await NoticeUtils.selectItem(item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms, userItemPerms);
-    };
+const selectItem = async (item) => {
+  await NoticeUtils.selectItem(item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms, userItemPerms);
+};
 
-    const openNewItemModal = (itemType) => {
-      NoticeUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem);
-    };
+const openNewItemModal = (itemType) => {
+  NoticeUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem);
+};
 
-    const closeNewItemModal = () => {
-      NoticeUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage);
-    };
+const closeNewItemModal = () => {
+  NoticeUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage);
+};
 
-    const handleNewItemForm = async () => {
-      await NoticeUtils.handleNewItemForm(newItem, workspace, router, wsId, userWsPerms, currentUser, isNewItemModalOpened, errorMessage);
-    }
-    
-    const translateItemType = (item) => {
-      return Utils.translateItemType(item);
-    }
+const handleNewItemForm = async () => {
+  await NoticeUtils.handleNewItemForm(newItem, workspace, router, wsId, userWsPerms, currentUser, isNewItemModalOpened, errorMessage);
+}
 
-    const formatDate = (date) => {
-      return Utils.formatDate(date);
-    }
+const translateItemType = (item) => {
+  return Utils.translateItemType(item);
+}
 
-    const deleteItem = async (itemId) => {
-      await NoticeUtils.deleteItem(itemId, workspace, router, wsId, userWsPerms, currentUser);
-    }
+const formatDate = (date) => {
+  return Utils.formatDate(date);
+}
 
-    const openModal = () => {
-      Utils.openModal(isModalOpened);
-    };
+const deleteItem = async (itemId) => {
+  await NoticeUtils.deleteItem(itemId, workspace, router, wsId, userWsPerms, currentUser);
+}
 
-    const closeModal = () => {
-      Utils.closeModal(isModalOpened, errorMessage);
-    };
+const openModal = () => {
+  Utils.openModal(isModalOpened);
+};
 
-    const getFilteredProfiles = computed(() => {
-      const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
-      const profiles = workspace.value.profiles.filter(profile => {
-        const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-        const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-        const isNotOwner = profile._id !== ownerProfile;
+const closeModal = () => {
+  Utils.closeModal(isModalOpened, errorMessage);
+};
 
-        return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
-      });
+const getFilteredProfiles = computed(() => {
+  const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const profiles = workspace.value.profiles.filter(profile => {
+    const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+    const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+    const isNotOwner = profile._id !== ownerProfile;
 
-      const orderedProfiles = [];
-      const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
-      const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
-      orderedProfiles.push(...inProfilePerms);
-      orderedProfiles.push(...notInProfilePerms);
-      return orderedProfiles; 
-    });
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+  });
 
-    const changePerms = async (perm, profileId) => {
-      await NoticeUtils.changePerms(perm, profileId, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage);
-    }
+  const orderedProfiles = [];
+  const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
+  const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile === profile._id));
+  orderedProfiles.push(...inProfilePerms);
+  orderedProfiles.push(...notInProfilePerms);
+  return orderedProfiles; 
+});
 
-    const checkDictUserItemPerms = (profileId) => {
-      if (!userItemPerms.value[profileId]) {
-        userItemPerms.value[profileId] = 'None';
-      }
-    }
+const changePerms = async (perm, profileId) => {
+  await NoticeUtils.changePerms(perm, profileId, workspace, selectedItem, wsId, router, userWsPerms, currentUser, errorMessage);
+}
 
-    const toggleDictPerm = (profileId) => {
-      const perm = userItemPerms.value[profileId];
-      if (perm == 'None') {
-        userItemPerms.value[profileId] = 'Read';
-      } else {
-        userItemPerms.value[profileId] = 'None';
-      }
-    }
-
-    const updatePermission = async (profileId, newPerm) => {
-      toggleDictPerm(profileId);
-      await changePerms(newPerm, profileId);
-    }
-
-    const handleSelectItem = async (item) => {
-      await selectItem(item);
-      openModal();
-    }
-
-    const logout = async () => {
-      await Utils.logout(router);
-    }
-
-    onBeforeMount(async () => {
-      path.value = "/" + route.name;
-      wsId.value = localStorage.getItem('workspace');
-      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({
-          username: import.meta.env.VITE_USERNAME,
-          password: "12345678910aA@",
-        })
-      });
-      fetchUser();
-      fetchNotices();
-    });
-
-    return {
-      workspace,
-      currentUser,
-      showMainSidebar,
-      path,
-      isNewItemModalOpened,
-      errorMessage,
-      newItem,
-      userWsPerms,
-      isModalOpened,
-      searchProfileTerm,
-      searchTypeProfile,
-      getFilteredProfiles,
-      selectedItem,
-      selectedItemPerms,
-      errorMessage,
-      userItemPerms,
-      fetchNotices,
-      fetchUser,
-      selectItem,
-      openNewItemModal,
-      closeNewItemModal,
-      handleNewItemForm,
-      translateItemType,
-      formatDate,
-      verifyNoticePerms,
-      deleteItem,
-      openModal,
-      closeModal,
-      checkDictUserItemPerms,
-      updatePermission,
-      handleSelectItem,
-      logout,
-    };
+const checkDictUserItemPerms = (profileId) => {
+  if (!userItemPerms.value[profileId]) {
+    userItemPerms.value[profileId] = 'None';
   }
 }
+
+const toggleDictPerm = (profileId) => {
+  const perm = userItemPerms.value[profileId];
+  if (perm == 'None') {
+    userItemPerms.value[profileId] = 'Read';
+  } else {
+    userItemPerms.value[profileId] = 'None';
+  }
+}
+
+const updatePermission = async (profileId, newPerm) => {
+  toggleDictPerm(profileId);
+  await changePerms(newPerm, profileId);
+}
+
+const handleSelectItem = async (item) => {
+  await selectItem(item);
+  openModal();
+}
+
+const logout = async () => {
+  await Utils.logout(router);
+}
+
+onBeforeMount(async () => {
+  path.value = "/" + route.name;
+  wsId.value = localStorage.getItem('workspace');
+  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: "include",
+    body: JSON.stringify({
+      username: import.meta.env.VITE_USERNAME,
+      password: "12345678910aA@",
+    })
+  });
+  fetchUser();
+  fetchNotices();
+});
+
 
 </script>
 

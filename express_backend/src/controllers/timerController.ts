@@ -10,21 +10,21 @@ export const modifyTimer = async (req: any, res: any) => {
     const timerId = req.body.timerId;
     const wsId = req.body.workspace;
     const action = req.body.action;
+    const timer =  await TimerItem.findById(timerId);
+
     if (Workspace.findById(wsId) === null) {
         return res.status(404).json({ success: false, error: 'Workspace no encontrado' });
-    }
-    console.log(await getUserPermission(req.user._id, req.body.workspace, timerId));
+    } 
     if (![Permission.Owner, Permission.Write].includes(await getUserPermission(req.user._id, req.body.workspace, timerId))) {
         return res.status(403).json({ success: false, error: 'No tienes permisos para modificar el timer' });
     }
-    const timer = await TimerItem.findById(req.body.timerId).exec();
     if (!timer) {
         return res.status(404).json({ success: false, error: 'Timer no encontrado' });
     }
     let result;
     switch (action) {
         case 'init':
-            result = await initTimer(timerId);
+            result = await initTimer(timerId, wsId);
             break;
         case 'stop':
             result = await stopTimer(timerId);
@@ -36,7 +36,8 @@ export const modifyTimer = async (req: any, res: any) => {
             return res.status(400).json({ success: false, error: 'Acción no válida' });
     }
     if (result?.success === true){
-        sendMessageToWorkspace(wsId, { type: 'timer', action, timer });
+        const modifiedTimer = await TimerItem.findById(timerId);
+        sendMessageToWorkspace(wsId, { type: 'timer', action, timer:modifiedTimer });
         res.status(result?.status).json({ success: true, message: result.message });
     }else{
         res.status(result?.status).json({ success: false, error: result?.error });
@@ -44,7 +45,7 @@ export const modifyTimer = async (req: any, res: any) => {
     
 }
 
-async function initTimer (timerId: string) {
+async function initTimer (timerId: string, wsId: string) {
 
     if (timerIntervals[timerId]) {
         return ({status:400, success: false, error: 'El timer ya está iniciado' })
@@ -55,21 +56,22 @@ async function initTimer (timerId: string) {
         if (!timer) {
             return ({status:404, success: false, error: 'Timer no encontrado' });
         }
+        if (timer.remainingTime <= 0) {
+            return ({status:400, success: false, error: 'El timer ha terminado' });
+        }
 
         timer.active = true;
         timer.initialDate = new Date();
         await timer.save();
-
         timerIntervals[timerId] = setInterval(async () => {
-            const elapsed = ( new Date().getTime() - timer.initialDate!.getTime()) / 1000;
-            timer.remainingTime = timer.duration - elapsed;
-
+            timer.remainingTime--;
             if (timer.remainingTime <= 0) {
                 clearInterval(timerIntervals[timerId]);
                 delete timerIntervals[timerId];
                 timer.active = false;
-                timer.remainingTime = 0;  
+                timer.remainingTime = 0;
             } 
+            sendMessageToWorkspace(wsId, { type: 'timer', action: "sync", timer });
             await timer.save();
         }, 1000) as NodeJS.Timeout;
         return ({status:200, success: true, message: 'Timer iniciado' });
@@ -86,11 +88,9 @@ async function stopTimer (timerId: string) {
             return ({status:404, success: false, error: 'Timer no encontrado' });
         }
         timer.active = false;
-        timer.initialDate = new Date();
         await timer.save();
         return ({status:400, success: false, error: 'El timer no está iniciado' });
     }
-
 
     clearInterval(timerIntervals[timerId]);
     delete timerIntervals[timerId];
@@ -101,8 +101,7 @@ async function stopTimer (timerId: string) {
             return ({status:404, success: false, error: 'Timer no encontrado' });
         }
 
-        timer.active = true;
-        timer.initialDate = new Date();
+        timer.active = false;
         await timer.save();
         return ({status:200, success: true, message: 'Timer detenido' });
     }catch (error) {
@@ -115,12 +114,13 @@ async function resetTimer(timerId: string) {
         clearInterval(timerIntervals[timerId]);
         delete timerIntervals[timerId];
         
-        let timer = await TimerItem.findById(timerId);
-        if (!timer) return;
-    
+        const timer = await TimerItem.findById(timerId);
+        if (!timer) {
+            return ({status: 404, success: false, error: 'Timer no encontrado' });
+        }
+
         timer.active = false;
-        timer.duration = 0;
-        timer.remainingTime = 0;
+        timer.remainingTime = timer.duration;
         timer.initialDate = new Date();
         await timer.save();
         return ({status:200, success: true, message: 'Timer reiniciado' });
@@ -128,3 +128,4 @@ async function resetTimer(timerId: string) {
         return ({status:500, success: false, error: 'Error al reiniciar el timer. ' + error });
     }
 }
+ 

@@ -1,246 +1,227 @@
-<script>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
+<script setup>
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
+import Timer from './Timer.vue';
+import WorkspaceUtils from '../utils/workspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 
-export default {
-  props: {
-    ws: Object
+const props = defineProps({
+  ws: {
+      ws: Object,
+      required: true
   },
-  setup(props) {
-    const ws = ref(null);
-    const currentUser = ref(null);
-    const userWsPerms = ref(null);
-    const userItemPerms = ref(null);
-    const router = useRouter();
-    const route = useRoute();
-    const path = ref("");
-    const workspace = ref({});
-    const currentPath = ref('');
-    const items = ref([]); 
-    const folders = ref([]);
-    const author = ref(null);
-    const selectedItem = ref(null);
-    const selectedItemPerms = ref(null);
-    const selectedFolder = ref('');
-    const existFolder = ref(false); 
-      
-    const showSidebar = ref(false);
-    const showMainSidebar = ref(false);
-    const isModalOpened = ref(false);
-    const searchProfileTerm = ref('');
-    const searchTypeProfile = ref('All');
-    const errorMessage = ref([]);
+});
 
-    const isNewItemModalOpened = ref(false);
-    const newItem = ref({});
-    const fileInput = ref(null); 
-    const hours = ref(0);
-    const minutes = ref(0);
-    const seconds = ref(0);
+const ws = ref(null);
+const currentUser = ref(null);
+const userWsPerms = ref(null);
+const userItemPerms = ref(null);
+const router = useRouter();
+const route = useRoute();
+const path = ref("");
+const workspaceId = ref(null);
+const workspace = ref({});
+const currentPath = ref('');
+const items = ref([]); 
+const folders = ref([]);
+const author = ref(null);
+const selectedItem = ref(null);
+const selectedItemPerms = ref(null);
+const selectedFolder = ref('');
+const existFolder = ref(false); 
+const routedItem = ref(null);
+const showSidebar = ref(false);
+const showMainSidebar = ref(false);
+const isModalOpened = ref(false);
+const searchProfileTerm = ref('');
+const searchTypeProfile = ref('All');
+const errorMessage = ref([]);
 
-    const fetchUser = async () => {
-      await Utils.fetchUser(currentUser, router);
-    }
+const isNewItemModalOpened = ref(false);
+const newItem = ref({});
+const fileInput = ref(null); 
+const hours = ref(0);
+const minutes = ref(0);
+const seconds = ref(0);
 
-    const fetchWorkspace = async () => {
-      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-      ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
-    }
+const selectedFolderPerms = ref(null);
 
-    const formatDate = (date) => {
-      return Utils.formatDate(date);
-    }
+const fetchUser = async () => {
+  await Utils.fetchUser(currentUser, router);
+}
 
-    const selectItem = async (item, direct) => {
-      await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
-    }
+const fetchWorkspace = async () => {
+  await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+}
 
-    const toggleLike = async (item) => {
-      await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders);
-    }
+const formatDate = (date) => {
+  return Utils.formatDate(date);
+}
 
-    const translateItemType = (item) => {
-      return Utils.translateItemType(item);
-    }
+const selectItem = async (item, direct) => {
+  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
+}
 
-    const translatePerm = (perm) => {
-      return Utils.translatePerm(perm);
-    }
+const toggleLike = async (item) => {
+  await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders);
+}
 
-    const deleteItem = async (item) => {
-      await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar);
-    }
+const translateItemType = (item) => {
+  return Utils.translateItemType(item);
+}
 
-    const selectImage = (item) => {
-      return Utils.selectImage(item);
-    }
+const translatePerm = (perm) => {
+  return Utils.translatePerm(perm);
+}
 
-    const openNewItemModal = (itemType) => {
-      WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
-    };
+const deleteItem = async (item) => {
+  await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar);
+}
 
-    const closeNewItemModal = () => {
-      WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-    };
+const selectImage = (item) => {
+  return Utils.selectImage(item);
+}
 
-    const handleNewItemForm = async () => {
-      await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-    }
+const openNewItemModal = (itemType) => {
+  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+};
 
-    const navigateToPreviousFolder = () => {
-      WorkspaceUtils.navigateToPreviousFolder(path, router);
-    }
+const closeNewItemModal = () => {
+  WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
+};
 
-    const openModal = () => {
-      Utils.openModal(isModalOpened);
-    };
+const handleNewItemForm = async () => {
+  await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
+}
 
-    const closeModal = () => {
-      Utils.closeModal(isModalOpened, errorMessage);
-    };
+const navigateToPreviousFolder = () => {
+  WorkspaceUtils.navigateToPreviousFolder(path, router);
+}
 
-    const closeSidebar = (event) => {
-      WorkspaceUtils.closeSidebar(event, showSidebar, author);
-    };
+const openModal = () => {
+  Utils.openModal(isModalOpened);
+};
 
-    const showFolderDetails = async () => {
-      await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser);
-    }
+const closeModal = () => {
+  Utils.closeModal(isModalOpened, errorMessage);
+};
 
-    const changePerms = async (perm, profileId) => {
-      await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-    }
+const closeSidebar = (event) => {
+  WorkspaceUtils.closeSidebar(event, showSidebar, author);
+};
 
-    const getFilteredProfiles = computed(() => {
-      const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
-      const profiles = workspace.value.profiles.filter(profile => {
-        const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-        const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-        const isNotOwner = profile._id !== ownerProfile._id;
+const showFolderDetails = async () => {
+  await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser);
+}
 
-        return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
-      });
+const changePerms = async (perm, profileId) => {
+  await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+}
 
-      const orderedProfiles = [];
-      const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-      const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-      orderedProfiles.push(...inProfilePerms);
-      orderedProfiles.push(...notInProfilePerms);
-      return orderedProfiles; 
-    });
-    
-    const downloadFile = async () => {
-      await WorkspaceUtils.downloadFile(workspace, selectedItem);
-    }
+const getFilteredProfiles = computed(() => {
+  const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const profiles = workspace.value.profiles.filter(profile => {
+    const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+    const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+    const isNotOwner = profile._id !== ownerProfile._id;
 
-    const selectUploadFile = () => {
-      fileInput.value.click();
-    };
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+  });
 
-    const uploadFile = async (event) => {
-      await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
-    }
+  const orderedProfiles = [];
+  const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+  const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+  orderedProfiles.push(...inProfilePerms);
+  orderedProfiles.push(...notInProfilePerms);
+  return orderedProfiles; 
+});
 
-    const logout = async () => {
-      await Utils.logout(router);
-    }
+const downloadFile = async () => {
+  await WorkspaceUtils.downloadFile(workspace, selectedItem);
+}
 
-    const checkDictUserItemPerms = (profileId) => {
-      if (!userItemPerms.value[profileId]) {
-        userItemPerms.value[profileId] = 'None';
-      }
-    }
+const selectUploadFile = () => {
+  fileInput.value.click();
+};
 
-    onBeforeMount(async () => {
-      path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-      ws.value = props.ws;
-      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({
-          username: import.meta.env.VITE_USERNAME,
-          password: "12345678910aA@",
-        })
-      });
-      await fetchUser();
-      await fetchWorkspace();
-    });
-    
-    onMounted(() => {
-      selectedFolder.value = path.value;
-      document.addEventListener('click', closeSidebar);
-    });
+const uploadFile = async (event) => {
+  await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+}
 
-    onUnmounted(() => {
-      document.removeEventListener('click', closeSidebar);
-    });
-    
-    watch(
-      () => route.params.path,
-      () => {
-        path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
-        selectedFolder.value = path.value;
-        fetchWorkspace();
-      }
-    );
+const logout = async () => {
+  await Utils.logout(router);
+}
 
-    return {
-      workspace,
-      folders,
-      items,
-      author,
-      selectedFolder,
-      showSidebar,
-      showMainSidebar,
-      selectedItem,
-      selectedItemPerms,
-      currentUser,
-      userWsPerms,
-      userItemPerms,
-      isModalOpened,
-      searchProfileTerm,
-      searchTypeProfile,
-      errorMessage,
-      fileInput,
-      isNewItemModalOpened,
-      newItem,
-      hours,
-      minutes,
-      seconds,
-      currentPath,
-      path,
-      existFolder,
-      getFilteredProfiles,
-      openModal,
-      closeModal,
-      changePerms,
-      selectItem,
-      toggleLike,
-      formatDate,
-      deleteItem,
-      logout,
-      downloadFile,
-      selectUploadFile,
-      uploadFile,
-      translatePerm,
-      translateItemType,
-      openNewItemModal,
-      closeNewItemModal,
-      handleNewItemForm,
-      selectImage,
-      navigateToPreviousFolder,
-      checkDictUserItemPerms,
-      showFolderDetails,
-    }
+const checkDictUserItemPerms = (profileId) => {
+  if (!userItemPerms.value[profileId]) {
+    userItemPerms.value[profileId] = 'None';
   }
-}   
+}
+
+const handleRightClick = (event, item) => {
+  selectItem(item, false);
+};
+
+onBeforeMount(async () => {
+  path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+  ws.value = props.ws;
+  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: "include",
+    body: JSON.stringify({
+      username: import.meta.env.VITE_USERNAME,
+      password: "12345678910aA@",
+    })
+  });
+  await fetchUser();
+  await fetchWorkspace();
+  const pathArray = path.value.split('/');
+  if( pathArray[pathArray.length - 2] == "i"){
+    workspace.value.items.forEach(item => {
+      if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
+        routedItem.value = item;
+      }
+    });
+  }
+});
+
+onMounted(() => {
+  selectedFolder.value = path.value;
+  workspaceId.value = localStorage.getItem('workspace');
+  document.addEventListener('click', closeSidebar);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeSidebar);
+});
+
+watch(
+  () => route.params.path,
+  () => {
+    path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
+    selectedFolder.value = path.value;
+    fetchWorkspace();
+    const pathArray = path.value.split('/');
+    if( pathArray[pathArray.length - 2] == "i"){
+      workspace.value.items.forEach(item => {
+        if(item.name == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
+          routedItem.value = item;
+        }
+      });
+    }else{
+      routedItem.value = null;
+    }
+    showSidebar.value = false;
+  }
+);
+
 </script>
  
 <template>
-  <button @click="$router.push('/test')"></button>
+  <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
+  <div v-if="!routedItem">
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
@@ -333,16 +314,18 @@ export default {
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
-          <div v-if="currentUser?.favorites?.includes(item._id)">
-            <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-          </div>
-          <div v-else>
-            <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-          </div>
-          <div style="display:flex; align-items: center;">
-            <p class="item-name">{{ item.name }} </p>
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event,item)">
+          <div>
+            <div v-if="currentUser?.favorites?.includes(item._id)">
+              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+            </div>
+            <div v-else>
+              <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+            </div>
+            <div style="display:flex; align-items: center;">
+              <p class="item-name">{{ item.name }} </p>
+            </div>
           </div>
         </div>
     </div>
@@ -430,6 +413,7 @@ export default {
       <template #footer></template>
     </Modal>
   </div>
+</div>
 </template>
 
 <style scoped>

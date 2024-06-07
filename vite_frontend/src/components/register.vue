@@ -1,95 +1,80 @@
-<script>
+<script setup>
 import { ref, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
-export default {
-  setup() {
+const user = ref({
+  username: "",
+  password: "",
+  email: "",
+});
 
-    const user = ref({
-      username: "",
-      password: "",
-      email: "",
-    });
+const router = useRouter();
+const passwordMatch = ref("");
+const errorMessage = ref([]);
+const successMessage = ref("");
 
-    const router = useRouter();
-    const passwordMatch = ref("");
-    const errorMessage = ref([]);
-    const successMessage = ref("");
-
-    const register = () => {
-      if (errorMessage.value.includes("Las contraseñas no coinciden")) {
-        return;
-      }
-      errorMessage.value = [];
-      fetch(import.meta.env.VITE_BACKEND_URL + "/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: user.value.username,
-          password: user.value.password,
-          firstName: user.value.firstName,
-          surnames: user.value.surnames,
-          email: user.value.email,
-        }),
-      })
-        .then((response) => {
-          if (response.status === 201) {
-            successMessage.value = "Usuario registrado correctamente";
-            setTimeout(() => {
-              router.push("/login");
-            }, 2000);
-          } else {
-            errorMessage.value = [];
-            if (response.status === 500) {
-              errorMessage.value.push("Error en el servidor. Inténtelo de nuevo más tarde.");
-              response.json().then((data) => {
-              });
-            }else{
-              response.json().then((data) => {
-                console.log(data);
-                if (data.message) {
-                  errorMessage.value.push(...data.message);
-                  
-                } else {
-                  data.errors.forEach((error) => {
-                    errorMessage.value.push(error.msg);
-                  });
-                }
+const register = () => {
+  if (errorMessage.value.includes("Las contraseñas no coinciden")) {
+    return;
+  }
+  errorMessage.value = [];
+  fetch(import.meta.env.VITE_BACKEND_URL + "/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: user.value.username,
+      password: user.value.password,
+      firstName: user.value.firstName,
+      surnames: user.value.surnames,
+      email: user.value.email,
+    }),
+  })
+    .then((response) => {
+      if (response.status === 201) {
+        successMessage.value = "Usuario registrado correctamente";
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      } else {
+        errorMessage.value = [];
+        if (response.status === 500) {
+          errorMessage.value.push("Error en el servidor. Inténtelo de nuevo más tarde.");
+          response.json().then((data) => {
+          });
+        }else{
+          response.json().then((data) => {
+            if (data.message) {
+              errorMessage.value.push(...data.message);
+              
+            } else {
+              data.errors.forEach((error) => {
+                errorMessage.value.push(error.msg);
               });
             }
-            throw new Error("Error al registrar");
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-      };
-    
-    const checkPassword = () => {
-      if (passwordMatch.value !== user.value.password && passwordMatch.value !== "" && user.value.password !== "") {
-        if (!errorMessage.value.includes("Las contraseñas no coinciden")) {
-          errorMessage.value.unshift("Las contraseñas no coinciden");
+          });
         }
-      } else {
-        errorMessage.value = errorMessage.value.filter(
-          (error) => error !== "Las contraseñas no coinciden"
-        );
+        throw new Error("Error al registrar");
       }
-    };
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+  };
 
-    watch([() => user.value.password, passwordMatch], checkPassword);
-    
-
-    return {
-      user,
-      passwordMatch,
-      errorMessage,
-      successMessage,
-      register,
-      checkPassword,
-    };
-  },
+const checkPassword = () => {
+  if (passwordMatch.value !== user.value.password && passwordMatch.value !== "" && user.value.password !== "") {
+    if (!errorMessage.value.includes("Las contraseñas no coinciden")) {
+      errorMessage.value.unshift("Las contraseñas no coinciden");
+    }
+  } else {
+    errorMessage.value = errorMessage.value.filter(
+      (error) => error !== "Las contraseñas no coinciden"
+    );
+  }
 };
+
+watch([() => user.value.password, passwordMatch], checkPassword);
+
 </script>
 
 <template>

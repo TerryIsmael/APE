@@ -131,11 +131,8 @@ export const changeItemPerms = async (req: any, res: any) => {
             profilePerms.push(newProfilePerm); // TODO: Fix addition of profile perms
         }
 
-        console.log(profilePerms[0]);
-        console.log(profilePerms[1]);
         item.profilePerms = profilePerms as Types.DocumentArray<IProfilePerms>;
         await item.save();
-        console.log(item.profilePerms);
         await workspace.save();
         res.status(201).json(item);
     } catch (error: any) {

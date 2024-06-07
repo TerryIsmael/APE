@@ -5,162 +5,161 @@ import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 
-  const props = defineProps({
-    ws: {
-        ws: Object,
-        required: true
-    },
-  });
+const props = defineProps({
+  ws: {
+      ws: Object,
+      required: true
+  },
+});
 
-  const ws = ref(null);
-  const currentUser = ref(null);
-  const userWsPerms = ref(null);
-  const userItemPerms = ref(null);
-  const router = useRouter();
-  const route = useRoute();
-  const path = ref("");
-  const workspace = ref({});
-  const items = ref([]); 
-  const folders = ref([]);
-  const author = ref(null);
-  const selectedItem = ref(null);
-  const selectedItemPerms = ref(null);
-  const selectedFolder = ref('favorites');
-    
-  const showSidebar = ref(false);
-  const showMainSidebar = ref(false);
-  const isModalOpened = ref(false);
-  const searchProfileTerm = ref('');
-  const searchTypeProfile = ref('All');
-  const errorMessage = ref([]);
-
-  const isNewItemModalOpened = ref(false);
-  const newItem = ref({});
-  const hours = ref(0);
-  const minutes = ref(0);
-  const seconds = ref(0);
-
-  const fetchUser = async () => {
-    await Utils.fetchUser(currentUser, router);
-  }
-
-  const fetchWorkspace = async () => {
-    await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
-  }
-
-  const formatDate = (date) => {
-    return Utils.formatDate(date);
-  }
-
-  const selectItem = async (item, direct) => {
-    await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
-  }
-
-  const toggleLike = async (item) => {
-    await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
-  }
-
-  const translateItemType = (item) => {
-    return Utils.translateItemType(item);
-  }
-
-  const translatePerm = (perm) => {
-    return Utils.translatePerm(perm);
-  }
-
-  const deleteItem = async (item) => {
-    await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar);
-  }
-
-  const selectImage = (item) => {
-    return Utils.selectImage(item);
-  }
-
-  const openNewItemModal = (itemType) => {
-    WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
-  };
-
-  const closeNewItemModal = () => {
-    WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-  };
-
-  const handleNewItemForm = async () => {
-    await FavoriteUtils.handleNewItemForm(newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds);
-  };
-
-  const openModal = () => {
-    Utils.openModal(isModalOpened);
-  };
-
-  const closeModal = () => {
-    Utils.closeModal(isModalOpened, errorMessage);
-  };
-
-  const closeSidebar = (event) => {
-    WorkspaceUtils.closeSidebar(event, showSidebar, author);
-  };
-
-  const changePerms = async (perm, profileId) => {
-    await FavoriteUtils.changePerms(perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
-  }
-
-  const getFilteredProfiles = computed(() => {
-    const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
-    const profiles = workspace.value.profiles.filter(profile => {
-      const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-      const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
-      const isNotOwner = profile._id !== ownerProfile._id;
-
-      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
-    });
-
-    const orderedProfiles = [];
-    const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-    const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
-    orderedProfiles.push(...inProfilePerms);
-    orderedProfiles.push(...notInProfilePerms);
-    return orderedProfiles; 
-  });
+const ws = ref(null);
+const currentUser = ref(null);
+const userWsPerms = ref(null);
+const userItemPerms = ref(null);
+const router = useRouter();
+const route = useRoute();
+const path = ref("");
+const workspace = ref({});
+const items = ref([]); 
+const folders = ref([]);
+const author = ref(null);
+const selectedItem = ref(null);
+const selectedItemPerms = ref(null);
+const selectedFolder = ref('favorites');
   
-  const downloadFile = async () => {
-    await WorkspaceUtils.downloadFile(workspace, selectedItem);
-  }
+const showSidebar = ref(false);
+const showMainSidebar = ref(false);
+const isModalOpened = ref(false);
+const searchProfileTerm = ref('');
+const searchTypeProfile = ref('All');
+const errorMessage = ref([]);
 
-  const logout = async () => {
-    await Utils.logout(router);
-  }
+const isNewItemModalOpened = ref(false);
+const newItem = ref({});
+const hours = ref(0);
+const minutes = ref(0);
+const seconds = ref(0);
 
-  const checkDictUserItemPerms = (profileId) => {
-    if (!userItemPerms.value[profileId]) {
-      userItemPerms.value[profileId] = 'None';
-    }
-  }
+const fetchUser = async () => {
+  await Utils.fetchUser(currentUser, router);
+}
 
-  onBeforeMount(async () => {
-      path.value = "/" + route.name;
-      ws.value = props.ws;
-      await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: "include",
-      body: JSON.stringify({
-        username: import.meta.env.VITE_USERNAME,
-        password: "12345678910aA@",
-      })
-    });
-    await fetchUser();
-    await fetchWorkspace();
+const fetchWorkspace = async () => {
+  await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+}
+
+const formatDate = (date) => {
+  return Utils.formatDate(date);
+}
+
+const selectItem = async (item, direct) => {
+  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
+}
+
+const toggleLike = async (item) => {
+  await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
+}
+
+const translateItemType = (item) => {
+  return Utils.translateItemType(item);
+}
+
+const translatePerm = (perm) => {
+  return Utils.translatePerm(perm);
+}
+
+const deleteItem = async (item) => {
+  await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar);
+}
+
+const selectImage = (item) => {
+  return Utils.selectImage(item);
+}
+
+const openNewItemModal = (itemType) => {
+  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+};
+
+const closeNewItemModal = () => {
+  WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
+};
+
+const handleNewItemForm = async () => {
+  await FavoriteUtils.handleNewItemForm(newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds);
+};
+
+const openModal = () => {
+  Utils.openModal(isModalOpened);
+};
+
+const closeModal = () => {
+  Utils.closeModal(isModalOpened, errorMessage);
+};
+
+const closeSidebar = (event) => {
+  WorkspaceUtils.closeSidebar(event, showSidebar, author);
+};
+
+const changePerms = async (perm, profileId) => {
+  await FavoriteUtils.changePerms(perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
+}
+
+const getFilteredProfiles = computed(() => {
+  const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const profiles = workspace.value.profiles.filter(profile => {
+    const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+    const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+    const isNotOwner = profile._id !== ownerProfile._id;
+
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
   });
-  
-  onMounted(() => {
-    document.addEventListener('click', closeSidebar);
-  });
 
-  onUnmounted(() => {
-    document.removeEventListener('click', closeSidebar);
+  const orderedProfiles = [];
+  const inProfilePerms = profiles.filter(profile => selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+  const notInProfilePerms = profiles.filter(profile => !selectedItem.value.profilePerms.find(profilePerm => profilePerm.profile._id === profile._id));
+  orderedProfiles.push(...inProfilePerms);
+  orderedProfiles.push(...notInProfilePerms);
+  return orderedProfiles; 
+});
+
+const downloadFile = async () => {
+  await WorkspaceUtils.downloadFile(workspace, selectedItem);
+}
+
+const logout = async () => {
+  await Utils.logout(router);
+}
+
+const checkDictUserItemPerms = (profileId) => {
+  if (!userItemPerms.value[profileId]) {
+    userItemPerms.value[profileId] = 'None';
+  }
+}
+
+onBeforeMount(async () => {
+    path.value = "/" + route.name;
+    ws.value = props.ws;
+    await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: "include",
+    body: JSON.stringify({
+      username: import.meta.env.VITE_USERNAME,
+      password: "12345678910aA@",
+    })
   });
-  
+  await fetchUser();
+  await fetchWorkspace();
+});
+
+onMounted(() => {
+  document.addEventListener('click', closeSidebar);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeSidebar);
+}); 
 </script>
  
 <template>

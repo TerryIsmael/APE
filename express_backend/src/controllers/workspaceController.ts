@@ -14,7 +14,7 @@ import fs from 'fs';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
-    const wsId = req.query.wsId;
+    const wsId = req.query.workspace;
     if (!wsId) {
       const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
       const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
@@ -120,7 +120,6 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     return;
 
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 }
