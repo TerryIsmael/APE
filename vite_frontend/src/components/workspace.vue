@@ -168,6 +168,43 @@ const modifyItem = async (item) => {
 
 }
 
+const startDrag = (evt, item) => {
+  evt.dataTransfer.setData('itemId', item._id);
+  evt.dataTransfer.dropEffect = 'move';
+  evt.dataTransfer.effectAllowed = 'move';
+};
+
+const onDrop = async (evt, folder, back) => {
+  const itemId = evt.dataTransfer.getData('itemId')
+  const item = items.value.find((item) => item._id == itemId);
+  if (back){
+    const path = item.path.split('/').slice(0, -1).join('/');
+    item.path = path;
+    await modifyItem(item);
+  } else {
+    if (item._id === folder._id) return;
+    item.path = folder.path+"/"+folder.name;
+    await modifyItem(item);
+  }
+};
+
+const getItemBindings = (item, index) => {
+  if (item.itemType === 'Folder') {
+    return {
+      onDrop: (event) => onDrop(event, item),
+      onDragover: (event) => event.preventDefault(),
+      onDragenter: (event) => event.preventDefault()
+    };
+  } else if (index === 0) {
+    return {
+      onDrop: (event) => onDrop(event, item, true),
+      onDragover: (event) => event.preventDefault(),
+      onDragenter: (event) => event.preventDefault()
+    };
+  }
+  return {};
+};
+
 onBeforeMount(async () => {
   path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
   ws.value = props.ws;
@@ -221,43 +258,6 @@ watch(
     showSidebar.value = false;
   }
 );
-
-const startDrag = (evt, item) => {
-  evt.dataTransfer.setData('itemId', item._id);
-  evt.dataTransfer.dropEffect = 'move';
-  evt.dataTransfer.effectAllowed = 'move';
-};
-
-const onDrop = async (evt, folder, back) => {
-  const itemId = evt.dataTransfer.getData('itemId')
-  const item = items.value.find((item) => item._id == itemId);
-  if (back){
-    const path = item.path.split('/').slice(0, -1).join('/');
-    item.path = path;
-    await modifyItem(item);
-  }else{
-    if (item._id === folder._id) return;
-    item.path = folder.path+"/"+folder.name;
-    await modifyItem(item);
-  }
-};
-
-const getItemBindings = (item, index) => {
-  if (item.itemType === 'Folder') {
-    return {
-      onDrop: (event) => onDrop(event, item),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }else if (index === 0){
-    return {
-      onDrop: (event) => onDrop(event, item, true),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  }
-  return {};
-}
 
 </script>
  
