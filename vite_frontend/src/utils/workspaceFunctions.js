@@ -200,7 +200,7 @@ class WorkspaceUtils {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
           } else {
-            throw new Error("Error al marcar/desmarcar como favorito el item");
+            throw new Error("Error al cambiar favorito");
           }
         })
       }
