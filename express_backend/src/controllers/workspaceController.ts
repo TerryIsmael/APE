@@ -11,6 +11,7 @@ import type { IProfilePerms } from '../models/profilePerms.ts';
 import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
+import { sendMessageToWorkspace } from '../config/websocket.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -170,6 +171,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   await profile.save();
   workspace.profiles.push(profile._id);
   await workspace.save();
+  sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
   res.status(201).json(workspace);
   
   } catch (error: any) {
@@ -199,6 +201,7 @@ export const changeWSPerms = async (req: any, res: any) => {
         profile.wsPerm = perm;
         profile.save();
       }
+      sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
       res.status(201).json(workspace);
   } catch (error: any) {
     res.status(404).json({ error: error.message });

@@ -225,6 +225,19 @@ const initPath = () => {
   showSidebar.value = false;
 }
 
+const openFormEditNote = () => {
+  editing.value = true;
+  titleText.value = routedItem.value.name;
+  noteText.value = routedItem.value.text;
+}
+
+const saveNote = async () => {
+  editing.value = false;
+  routedItem.value.name = titleText.value;
+  routedItem.value.text = noteText.value;
+  await modifyItem(routedItem.value);
+}
+
 onBeforeMount(async () => {
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   ws.value = props.ws;
@@ -246,6 +259,12 @@ onMounted(() => {
   selectedFolder.value = path.value;
   workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
+  props.ws.onmessage = async (event) => {
+        const jsonEvent = JSON.parse(event.data);
+        if (jsonEvent.type === 'workspaceUpdated') {
+            await fetchWorkspace();
+        }
+    };
 });
 
 onUnmounted(() => {
@@ -263,18 +282,6 @@ watch(
   }
 );
 
-const openFormEditNote = () => {
-  editing.value = true;
-  titleText.value = routedItem.value.name;
-  noteText.value = routedItem.value.text;
-}
-
-const saveNote = async () => {
-  editing.value = false;
-  routedItem.value.name = titleText.value;
-  routedItem.value.text = noteText.value;
-  await modifyItem(routedItem.value);
-}
 </script>
 
 <template>
@@ -478,27 +485,25 @@ const saveNote = async () => {
   </Modal>
 
   <!-- Sidebar de detalles -->
-  <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar">
-    <div class="sidebar" :class="{ 'show': showSidebar }">
-      <ul>
-        <li style="margin-bottom: 2px;"> Archivo: </li>
-        <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
-        <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-        <li style="margin-top: 2px;"> ({{ author?.email }})</li>
-        <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
-        <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
+  <div class="sidebar" :class="{ 'show': showSidebar }">
+    <ul>
+      <li style="margin-bottom: 2px;"> Archivo: </li>
+      <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
+      <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
+      <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+      <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
+      <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
 
-        <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-          <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-          <button class="downloadButton" v-if="['Owner', 'Admin', 'Write', 'Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
-          <button @click="toggleLike(selectedItem)">
-            <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
-            <span v-else class="material-symbols-outlined filled-heart">favorite</span>
-          </button>
-          <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
-        </li>
-      </ul>
-    </div>
+      <li style="display: inline-flex; justify-content: space-around; width: 90%;">
+        <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
+        <button class="downloadButton" v-if="['Owner', 'Admin', 'Write', 'Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+        <button @click="toggleLike(selectedItem)">
+          <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
+          <span v-else class="material-symbols-outlined filled-heart">favorite</span>
+        </button>
+        <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
+      </li>
+    </ul>
   </div>
 
   <!-- Modal de permisos -->
@@ -625,6 +630,7 @@ const saveNote = async () => {
 }
 
 .sidebar {
+  z-index: 1000;
   width: 300px;
   height: 100vh;
   height: 100%;

@@ -14,6 +14,7 @@ import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
 import type { IEvent, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
+import { sendMessageToWorkspace } from '../config/websocket.ts';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -83,6 +84,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                         await item.save();
                         workspace.items.push(item.id);
                         await workspace.save();
+                        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
                         res.status(201).json(item);
                     } catch (error) {
                         res.status(400).json({ errors: parseValidationError(error) });
@@ -143,8 +145,7 @@ export const editItem = async (req: any, res: any) => {
             res.status(400).json({ error: parseValidationError(error) });
             return;
         }
-       
-        
+        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
         await item.save();
         res.status(200).json(item);
     } catch (error: any) {
@@ -196,6 +197,7 @@ export const changeItemPerms = async (req: any, res: any) => {
         item.profilePerms = profilePerms as Types.DocumentArray<IProfilePerms>;
         await item.save();
         await workspace.save();
+        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
         res.status(201).json(item);
     } catch (error: any) {
         res.status(500).json({ error: error.message }); 
@@ -280,6 +282,7 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
         if (item.itemType === ItemType.File) {
             fs.unlink(`uploads/${wsId}/${itemId}`, () => { });
         }
+        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
         res.status(200).json({ success: true });
     } catch (error: any) {
         res.status(404).json({ error: error.message });
