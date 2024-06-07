@@ -33,10 +33,10 @@ const profilePermSchema = new mongoose.Schema<IProfilePerms>({
 const itemSchema = new mongoose.Schema({
     name: { 
         type: String, 
-        required: [true, "El nombre del archivo es obligatorio"], 
+        required: [true, "El nombre del item es obligatorio"], 
         validate: {  
             validator: (value: string) => value.trim().length > 0,
-            message: `El nombre del archivo no puede estar vacío`
+            message: `El nombre del item no puede estar vacío`
         }
     },
     path: {

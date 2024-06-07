@@ -111,3 +111,12 @@ const checkItem = async (req: any) => {
 
     return undefined;
 };
+
+export const validateItem = async (req : Request, res : Response, next : NextFunction) => {
+    const error = await checkItem(req);
+    if (error) {
+        res.status(400).json({ error: error });
+    } else {
+        next();
+    }
+};

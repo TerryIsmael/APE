@@ -7,7 +7,7 @@ import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, g
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
-import { validateFile, validatePerm } from './middlewares/itemMiddleware.ts';
+import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
@@ -96,7 +96,7 @@ router.post('/file', isLogged, createFile, uploader.single('file'), validateFile
     }
 });
 
-router.post('/item', isLogged, (req: Request, res: Response) => {
+router.post('/item', isLogged, validateItem, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {

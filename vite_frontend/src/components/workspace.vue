@@ -84,7 +84,7 @@ const selectImage = (item) => {
 }
 
 const openNewItemModal = (itemType) => {
-  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
 };
 
 const closeNewItemModal = () => {
@@ -162,6 +162,10 @@ const checkDictUserItemPerms = (profileId) => {
 const handleRightClick = (event, item) => {
   selectItem(item, false);
 };
+
+const clearErrorMessage = () => {
+  Utils.clearErrorMessage(errorMessage);
+}
 
 const modifyItem = async (item) => {
   await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
@@ -361,21 +365,28 @@ watch(
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
 
-      <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event,item)" v-bind="getItemBindings(item)">
-          <div>
-            <div v-if="currentUser?.favorites?.includes(item._id)">
-              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-            </div>
-            <div v-else>
-              <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            </div>
-            <div style="display:flex; align-items: center;">
-              <p class="item-name">{{ item.name }} </p>
+      <div v-else>
+
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" v-for="error in errorMessage" style="width: 60%;">
+            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center">{{ error }}</p>
+          </div>
+
+        <div class="items-container">
+          <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event,item)" v-bind="getItemBindings(item)">
+            <div>
+              <div v-if="currentUser?.favorites?.includes(item._id)">
+                <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+              </div>
+              <div v-else>
+                <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+              </div>
+              <div style="display:flex; align-items: center;">
+                <p class="item-name">{{ item.name }} </p>
+              </div>
             </div>
           </div>
-        </div>
+      </div>
     </div>
     
     <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
@@ -409,20 +420,20 @@ watch(
           <div class="error" v-if="errorMessage.length !== 0">
             <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
           </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-            <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
-            <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
-            <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
-              Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
-            </div>
-
-            <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
-              <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
-              :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
-              :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
-            </div>
+          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+          <textarea v-if="newItem.itemType == 'Note'" v-model="newItem.text" placeholder="Contenido..." class="text-input textarea-input"></textarea>
+          <textarea v-if="newItem.itemType == 'Notice'" v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
+          <div v-if="newItem.itemType == 'Notice'" style="display: flex; justify-content: center; align-items: center;">
+            Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
           </div>
-          <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+
+          <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
+            <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;"/>
+            :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input"/>
+            :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;"/>
+          </div>
+        </div>
+        <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
       </template>
     </Modal>
 

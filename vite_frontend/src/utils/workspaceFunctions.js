@@ -252,12 +252,13 @@ class WorkspaceUtils {
         response.json().then((data) => {
           if (data.error) {
             errorMessage.value.push(data.error);
+          } else if (data.errors) {
+              data.errors.forEach((error) => {
+                errorMessage.value.push(error);
+              });
           } else {
-            data.errors.forEach((error) => {
-              errorMessage.value.push(error.msg);
-            });
+            throw new Error("Error al crear item");
           }
-        throw new Error("Error al crear item");
         })
       }
     } catch (error) {
@@ -265,7 +266,8 @@ class WorkspaceUtils {
     }
   };
 
-  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds) => {
+  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage) => {
+    errorMessage.value = [];
     isNewItemModalOpened.value = true;
     newItem.value.name = '';
     newItem.value.itemType = itemType;

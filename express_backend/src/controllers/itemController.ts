@@ -79,10 +79,14 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 if (perm === Permission.Read || !perm) {
                     res.status(401).json({ error: 'No estás autorizado para añadir items a este workspace' });
                 } else {
-                    await item.save();
-                    workspace.items.push(item.id);
-                    await workspace.save();
-                    res.status(201).json(item);
+                    try {
+                        await item.save();
+                        workspace.items.push(item.id);
+                        await workspace.save();
+                        res.status(201).json(item);
+                    } catch (error) {
+                        res.status(400).json({ errors: parseValidationError(error) });
+                    }
                 }
             }
         }
