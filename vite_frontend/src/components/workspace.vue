@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Timer from './Timer.vue';
-import WorkspaceUtils from '../utils/workspaceFunctions.js';
+import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 
 const props = defineProps({
@@ -314,7 +314,7 @@ watch(
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event,item)">
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
           <div>
             <div v-if="currentUser?.favorites?.includes(item._id)">
               <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">

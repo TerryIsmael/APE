@@ -57,6 +57,10 @@ const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
 }
 
+const handleRightClick = (event, item) => {
+  selectItem(item, false);
+}
+
 const toggleLike = async (item) => {
   await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
 }
@@ -233,7 +237,7 @@ onUnmounted(() => {
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
       </div>
       <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, false)">
+        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
           <div>
             <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
             <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
