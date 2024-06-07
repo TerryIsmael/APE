@@ -128,7 +128,7 @@ export const changeItemPerms = async (req: any, res: any) => {
                 profile: profile._id,
                 permission: perm
             });
-            profilePerms.push(newProfilePerm); // TODO: Fix addition of profile perms
+            profilePerms.push(newProfilePerm);
         }
 
         item.profilePerms = profilePerms as Types.DocumentArray<IProfilePerms>;
@@ -136,7 +136,7 @@ export const changeItemPerms = async (req: any, res: any) => {
         await workspace.save();
         res.status(201).json(item);
     } catch (error: any) {
-        res.status(404).json({ error: error.message }); //Cambiar a 500
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -149,6 +149,7 @@ export const createFile = async (req: any, _: any, next: NextFunction) => {
         next();
     } catch (error) {
         console.log(error);
+        next(error);
     }
 };
 

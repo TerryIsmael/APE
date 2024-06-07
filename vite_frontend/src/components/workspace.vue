@@ -60,7 +60,7 @@ const formatDate = (date) => {
 }
 
 const selectItem = async (item, direct) => {
-  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
+  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
 }
 
 const toggleLike = async (item) => {
@@ -146,7 +146,7 @@ const selectUploadFile = () => {
 };
 
 const uploadFile = async (event) => {
-  await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+  await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, fileInput);
 }
 
 const logout = async () => {
@@ -220,6 +220,7 @@ watch(
 </script>
  
 <template>
+  {{ fileInput }}
   <Timer v-if="routedItem && routedItem.itemType=='Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
   <div v-if="!routedItem">
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
@@ -313,6 +314,7 @@ watch(
       <div v-if="existFolder && items.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
       </div>
+
       <div class="items-container" v-else>
         <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
           <div>

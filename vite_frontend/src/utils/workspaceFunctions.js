@@ -105,7 +105,7 @@ class WorkspaceUtils {
     }
   };
 
-  static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms) => {
+  static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage) => {
     if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
       selectedFolder.value = item;
       router.push('/' + item);
@@ -114,22 +114,24 @@ class WorkspaceUtils {
 
     if (direct){
       if (item.itemType === 'Folder') {
+        errorMessage.value = [];
         router.push('/workspace' + (item.path? '/' + item.path : '') + '/' +  item.name);
         return;
       } else {
+        errorMessage.value = [];
         router.push('/workspace' + (item.path? '/' + item.path : '') + '/i/' +  item.name);
         return;
       }
-    } else{
+    } else {
       selectedItem.value = item;
-        selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
-        showSidebar.value = true;
-        await this.findAuthor(selectedItem, author, router);
-        userItemPerms.value = {};
-        selectedItem.value.profilePerms.forEach(profilePerm => {
-          userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
-        });
-        return;
+      selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
+      showSidebar.value = true;
+      await this.findAuthor(selectedItem, author, router);
+      userItemPerms.value = {};
+      selectedItem.value.profilePerms.forEach(profilePerm => {
+        userItemPerms.value[profilePerm.profile._id] = profilePerm.permission;
+      });
+      return;
     }
   };
 
@@ -343,8 +345,9 @@ class WorkspaceUtils {
     }
   };
 
-  static uploadFile = async (event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router) => {
+  static uploadFile = async (event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, fileInput) => {
     const file = event.target.files[0];
+    fileInput.value.value = null;
     try {
       const formData = new FormData();
       formData.append('workspace', workspace.value._id);
@@ -361,6 +364,7 @@ class WorkspaceUtils {
         router.push({ name: 'login' });
       } else {
         response.json().then((data) => { 
+          errorMessage.value.push(data.errors);
           console.log(data);
         })
       }
