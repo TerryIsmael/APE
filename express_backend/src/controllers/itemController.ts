@@ -112,6 +112,7 @@ export const editItem = async (req: any, res: any) => {
         }
         item.name = itemData.name;
         item.modifiedDate = new Date();
+        item.path = itemData.path;
         switch (item.itemType) {
             case ItemType.Timer:
                 (item as ITimer).duration = itemData.duration;

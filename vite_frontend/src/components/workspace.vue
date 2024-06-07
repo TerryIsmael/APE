@@ -163,6 +163,11 @@ const handleRightClick = (event, item) => {
   selectItem(item, false);
 };
 
+const modifyItem = async (item) => {
+  await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  
+}
+
 onBeforeMount(async () => {
   path.value = route.params.path?JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/'): '';
   ws.value = props.ws;
@@ -223,17 +228,17 @@ const startDrag = (evt, item) => {
   evt.dataTransfer.effectAllowed = 'move';
 };
 
-const onDrop = (evt, folder, back) => {
+const onDrop = async (evt, folder, back) => {
   const itemId = evt.dataTransfer.getData('itemId')
   const item = items.value.find((item) => item._id == itemId);
   if (back){
     const path = item.path.split('/').slice(0, -1).join('/');
     item.path = path;
-    console.log("Nuevo path-> ",item.path)
+    await modifyItem(item);
   }else{
     if (item._id === folder._id) return;
     item.path = folder.path+"/"+folder.name;
-    console.log("Nuevo path-> ",item.path)
+    await modifyItem(item);
   }
 };
 

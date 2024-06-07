@@ -403,6 +403,39 @@ class WorkspaceUtils {
       console.log(error);
     }
   };
+  static modifyItem = async (item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+    try{
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+        body: JSON.stringify({ workspace: workspace.value._id, item: item }),
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router);
+        errorMessage.value = [];
+      } else if (response.status === 401) {
+        router.push({ name: 'login' });
+      } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
+        response.json().then((data) => {
+          if (data.error) {
+            errorMessage.value.push(data.error);
+          } else {
+            data.errors.forEach((error) => {
+              errorMessage.value.push(error.msg);
+            });
+          }
+        throw new Error("Error al modificar item");
+        })
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 }
 
 export default WorkspaceUtils;
