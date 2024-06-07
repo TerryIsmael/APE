@@ -3,7 +3,7 @@ import Utils from "./UtilsFunctions.js";
 
 class FavoriteUtils {
 
-  static fetchFavs = async (workspace, currentUser, items, folders, userWsPerms, router) => {
+  static fetchFavs = async (workspace, currentUser, items, folders, userWsPerms, router, errorMessage) => {
     try {
       const wsId = localStorage.getItem('workspace');
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/favorites', {
@@ -23,6 +23,14 @@ class FavoriteUtils {
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else {
+        response.json().then((data) => { 
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al cargar favoritos");
+          }
+        })
       }
     } catch (error) {
       console.log(error);
@@ -44,7 +52,7 @@ class FavoriteUtils {
     items.value.push(...favOtherItems);
   };
 
-  static deleteItem = async (item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar) => {
+  static deleteItem = async (item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar, errorMessage) => {
     try {
       const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
       if (!confirmDelete) return;
@@ -61,9 +69,17 @@ class FavoriteUtils {
         WorkspaceUtils.toggleSidebar(showSidebar);
         selectedItem.value = null;
         author.value = null;
-        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else {
+        response.json().then((data) => {
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al eliminar item");
+          }
+        })
       }
     } catch (error) {
       console.log(error);
@@ -83,21 +99,18 @@ class FavoriteUtils {
 
       if (response.ok) {
         WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
         errorMessage.value = [];
         response.json().then((data) => {
-          if (data.error) {
-            errorMessage.value.push(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
           } else {
-            data.errors.forEach((error) => {
-              errorMessage.value.push(error.msg);
-            });
+          throw new Error("Error al crear item");
           }
-        throw new Error("Error al crear item");
         })
       }
     } catch (error) {
@@ -117,7 +130,7 @@ class FavoriteUtils {
       });
 
       if (response.ok) {
-        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
         selectedItem.value = workspace.value.items.find(item => item._id === selectedItem.value._id);
         errorMessage.value = [];
       } else if (response.status === 401) {
@@ -125,14 +138,11 @@ class FavoriteUtils {
       } else if (response.status === 400 || response.status === 404) {
         errorMessage.value = [];
         response.json().then((data) => {
-          if (data.error) {
-            errorMessage.value.push(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
           } else {
-            data.errors.forEach((error) => {
-              errorMessage.value.push(error.msg);
-            });
+            throw new Error("Error al cambiar permisos");
           }
-        throw new Error("Error al cambiar permisos");
         })
       }
     } catch (error) {
@@ -140,7 +150,7 @@ class FavoriteUtils {
     }
   };
 
-  static toggleLike = async (item, workspace, router, currentUser, items, folders, userWsPerms) => {
+  static toggleLike = async (item, workspace, router, currentUser, items, folders, userWsPerms, errorMessage) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/like', {
         body: JSON.stringify({ itemId: item._id, workspace: workspace.value._id }),
@@ -152,12 +162,16 @@ class FavoriteUtils {
       });
       if (response.ok) {
         await Utils.fetchUser(currentUser);
-        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else{
+      } else {
         response.json().then((data) => { 
-          console.log(data.error);
+          if (data.error || data.errors) {
+            Utils.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al cambiar favorito");
+          }
         })
       }
     } catch (error) {

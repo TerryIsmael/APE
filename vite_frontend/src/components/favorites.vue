@@ -45,7 +45,7 @@ const fetchUser = async () => {
 }
 
 const fetchWorkspace = async () => {
-  await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router);
+  await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
   ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
 }
 
@@ -54,7 +54,7 @@ const formatDate = (date) => {
 }
 
 const selectItem = async (item, direct) => {
-  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms);
+  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
 }
 
 const handleRightClick = (event, item) => {
@@ -62,7 +62,7 @@ const handleRightClick = (event, item) => {
 }
 
 const toggleLike = async (item) => {
-  await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms);
+  await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms, errorMessage);
 }
 
 const translateItemType = (item) => {
@@ -74,7 +74,7 @@ const translatePerm = (perm) => {
 }
 
 const deleteItem = async (item) => {
-  await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar);
+  await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar, errorMessage);
 }
 
 const selectImage = (item) => {
@@ -113,7 +113,7 @@ const getFilteredProfiles = computed(() => {
   const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-    const matchesSearchTerm = searchProfileTerm.value === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase());
+    const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
     const isNotOwner = profile._id !== ownerProfile._id;
 
     return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
@@ -128,7 +128,7 @@ const getFilteredProfiles = computed(() => {
 });
 
 const downloadFile = async () => {
-  await WorkspaceUtils.downloadFile(workspace, selectedItem);
+  await WorkspaceUtils.downloadFile(workspace, selectedItem, errorMessage);
 }
 
 const logout = async () => {
@@ -167,7 +167,46 @@ onUnmounted(() => {
 </script>
  
 <template>
-  <button @click="$router.push('/test')"></button>
+  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ workspace?.name }} 
+      </h1>
+  </div>
+
+  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
+      </div>
+    </div>
+    <div class="main-content container">
+      <div v-if="items.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
+      </div>
+
+      <div v-else> 
+        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
+          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+        </div>
+
+        <div class="items-container">
+          <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
+            <div>
+              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+            </div>
+            <div style="display:flex; align-items: center;">
+              <p class="item-name">{{ item.name }} </p>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Main sidebar -->
   <div class="main-sidebar-overlay" v-if="showMainSidebar"></div>
     <div class="main-sidebar" :class="{'show' : showMainSidebar}">
 
@@ -216,110 +255,80 @@ onUnmounted(() => {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
-  
-  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }} 
-      </h1>
+
+  <!-- Modal de nuevo item --> 
+  <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
+    <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
+    <template #footer>
+
+      <div style="margin-top: 20px">
+        <div class="error" v-if="errorMessage.length !== 0">
+          <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+        </div>
+          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+        </div>
+        <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+    </template>
+  </Modal>
+
+  <!-- Sidebar de detalles -->
+  <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
+    <div class="sidebar" :class="{ 'show': showSidebar }">
+      <ul>
+        <li style="margin-bottom: 2px;"> Archivo: </li>
+        <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
+        <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
+        <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+        <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
+        <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
+
+        <li style="display: inline-flex; justify-content: space-around; width: 90%;">
+          <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
+          <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+          <button @click="toggleLike(selectedItem)">
+            <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
+            <span v-else class="material-symbols-outlined filled-heart">favorite</span>
+          </button>
+          <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
+        </li>
+      </ul>
+    </div>
   </div>
 
-  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+  <!-- Modal de permisos -->
+  <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
+    <template #header><strong>Compartir archivo</strong></template>
+    <template #content>  
+      <div class="error" v-if="errorMessage.length !== 0"  style="width: 60%;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
 
-    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
-      </div>
-    </div>
-    <div class="main-content container">
-      <div v-if="items.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
-      </div>
-      <div class="items-container" v-else>
-        <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
-          <div>
-            <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-            <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-          </div>
-          <div style="display:flex; align-items: center;">
-            <p class="item-name">{{ item.name }} </p>
-          </div>
+      <div style="margin-top:20px">
+        <p>Compartir con:</p>
+        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
+          <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
+          <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
+            <option value="Individual">Individual</option>
+            <option value="Group">Grupo</option>
+            <option value="All">Todos</option>
+          </select>
         </div>
-    </div>
-    
-    <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
-      <div class="sidebar" :class="{ 'show': showSidebar }">
-        <ul>
-          <li style="margin-bottom: 2px;"> Archivo: </li>
-          <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
-          <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-          <li style="margin-top: 2px;"> ({{ author?.email }})</li>
-          <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
-          <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
 
-          <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-            <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
-            <button @click="toggleLike(selectedItem)">
-              <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
-              <span v-else class="material-symbols-outlined filled-heart">favorite</span>
-            </button>
-            <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-      <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
-      <template #footer>
-
-        <div style="margin-top: 20px">
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-            <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-          </div>
-          <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-      </template>
-    </Modal>
-
-    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
-      <template #header><strong>Compartir archivo</strong></template>
-      <template #content>  
-        <div style="margin-top:20px">
-          <div class="error" v-if="errorMessage.length !== 0">
-            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-          </div>
-
-          <p>Compartir con:</p>
-
-          <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
-            <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
-            <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
-              <option value="Individual">Individual</option>
-              <option value="Group">Grupo</option>
-              <option value="All">Todos</option>
+        <div v-for="profile in getFilteredProfiles" :key="profile._id">
+          <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
+            <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+            {{ checkDictUserItemPerms(profile._id) }}
+            <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
+              <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
+              <option value="Read">Lectura</option>
+              <option value="Write">Escritura</option>
             </select>
           </div>
-
-          <div v-for="profile in getFilteredProfiles" :key="profile._id">
-            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-              <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-              {{ checkDictUserItemPerms(profile._id) }}
-              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
-                <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
-                <option value="Read">Lectura</option>
-                <option value="Write">Escritura</option>
-              </select>
-            </div>
-          </div>
         </div>
-      </template>
-      <template #footer></template>
-    </Modal>
-  </div>
+      </div>
+    </template>
+    <template #footer></template>
+  </Modal>
 </template>
 
 <style scoped>
