@@ -49,7 +49,7 @@ const selectItem = async (item) => {
 };
 
 const openNewItemModal = (itemType) => {
-  NoticeUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem);
+  NoticeUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, errorMessage);
 };
 
 const closeNewItemModal = () => {
@@ -73,7 +73,7 @@ const deleteItem = async (itemId) => {
 }
 
 const openModal = () => {
-  Utils.openModal(isModalOpened);
+  Utils.openModal(isModalOpened, errorMessage);
 };
 
 const closeModal = () => {

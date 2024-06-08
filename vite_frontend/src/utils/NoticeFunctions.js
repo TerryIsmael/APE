@@ -22,6 +22,7 @@ class NoticeFunctions {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -81,6 +82,7 @@ class NoticeFunctions {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -112,7 +114,8 @@ class NoticeFunctions {
     return;
   };
 
-  static openNewItemModal = (itemType, isNewItemModalOpened, newItem) => {
+  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, errorMessage) => {
+    errorMessage.value = [];
     isNewItemModalOpened.value = true;
     newItem.value.name = '';
     newItem.value.itemType = itemType;
@@ -154,6 +157,7 @@ class NoticeFunctions {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -185,6 +189,7 @@ class NoticeFunctions {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);

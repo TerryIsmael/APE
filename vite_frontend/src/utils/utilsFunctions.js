@@ -108,8 +108,9 @@ class UtilsFunctions {
     } 
   };
 
-  static openModal = (isModalOpened) => {
+  static openModal = (isModalOpened, errorMessage) => {
     isModalOpened.value = true;
+    errorMessage.value = [];
   };
 
   static closeModal = (isModalOpened, errorMessage) => {
@@ -118,7 +119,6 @@ class UtilsFunctions {
   };
 
   static parseErrorMessage = (data, errorMessage) => {
-    errorMessage.value = [];
     if (data.error) {
       errorMessage.value.push(data.error);
     } else if (data.errors) {

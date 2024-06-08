@@ -88,7 +88,7 @@ const selectImage = (item) => {
 }
 
 const openNewItemModal = (itemType) => {
-  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds);
+  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
 };
 
 const closeNewItemModal = () => {
@@ -104,7 +104,7 @@ const navigateToPreviousFolder = () => {
 }
 
 const openModal = () => {
-  Utils.openModal(isModalOpened);
+  Utils.openModal(isModalOpened, errorMessage);
 };
 
 const closeModal = () => {
@@ -146,6 +146,7 @@ const downloadFile = async () => {
 }
 
 const selectUploadFile = () => {
+  errorMessage.value = [];
   fileInput.value.click();
 };
 

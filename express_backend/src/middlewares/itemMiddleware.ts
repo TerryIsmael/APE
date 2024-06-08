@@ -38,13 +38,13 @@ export const validatePerm = [
 ];
 
 export const validateFile = async (req : Request, res : Response, next : NextFunction) => {
-    const errors = await checkFile(req);
-    if (errors) {
+    const error = await checkFile(req);
+    if (error) {
         if (req.file)
             fs.unlinkSync(req.file.path);
         if (req.params.itemId)
             await Item.findByIdAndDelete(req.params.itemId).exec();
-        res.status(400).json({ errors: errors });
+        res.status(400).json({ error: error });
     } else {
         next();
     }

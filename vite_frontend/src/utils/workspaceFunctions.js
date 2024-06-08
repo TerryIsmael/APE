@@ -19,6 +19,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -67,6 +68,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -108,16 +110,16 @@ class WorkspaceUtils {
   static getCurrentPath = (path, currentPath) => {
     const pathArray = path.value.split('/');
     if (pathArray.length === 0) {
-        currentPath.value = '/';
+      currentPath.value = '/';
     } else if (pathArray.length <= 1) {
-        currentPath.value =  '/' + pathArray[0];
+      currentPath.value =  '/' + pathArray[0];
     } else {
-        const lastTwoSegments = pathArray.slice(-2);
-        if (lastTwoSegments[0].length > 25) {
+      const lastTwoSegments = pathArray.slice(-2);
+      if (lastTwoSegments[0].length > 25) {
         lastTwoSegments[0] = lastTwoSegments[0].substring(0, 25) + '...';
-        }
-        const path = (pathArray.length === 2 ? '/' : '.../') + lastTwoSegments.join('/');
-        currentPath.value = path;
+      }
+      const path = (pathArray.length === 2 ? '/' : '.../') + lastTwoSegments.join('/');
+      currentPath.value = path;
     }
   };
 
@@ -196,6 +198,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -230,6 +233,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -275,6 +279,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -289,7 +294,8 @@ class WorkspaceUtils {
     }
   };
 
-  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds) => {
+  static openNewItemModal = (itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage) => {
+    errorMessage.value = [];
     isNewItemModalOpened.value = true;
     newItem.value.name = '';
     newItem.value.itemType = itemType;
@@ -360,6 +366,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -391,6 +398,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -453,6 +461,7 @@ class WorkspaceUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);

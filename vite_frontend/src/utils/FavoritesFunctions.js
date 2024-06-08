@@ -24,6 +24,7 @@ class FavoriteUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -73,6 +74,7 @@ class FavoriteUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => {
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
@@ -166,6 +168,7 @@ class FavoriteUtils {
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
+        errorMessage.value = [];
         response.json().then((data) => { 
           if (data.error || data.errors) {
             Utils.parseErrorMessage(data, errorMessage);
