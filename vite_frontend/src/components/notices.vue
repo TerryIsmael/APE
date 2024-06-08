@@ -30,6 +30,7 @@ const errorMessage = ref([]);
 const selectedItem = ref(null);
 const selectedItemPerms = ref(null);
 const userItemPerms = ref(null);
+const loading = ref(true);
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -142,60 +143,63 @@ onBeforeMount(async () => {
       password: "12345678910aA@",
     })
   });
-  fetchUser();
-  fetchNotices();
+  await fetchUser();
+  await fetchNotices();
+  loading.value = false;
 });
 
 </script>
 
 <template>
-  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-    <h1 @click="$router.push('/workspace/')"
-      style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
-      <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-      {{ workspace?.name }}
-    </h1>
-  </div>
-
-  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-
-    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
-      </div>
-
-      <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
-        <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
-          <span class="material-symbols-outlined">add</span>
-        </button>
-      </div>
+  <div v-if="!loading">
+    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+      <h1 @click="$router.push('/workspace/')"
+        style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ workspace?.name }}
+      </h1>
     </div>
-    
-    <div class="main-content container">
-      <div v-if="workspace?.notices?.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
-      </div>
 
-      <div v-else>
-        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
-          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+        <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+          <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+          <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
         </div>
 
-        <div class="items-container">
-          <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
-            <div style="display: flex; align-items: center;">
-              <h2 class="item-name"> {{ item?.notice?.name }}</h2>
-              <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
-              <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
-              <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
-            </div>
+        <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
+          <button @click="openNewItemModal('Notice')" style="max-height: 50px;">
+            <span class="material-symbols-outlined">add</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="main-content container">
+        <div v-if="workspace?.notices?.length === 0">
+          <p style="font-size: xx-large; font-weight: bolder;">Aún no hay anuncios...</p>
+        </div>
 
-            <h4 class="item-name" style="color: #525252">
-              Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
-            </h4>
-            <hr>          
-            <p class="text-container">{{ item?.notice?.text }}</p>
+        <div v-else>
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
+            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+          </div>
+
+          <div class="items-container">
+            <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
+              <div style="display: flex; align-items: center;">
+                <h2 class="item-name"> {{ item?.notice?.name }}</h2>
+                <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
+                <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
+                <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
+              </div>
+
+              <h4 class="item-name" style="color: #525252">
+                Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
+              </h4>
+              <hr>          
+              <p class="text-container">{{ item?.notice?.text }}</p>
+            </div>
           </div>
         </div>
       </div>

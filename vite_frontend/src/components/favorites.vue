@@ -33,6 +33,7 @@ const isModalOpened = ref(false);
 const searchProfileTerm = ref('');
 const searchTypeProfile = ref('All');
 const errorMessage = ref([]);
+const loading = ref(true);
 
 const isNewItemModalOpened = ref(false);
 const newItem = ref({});
@@ -155,6 +156,7 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchWorkspace();
+  loading.value = false;
 });
 
 onMounted(() => {
@@ -167,42 +169,44 @@ onUnmounted(() => {
 </script>
  
 <template>
-  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }} 
-      </h1>
-  </div>
-
-  <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-
-    <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-      <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
-      </div>
+  <div v-if="!loading">
+    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }} 
+        </h1>
     </div>
-    <div class="main-content container">
-      <div v-if="items.length === 0">
-        <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
-      </div>
 
-      <div v-else> 
-        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
-          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+        <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+          <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
+          <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
+        </div>
+      </div>
+      <div class="main-content container">
+        <div v-if="items.length === 0">
+          <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
         </div>
 
-        <div class="items-container">
-          <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
-            <div>
-              <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-              <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
-            </div>
-            <div style="display:flex; align-items: center;">
-              <p class="item-name">{{ item.name }} </p>
+        <div v-else> 
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
+            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+          </div>
+
+          <div class="items-container">
+            <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)" @contextmenu.prevent="handleRightClick(event, item)">
+              <div>
+                <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                <span v-if="currentUser?.favorites?.includes(item._id)" class="material-symbols-outlined filled-heart absolute-heart">favorite</span>       
+              </div>
+              <div style="display:flex; align-items: center;">
+                <p class="item-name">{{ item.name }} </p>
+              </div>
             </div>
           </div>
-        </div>
+      </div>
     </div>
   </div>
 
