@@ -251,11 +251,11 @@ onBeforeMount(async () => {
       <li class="li-clickable">Gestionar perfil</li>
       <li class="li-clickable">Gestionar workspaces</li>
 
-      <li class="main-sidebar-subtitle">Workspace actual 
-          <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
-        </li>
+      <li class="main-sidebar-subtitle">Workspace actual
+        <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
+        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
+      </li>
 
-      <li @click="selectItem('wsDetails')" :class="{ 'li-clickable': true }">Detalles del workspace</li>
       <li @click="selectItem('notices')" :class="{ 'li-clickable': true, 'selected-folder': true }">Anuncios</li>
       <li @click="selectItem('favorites')" :class="{ 'li-clickable': true }">Favoritos</li>
 

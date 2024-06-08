@@ -454,12 +454,10 @@ watch(
       <li class="li-clickable">Gestionar workspaces</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
-        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')"
-          style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle"
-          class="material-symbols-outlined">add</span>
+        <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
+        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
-      <li @click="selectItem('wsDetails', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'wsDetails' }"> Detalles del workspace </li>
       <li @click="selectItem('notices', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'notices' }">Anuncios</li>
       <li @click="selectItem('favorites', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'favorites' }">Favoritos</li>
 
@@ -719,20 +717,6 @@ watch(
 
 .main-sidebar.show {
   left: 0;
-}
-
-.main-sidebar-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: none;
-}
-
-.main-sidebar.show+.main-sidebar-overlay {
   display: block;
 }
 
