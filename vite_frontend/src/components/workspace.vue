@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import Timer from './Timer.vue';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
+import Calendar from './calendar.vue';
 
 const props = defineProps({
   ws: {
@@ -296,6 +297,7 @@ watch(
 
 <template>
   <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
+  <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Calendar>
   <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
     <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
       <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
