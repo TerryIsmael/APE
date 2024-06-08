@@ -209,6 +209,7 @@ const getItemBindings = (item, index) => {
 };
 
 const initPath = () => {
+  path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   const pathArray = path.value.split('/');
   if (pathArray[pathArray.length - 2] == "i") {
     workspace.value.items.forEach(item => {
@@ -259,12 +260,13 @@ onMounted(() => {
   selectedFolder.value = path.value;
   workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
-  props.ws.onmessage = async (event) => {
+  props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
         if (jsonEvent.type === 'workspaceUpdated') {
             await fetchWorkspace();
+            initPath();
         }
-    };
+    });
 });
 
 onUnmounted(() => {
@@ -293,14 +295,13 @@ watch(
       <span v-else @click="showMainSidebar = false" class="material-symbols-outlined"
         style="z-index: 1002">chevron_left</span>
     </div>
-    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; ">
-      <div></div>
-      <h1 @click="$router.push('/workspace/')"
-        style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; width: 80%;">
+      <div style="flex:1"></div>
+      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; flex:10; justify-content: center;">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
         {{ workspace?.name }}
       </h1>
-      <button @click="openFormEditNote">Editar</button>
+      <button style="flex:1" @click="openFormEditNote" v-if="!editing">Editar</button>
     </div>
     <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
       <div class="notebook" style="color:black; width: 80%; height: 100vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">

@@ -99,12 +99,12 @@ onMounted( async () => {
     if (item.value.active) {
         startTimer();
     }
-    props.ws.onmessage = async (event) => {
+    props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
         if (jsonEvent.type === 'timer' && jsonEvent.timer._id === item.value._id) {
             item.value = jsonEvent.timer;
         }
-    };
+    });
 });
 
 onBeforeUnmount(() => {
