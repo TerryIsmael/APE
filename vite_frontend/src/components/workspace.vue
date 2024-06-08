@@ -244,6 +244,19 @@ const saveNote = async () => {
   await modifyItem(routedItem.value);
 }
 
+const websocketEventAdd = () => {
+  props.ws.addEventListener('open', async (event) => {
+       websocketEventAdd();
+  });
+  props.ws.addEventListener('message', async (event) => {
+        const jsonEvent = JSON.parse(event.data);
+        if (jsonEvent.type === 'workspaceUpdated') {
+            await fetchWorkspace();
+            initPath();
+        }
+    });
+}
+
 onBeforeMount(async () => {
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   ws.value = props.ws;
@@ -265,13 +278,7 @@ onMounted(() => {
   selectedFolder.value = path.value;
   workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
-  props.ws.addEventListener('message', async (event) => {
-        const jsonEvent = JSON.parse(event.data);
-        if (jsonEvent.type === 'workspaceUpdated') {
-            await fetchWorkspace();
-            initPath();
-        }
-    });
+  websocketEventAdd();
 });
 
 onUnmounted(() => {
@@ -309,16 +316,16 @@ watch(
       <button style="flex:1" @click="openFormEditNote" v-if="!editing">Editar</button>
     </div>
     <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
-      <div class="notebook" style="color:black; width: 80%; height: 100vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
+      <div class="notebook" style="color:black; width: 80%; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
         <h1 style="text-align: center; margin-top: 20px; margin-bottom:30px;">{{ routedItem.name }}</h1>
         <p style="white-space: pre-line; font-size: 2vh">{{ routedItem.text }}</p>
       </div>
-      <div class="notebook" style="color:black; width: 80%; height: 100vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
-        <textarea v-model="titleText" style="height: 20vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
-        <textarea v-model="noteText" style="color:black; width: 100%; height: 60%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
-        <div>
-          <button @click="saveNote">Guardar</button>
-          <button @click="editing=!editing">Cancelar</button>
+      <div class="notebook" style="color:black; width: 80%; height: 70vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
+        <textarea v-model="titleText" style="height: 10vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
+        <textarea v-model="noteText" style="color:black; width: 100%; height: 70%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
+        <div style="margin:5px">
+          <button style="margin-right:5px" @click="saveNote">Guardar</button>
+          <button style="margin-left:5px; background-color: #c55e5e" @click="editing=!editing">Cancelar</button>
         </div>
       </div>
     </div>
