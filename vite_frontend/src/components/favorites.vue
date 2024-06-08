@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed, defineProps } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
@@ -132,6 +132,10 @@ const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, selectedItem, errorMessage);
 }
 
+const clearErrorMessage = () => {
+  Utils.clearErrorMessage(errorMessage);
+}
+
 const logout = async () => {
   await Utils.logout(router);
 }
@@ -191,8 +195,15 @@ onUnmounted(() => {
         </div>
 
         <div v-else> 
-          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
-            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div>
+              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                {{ error }}
+              </p>
+            </div>
+            <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+            </button>
           </div>
 
           <div class="items-container">
@@ -240,11 +251,11 @@ onUnmounted(() => {
         <li class="li-clickable">Gestionar perfil</li>
         <li class="li-clickable">Gestionar workspaces</li>
 
-        <li class="main-sidebar-subtitle">Workspace actual 
-          <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
-        </li>
+        <li class="main-sidebar-subtitle">Workspace actual
+        <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
+        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
+      </li>
 
-        <li @click="selectItem('wsDetails', true)" class="li-clickable">Detalles del workspace</li>
         <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
         <li @click="selectItem('favorites', true)" class="li-clickable selected-folder">Favoritos</li>
         
@@ -263,12 +274,13 @@ onUnmounted(() => {
   <!-- Modal de nuevo item --> 
   <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
     <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
-    <template #footer>
+    <template #content>
+
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+        <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+      </div>
 
       <div style="margin-top: 20px">
-        <div class="error" v-if="errorMessage.length !== 0">
-          <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-        </div>
           <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
         </div>
         <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
@@ -303,11 +315,11 @@ onUnmounted(() => {
   <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
     <template #header><strong>Compartir archivo</strong></template>
     <template #content>  
-      <div class="error" v-if="errorMessage.length !== 0"  style="width: 60%;">
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
         <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
-      <div style="margin-top:20px">
+      <div style="margin-top: 20px">
         <p>Compartir con:</p>
         <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
           <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
@@ -558,10 +570,13 @@ onUnmounted(() => {
   grid-column: 1 / -1;
   text-align: center;
   justify-content: center;
-  width: 90%;
+  width: fit-content; 
+  max-width: 80%; 
   height: auto;
   background-color: rgb(151, 47, 47);
   border-radius: 10px;
+  padding-left: 1%; 
+  padding-right: 1%;
   padding: 1px 10px;
   margin-bottom: 10px;
   margin-left: auto;

@@ -146,6 +146,10 @@ const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, selectedItem, errorMessage);
 }
 
+const clearErrorMessage = () => {
+  Utils.clearErrorMessage(errorMessage);
+}
+
 const selectUploadFile = () => {
   errorMessage.value = [];
   fileInput.value.click();
@@ -309,7 +313,7 @@ watch(
       <div style="flex:1"></div>
       <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; flex:10; justify-content: center;">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }}
+        {{ workspace?.name }} 
       </h1>
       <button style="flex:1" @click="openFormEditNote" v-if="!editing">Editar</button>
     </div>
@@ -317,7 +321,6 @@ watch(
       <div class="notebook" style="color:black; width: 80%; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
         <h1 style="text-align: center; margin-top: 20px; margin-bottom:30px;">{{ routedItem.name }}</h1>
         <p style="white-space: pre-line; font-size: 2vh">{{ routedItem.text }}</p>
-
       </div>
       <div class="notebook" style="color:black; width: 80%; height: 70vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
         <textarea v-model="titleText" style="height: 10vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
@@ -388,8 +391,15 @@ watch(
         </div>
 
         <div v-else>
-          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="width: 60%;">
-            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center"  v-for="error in errorMessage"> {{ error }} </p>
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div>
+              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                {{ error }}
+              </p>
+            </div>
+            <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+            </button>
           </div>
 
           <div class="items-container">
@@ -446,12 +456,10 @@ watch(
       <li class="li-clickable">Gestionar workspaces</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
-        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')"
-          style="margin-left: 35%; text-align: right; cursor: pointer; vertical-align: middle"
-          class="material-symbols-outlined">add</span>
+        <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
+        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
-      <li @click="selectItem('wsDetails', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'wsDetails' }"> Detalles del workspace </li>
       <li @click="selectItem('notices', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'notices' }">Anuncios</li>
       <li @click="selectItem('favorites', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'favorites' }">Favoritos</li>
 
@@ -473,7 +481,7 @@ watch(
   <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
     <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>
     <template #content>
-      <div class="error" v-if="errorMessage.length !== 0"  style="width: 60%; margin-top: 10px;">
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
           <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
@@ -521,11 +529,11 @@ watch(
   <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
     <template #header><strong>Compartir archivo</strong></template>
     <template #content>
-      <div class="error" v-if="errorMessage.length !== 0"  style="width: 60%;">
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
         <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
-      <div style="margin-top:20px">
+      <div style="margin-top: 20px">
         <p>Compartir con:</p>
         <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
           <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
@@ -711,20 +719,6 @@ watch(
 
 .main-sidebar.show {
   left: 0;
-}
-
-.main-sidebar-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: none;
-}
-
-.main-sidebar.show+.main-sidebar-overlay {
   display: block;
 }
 
@@ -781,10 +775,13 @@ watch(
   grid-column: 1 / -1;
   text-align: center;
   justify-content: center;
-  width: 90%;
+  width: fit-content; 
+  max-width: 80%; 
   height: auto;
   background-color: rgb(151, 47, 47);
   border-radius: 10px;
+  padding-left: 1%; 
+  padding-right: 1%;
   padding: 1px 10px;
   margin-bottom: 10px;
   margin-left: auto;

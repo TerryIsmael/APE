@@ -128,6 +128,10 @@ class UtilsFunctions {
     }
   };
 
+  static clearErrorMessage = (errorMessage) => {
+    errorMessage.value = [];
+  };
+
 }
 
 export default UtilsFunctions;
