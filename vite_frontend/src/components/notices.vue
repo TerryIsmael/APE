@@ -313,7 +313,7 @@ onBeforeMount(async () => {
 
         <div v-for="profile in getFilteredProfiles" :key="profile._id">
           <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-            <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+            <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
             {{ checkDictUserItemPerms(profile._id) }}
             <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
             <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
@@ -349,6 +349,16 @@ onBeforeMount(async () => {
   background-color: #F2F2F2;
   border-radius: 10px;
   position: relative;
+}
+
+.profile-name {
+  max-width: 70%;
+  margin-right: 10px;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
 }
 
 .text-input {
