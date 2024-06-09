@@ -333,7 +333,7 @@ onUnmounted(() => {
 
         <div v-for="profile in getFilteredProfiles" :key="profile._id">
           <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-            <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+            <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
             {{ checkDictUserItemPerms(profile._id) }}
             <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
               <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
@@ -372,6 +372,16 @@ onUnmounted(() => {
   width: 150px;
   height: 175px;
   position: relative;
+}
+
+.profile-name {
+  max-width: 70%;
+  margin-right: 10px;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
 }
 
 .text-input {

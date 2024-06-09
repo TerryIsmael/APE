@@ -27,7 +27,7 @@ const existFolder = ref(false);
 const showSidebar = ref(false);
 const selectedItemPerms = ref(null);
 const author = ref(null);
-const userItemPerms = ref({});
+const profileWsPerms = ref({});
 const hours = ref(0);
 const minutes = ref(0);
 const seconds = ref(0);
@@ -54,59 +54,61 @@ const editing = ref(false);
 const loading = ref(true);
 
 const isUserInModalProfile = (user) => {
-  WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
-}
+  return WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
+};
 
 const handleSelectProfile = (profile) => {
   selectedProfile.value = profile;
   openModal();
-} 
+};
 
 const openModal = () => {
   WorkspaceDetailsUtils.openModal(selectedProfile, modalProfile, isModalOpened);
-}
+};
 
 const closeModal = () => {
   WorkspaceDetailsUtils.closeModal(selectedProfile, modalProfile, isModalOpened);
-}
+};
 
 const setModalProfileUsers = (user) => {
   WorkspaceDetailsUtils.setModalProfileUsers(user, modalProfile);
-}
+};
 
 const toggleEdit = () => {
   WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace);
-}
+};
 
 const saveProfile = async () => { 
   await WorkspaceUtils.saveProfile(modalProfile, errorMessage, router); // Adaptar parámetros a lo que haga falta al final
-}
+};
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
-}
+};
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
   ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
-  author.value = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner').users[0];
-}
+  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+};
 
 const selectItem = async (item, direct) => {
-  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
-}
+  profileWsPerms.value = {};
+  author.value = null;
+  await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, profileWsPerms, errorMessage);
+};
 
 const formatDate = (date) => {
   return Utils.formatDate(date);
-}
+};
 
 const translateItemType = (item) => {
   return Utils.translateItemType(item);
-}
+};
 
 const translatePerm = (perm) => {
   return Utils.translatePerm(perm);
-}
+};
 
 const openNewItemModal = (itemType) => {
   WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
@@ -118,11 +120,11 @@ const closeNewItemModal = () => {
 
 const handleNewItemForm = async () => {
   await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-}
+};
 
 const navigateToPreviousFolder = () => {
   WorkspaceUtils.navigateToPreviousFolder(path, router);
-}
+};
 
 const getFilteredProfiles = computed(() => {
 
@@ -188,24 +190,18 @@ const getIndividualProfiles = computed(() => {
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
-}
+};
 
 const logout = async () => {
   await Utils.logout(router);
-}
-
-const checkDictUserItemPerms = (profileId) => {
-  if (!userItemPerms.value[profileId]) {
-    userItemPerms.value[profileId] = 'None';
-  }
-}
+};
 
 const saveNote = async () => { // Adaptar a ws
   editing.value = false;
   routedItem.value.name = titleText.value;
   routedItem.value.text = noteText.value;
   await modifyItem(routedItem.value);
-}
+};
 
 const websocketEventAdd = () => { // He quitado initPath
   props.ws.addEventListener('open', async (event) => {
@@ -217,7 +213,7 @@ const websocketEventAdd = () => { // He quitado initPath
           await fetchWorkspace();
         }
     });
-}
+};
 
 onBeforeMount(async () => {
   ws.value = props.ws;
@@ -278,8 +274,7 @@ onMounted(() => {
         </div>
 
         <div style="display: flex; width: 100%">
-
-          <div style="text-align: left; flex: 1;"> 
+          <div style="text-align: left; flex: 1; max-width: 45%;"> 
             <h2 style="margin-left: 0; margin-right: 0; margin-bottom: 0;">Detalles del workspace</h2>
             <hr style="width: 90%; display: flex; margin-left: 0%;">
 
@@ -289,26 +284,24 @@ onMounted(() => {
             <hr style="width: 90%; display: flex; margin-left: 0%;">
 
             <h3 style="margin-left: 0; margin-right: 0; margin-top: 5px; margin-bottom: 5px;">Mediante link de invitación</h3>
-            <div style="width: 100%;">
-              <p style="margin: 0%; margin-bottom: 5px;">Seleccione un perfil para generar el link:</p>
-              <div style="display: flex; justify-content: space-between;">
-                <select v-model="inviteProfile" class="text-input" style="width: 60%;">
-                    <option :value="None"> Ninguno </option>
-                    <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile.name">{{ profile.name }}  -  Permiso: {{ translatePerm(profile.wsPerm) }}</option>
-                </select>
-                <button class="invite-button" @click="generateLink">Generar</button>
-              </div>
+            
+            <p style="margin: 0%; margin-bottom: 5px;">Seleccione un perfil para generar el link:</p>
+            <div style="display: flex; justify-content: space-between; width: 100%;">
+              <select v-model="inviteProfile" class="text-input" style="width: 60%;">
+                  <option :value="None"> Ninguno - Lectura </option>
+                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile.name">{{ profile.name }} </option>
+              </select>
+              <button class="invite-button" @click="generateLink">Generar</button>
             </div>
 
             <h3 style="margin: 0; margin-top: 5px; margin-bottom: 5px;">Mediante nombre de usuario</h3>
             <div style="display: flex; justify-content: space-between;">
-              <input type="text" class="text-input" style="width: 59%;" v-model="inviteUser" placeholder="Username del nuevo miembro..."></input>
+              <input type="text" class="text-input" style="width: 56.5%;" v-model="inviteUser" placeholder="Username del nuevo miembro..."></input>
               <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
             </div>
           </div>
 
-          <div style="text-align: left; flex: 1; padding-left: 5px;">
-            
+          <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 55%;">
             <div style="display:flex; justify-content:space-between; align-items:center"> 
               <h2 style="text-align: left; margin-bottom: 5px;">Nombre del workspace</h2>
 
@@ -344,15 +337,16 @@ onMounted(() => {
                 </select>
               </div>
               
-              <div v-for="profile in getFilteredProfiles" :key="profile._id">
+              <div v-for="profile in getFilteredProfiles" :key="profile._id" style="width: 100%;">
                 <div style="display: inline-flex; width: 91.5%; height: 40px; align-items: center; justify-content: space-between;">
-                  <div style="display: inline-flex; align-items: center; justify-content: left;">
-                    <p style="margin-right: 10px;">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-                    {{ checkDictUserItemPerms(profile._id) }}
-                    <span v-if="profile.profileType !== 'Individual'" @click="handleSelectProfile(profile)" style="vertical-align: middle; cursor: pointer;" class="material-symbols-outlined">edit</span>
+
+                  <div style="display: inline-flex; align-items: center; justify-content: left; width: 75%;">
+                    <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+                    <span v-if="profile.profileType !== 'Individual'" @click="handleSelectProfile(profile)" style="vertical-align: middle; cursor: pointer; margin-right: 2px;" class="material-symbols-outlined">edit</span>
+                    <span @click="deleteProfile(profile)" style="vertical-align: middle; cursor: pointer; margin: 0;" class="material-symbols-outlined">delete</span>
                   </div>
 
-                  <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
+                  <select v-model="profileWsPerms[profile._id]" @change="changeProfilePerms(profileWsPerms[profile._id], profile)" class="text-input" style="width: 25%; margin: 0%; padding: 0;">
                     <option value="Read">Lectura</option>
                     <option value="Write">Escritura</option>
                     <option value="Admin">Admin</option>
@@ -361,11 +355,9 @@ onMounted(() => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
-    
   </div>
 
   <!-- Main sidebar -->
@@ -445,7 +437,7 @@ onMounted(() => {
 
       <div style="margin-top: 20px; justify-content: center;"> 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-left: 5px; margin-right: 5px;">
-          <input type="text" v-model="modalProfile.name" placeholder="Nombre de perfil..." class="text-input" style="width: 70%;"/>
+          <input type="text" v-model="modalProfile.name" maxlength="60" placeholder="Nombre de perfil..." class="text-input" style="width: 70%;"/>
 
           <select v-model="modalProfile.wsPerm" class="text-input" style="width: 25%;">
             <option value="Read">Lectura</option>
@@ -668,6 +660,16 @@ onMounted(() => {
 
 .remove-perm-button {
   background-color: #c55e5e;
+}
+
+.profile-name {
+  max-width: 81%;
+  margin-right: 5px;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
 }
 
 .scrollable {

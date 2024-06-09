@@ -15,6 +15,7 @@ const profileSchema = new mongoose.Schema<IProfile>({
     name: {
         type: String,
         required: [true, 'El nombre identificador es obligatorio'],
+        maxlength: [60, 'El nombre identificador no puede tener más de 60 caracteres'],
         validate: {
             validator: (value: string) => value.trim().length > 0,
             message: 'El nombre identificador no puede estar vacío'

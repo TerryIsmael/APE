@@ -37,6 +37,15 @@ class WorkspaceDetails {
         editing.value = !editing.value;
         newWorkspace.value = workspace.value;
     };
+
+    static populateVariables = (workspace, author, profileWsPerms) => {
+        author.value = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner').users[0];
+
+        profileWsPerms.value = {};
+        workspace.value.profiles.forEach(profile => {
+          profileWsPerms.value[profile._id] = profile.wsPerm;
+        });
+    }
 }
 
 export default WorkspaceDetails;
