@@ -62,20 +62,11 @@ export const eventSchema = new mongoose.Schema<IEvent>({
     initDate: { 
         type: Date, 
         required: [true, "La fecha de inicio del evento es obligatoria"],
-        validate: {
-            validator: (value: Date) => value.getTime() > Date.now(),
-            message: "La fecha de inicio del evento no puede ser anterior a la fecha actual"
-        },
         default: Date.now
     },
     finalDate: { 
         type: Date, 
-        required: [true, "La fecha de finalización del evento es obligatoria"],
         validate: [
-            {
-                validator: (value: Date) => value.getTime() > Date.now(),
-                message: "La fecha de finalización del evento no puede ser anterior a la fecha actual"
-            },
             {
                 validator: function(this: IEvent, value: Date) {
                     return value.getTime() > this.initDate.getTime();
@@ -90,7 +81,11 @@ export const eventSchema = new mongoose.Schema<IEvent>({
 export const folderSchema = new mongoose.Schema<IFolder>({});
 
 export const calendarSchema = new mongoose.Schema<ICalendar>({
-    //TODO: Define properties
+    events: { 
+        type: [eventSchema], 
+        required: [true, "El calendario debe tener al menos un evento"],
+        default: []
+    }
 });
 
 export const studySessionSchema = new mongoose.Schema<IStudySession>({

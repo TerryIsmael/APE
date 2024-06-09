@@ -52,7 +52,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                             item = new NoticeItem({ text: itemData.text, important: itemData.important });
                             break;
                         case ItemType.Calendar:
-                            item = new CalendarItem({}); // TODO
+                            item = new CalendarItem({events:[]}); // TODO
                             break;
                         case ItemType.Event:
                             item = new EventItem({ event: { initDate: itemData.initDate, finalDate: itemData.finalDate } });

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeMount, onBeforeUnmount, defineProps, computed, defineComponent, watch } from 'vue';
+import { ref, onMounted, onBeforeMount, onBeforeUnmount, computed, defineComponent, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 const props = defineProps({

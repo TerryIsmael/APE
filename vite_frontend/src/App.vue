@@ -1,6 +1,6 @@
 <script setup>
 import { onBeforeMount, onMounted, ref } from 'vue';
-
+import Utils from './utils/utilsFunctions.js';
 const ws = ref(null);
 const wsReconnect = ref(null);
 
@@ -9,7 +9,6 @@ const connectWs = () => {
 
   ws.value.onopen = () => {
     console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: localStorage.getItem('workspace') }));
     wsReconnect?clearInterval(wsReconnect.value):null;
     wsReconnect?wsReconnect.value = null:null;
   };

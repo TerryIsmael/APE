@@ -43,7 +43,6 @@ class WorkspaceUtils {
         },
         credentials: "include",
       });
-
       if (response.ok) {
         const data = await response.json();
         workspace.value = data;
@@ -86,7 +85,7 @@ class WorkspaceUtils {
     const wsItems = workspace.value.items;
     const wsFolders = await wsItems.filter(item => item.itemType === 'Folder');
     const currentFolders = await wsItems.filter(item => item.itemType === 'Folder' && item.path === path.value);
-    const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.itemType !== 'Calendar' && item.path === path.value);
+    const otherItems = await wsItems.filter(item => item.itemType !== 'Folder' && item.itemType !== 'Notice' && item.path === path.value);
 
     const comparator = (a, b) => {
       if (currentUser.value.favorites.includes(a._id) && !currentUser.value.favorites.includes(b._id)) {

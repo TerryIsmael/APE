@@ -1,6 +1,8 @@
+import { connection } from 'mongoose';
 import WebSocket from 'ws';
 
-const connectionsByWorkspace: Map<string, WebSocket[]> = new Map();
+const usersByWorkspace: Map<string, string[]> = new Map();
+const connectionByUser: Map<string, WebSocket> = new Map();
 
 const wsServer = new WebSocket.Server({ noServer: true });
 
@@ -11,50 +13,64 @@ wsServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message.toString());
     if (parsedMessage.type === 'workspaceIdentification') {
-      workspaceId = parsedMessage.workspaceId;
-      if (!workspaceId) {
+      console.log('Mensaje de identificación de workspace recibido', parsedMessage);
+      const workspaceId = parsedMessage.workspaceId;
+      const userId = parsedMessage.userId;
+      if (!workspaceId || !userId) {
         return;
       }
-      const keysWithSearchValue = Object.keys(connectionsByWorkspace).filter(key => connectionsByWorkspace.get(key)?.includes(ws));
-      for (const key of keysWithSearchValue) {
-        const index = connectionsByWorkspace.get(key)?.indexOf(ws);
-        if (index && index !== -1) {
-          connectionsByWorkspace.get(key)?.splice(index, 1);
+      if (!usersByWorkspace.has(workspaceId)) {
+        usersByWorkspace.set(workspaceId, []);
+      }
+
+      usersByWorkspace.forEach((users, key) => {
+        const index = users.indexOf(userId);
+        if (index !== -1) {
+          users.splice(index, 1);
+        }
+      });
+
+      usersByWorkspace.get(workspaceId)?.push(userId);
+
+     if (!connectionByUser.has(userId)) {
+        connectionByUser.set(userId, ws);
+      } else {
+        if (connectionByUser.get(userId) !== ws) {
+          connectionByUser.get(userId)?.close();
+          connectionByUser.set(userId, ws);
         }
       }
-      if (!connectionsByWorkspace.has(workspaceId)) {
-        connectionsByWorkspace.set(workspaceId, []);
-      }
-      connectionsByWorkspace.get(workspaceId)?.push(ws);
+ 
     } else {
       // Aquí puedes manejar otros tipos de mensajes
     }
   });
 
   ws.on('close', () => {
-    if (workspaceId && connectionsByWorkspace.has(workspaceId)) {
-      const workspaceConnections = connectionsByWorkspace.get(workspaceId);
-      if (!workspaceConnections) {
-        return;
-      }
-      const index = workspaceConnections.indexOf(ws);
-      if (index !== -1) {
-        workspaceConnections?.splice(index, 1);
-        if (workspaceConnections.length === 0) {
-          connectionsByWorkspace.delete(workspaceId);
+    const userId = [...connectionByUser.entries()].find(([_, socket]) => socket === ws)?.[0];
+    if (userId) {
+      const workspaceEntry = [...usersByWorkspace.entries()].find(([_, users]) => users.includes(userId));
+      if (workspaceEntry) {
+        const [workspaceId, users] = workspaceEntry;
+        const index = users.indexOf(userId);
+        if (index !== -1) {
+          users.splice(index, 1);
         }
       }
+      connectionByUser.delete(userId);
     }
   });
 });
 
 function sendMessageToWorkspace(workspaceId: string, message: any) {
-  const workspaceConnections = connectionsByWorkspace.get(workspaceId);
-  if (workspaceConnections) {
+  const workspaceUsers = usersByWorkspace.get(workspaceId);
+  if (workspaceUsers && workspaceUsers.length > 0) {
+    const workspaceConnections = workspaceUsers.map(userId => connectionByUser.get(userId)).filter(Boolean) as WebSocket[];
     for (const ws of workspaceConnections) {
       ws.send(JSON.stringify(message));
       //console.log('Mensaje enviado a un cliente conectado al workspace', workspaceId); 
     }
+    //console.log('Mensaje enviado a ', workspaceConnections.length ,' clientes conectados al workspace', workspaceId);
   }
 }
 

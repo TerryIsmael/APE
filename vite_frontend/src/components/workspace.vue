@@ -57,7 +57,7 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+  if(routedItem.value) routedItem.value = items.value.find(item => item._id == routedItem.value._id);
 }
 
 const formatDate = (date) => {
@@ -247,10 +247,12 @@ const saveNote = async () => {
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
-       websocketEventAdd();
+    console.log('Connected to server',currentUser.value?._id,workspace.value?._id);
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
+        console.log(jsonEvent);
         if (jsonEvent.type === 'workspaceUpdated') {
             await fetchWorkspace();
             initPath();
@@ -273,16 +275,18 @@ onBeforeMount(async () => {
   await fetchUser();
   await fetchWorkspace();
   initPath();
+  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value._id }));
+  websocketEventAdd();
 });
 
 onMounted(() => {
   selectedFolder.value = path.value;
   workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
-  websocketEventAdd();
 });
 
 onUnmounted(() => {
+  ws.value.removeEventListener('open', websocketEventAdd);
   document.removeEventListener('click', closeSidebar);
 });
 
@@ -301,7 +305,7 @@ watch(
 
 <template>
   <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
-  <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Calendar>
+  <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></Calendar>
   <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
     <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
       <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
