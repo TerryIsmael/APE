@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeMount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
+import WorkspaceDetailsUtils from "../utils/WorkspaceDetailsFunctions.js";
 import Utils from '../utils/UtilsFunctions.js';
 
 const props = defineProps({
@@ -53,11 +54,7 @@ const editing = ref(false);
 const loading = ref(true);
 
 const isUserInModalProfile = (user) => {
-  if (modalProfile.value.users) {
-    return modalProfile.value.users.find(u => u._id === user._id);
-  } else {
-    return false;
-  }
+  WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
 }
 
 const handleSelectProfile = (profile) => {
@@ -66,40 +63,24 @@ const handleSelectProfile = (profile) => {
 } 
 
 const openModal = () => {
-  if (selectedProfile.value) {
-    modalProfile.value = selectedProfile.value;
-  } else {
-    modalProfile.value = {};
-    modalProfile.value.wsPerm = 'Read';
-    modalProfile.value.profileType = 'Group';
-  }
-  isModalOpened.value = true;
+  WorkspaceDetailsUtils.openModal(selectedProfile, modalProfile, isModalOpened);
 }
 
 const closeModal = () => {
-  selectedProfile.value = null;
-  isModalOpened.value = false;
-  modalProfile.value = {};
+  WorkspaceDetailsUtils.closeModal(selectedProfile, modalProfile, isModalOpened);
 }
 
-const setModalProfileUsers = (newUser) => {
-  if (!newProfile.users.includes(newUser)) {
-    newProfile.users.push(newUser);
-  } else {
-    newProfile.users = newProfile.users.filter(user => user._id !== newUser._id);
-  }
-}
-
-const saveProfile = async () => { 
-  await WorkspaceUtils.saveProfile(modalProfile, errorMessage, router); // Adaptar parámetros a lo que me haga falta al final
+const setModalProfileUsers = (user) => {
+  WorkspaceDetailsUtils.setModalProfileUsers(user, modalProfile);
 }
 
 const toggleEdit = () => {
-  editing.value = !editing.value;
-  newWorkspace.value = workspace.value;
+  WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace);
 }
 
-// TODO ^^ Mover a WSDetailsFunctiosn
+const saveProfile = async () => { 
+  await WorkspaceUtils.saveProfile(modalProfile, errorMessage, router); // Adaptar parámetros a lo que haga falta al final
+}
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
