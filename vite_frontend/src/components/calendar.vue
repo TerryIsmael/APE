@@ -1,18 +1,19 @@
 <script setup>
-import { ref, defineComponent } from 'vue'
+import { ref, computed, watch, defineComponent, onMounted, onBeforeMount } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import esLocale from '@fullcalendar/core/locales/es';
 import path from 'path';
-
+import Utils from '../utils/utilsFunctions.js';
 const props = defineProps({
   ws: {
     ws: Object,
     required: true
   },
   workspace: {
-    type: String,
+    type: Object,
     required: true
   },
   item:{
@@ -25,175 +26,435 @@ const props = defineProps({
   }
 
 });
-
-const isToastOpen = ref(false)
-const toastMessage = ref('')
-const myView = ref('dayGridMonth')
-const myEvents = ref([])
+const item = ref(props.item);
 const eventGuid = ref(0)
-const todayStr = new Date().toISOString().replace(/T.*$/, '') // YYYY-MM-DD of today
-
+const todayStr = new Date().toString().replace(/T.*$/, '') // YYYY-MM-DD of today
+const showModal = ref(false)
+const selectedEvent = ref(null)
+const modalTop = ref(0)
+const modalLeft = ref(0)
+const editing = ref(false)
+const currentEvents = []
+const editingEvent = ref({})
+const calendar = ref(null)
 
 const createEventId = () => {
   return String(eventGuid.value++)
 }
+ 
+const parseDate = (date) => {
+  const parsedDate = new Date(date);
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
+const parseSpanishStartDate = (date) => {
+  return parseDate(date).split('-').reverse().join('/');
+}
 
-const INITIAL_EVENTS = [
+const parseSpanishEndDate = (date) => {
+  return parseFormEndDate(date, true).split('-').reverse().join('/');
+}
+ 
+const parseFormEndDate = (date, init) => {
+  const parsedDate = date
+  if (init){
+    parsedDate.setDate(parsedDate.getDate() - 1);
+  }else{
+    parsedDate.setDate(parsedDate.getDate() + 1);
+  }
+  return parseDate(parsedDate);
+}
+ 
+const events = [
   {
     id: createEventId(),
-    title: 'All-day event',
-    start: todayStr
+    title: 'All-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day event',
+    start: "2024-06-02",
+    end: "2024-06-27",
+    allDay: true
   },
   {
     id: createEventId(),
     title: 'Timed event',
-    start: todayStr + 'T12:00:00'
+    start: todayStr,
+    allDay: true
   }
 ]
 
-const handleDateSelect = () => {
-  
+const handleWeekendsToggle = () => {
+  this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
 }
 
-const handleEventClick = (clickInfo) => {
-  if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
-    clickInfo.event.remove()
+const handleDateSelect = (selectInfo) => {
+  let title = prompt('Please enter a new title for your event')
+  let calendarApi = selectInfo.view.calendar
+
+  calendarApi.unselect() // clear date selection
+
+  if (title) {
+    calendarApi.addEvent({
+      id: createEventId(),
+      title,
+      start: selectInfo.startStr,
+      end: selectInfo.endStr,
+      allDay: selectInfo.allDay
+    })
   }
 }
 
-const handleEvents = (events) => {
-  currentEvents.value = events
+const modalStyle = computed(() => {
+  return {
+    top: `${modalTop.value}px`,
+    left: `${modalLeft.value}px`
+  }
+})
+
+const handleEventClick = (clickInfo) => {
+  selectedEvent.value = clickInfo.event;
+  console.log(selectedEvent.value.end)
+  showModal.value = true;
+  const modalWidth = 300
+  const modalHeight = 200 
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const clickX = clickInfo.jsEvent.clientX - (modalWidth / 2);
+  const clickY = clickInfo.jsEvent.clientY - (modalHeight / 2);
+  modalTop.value = clickY > screenHeight / 2 ? clickY - modalHeight + 100 : clickY + 100;
+  modalLeft.value = clickX > screenWidth / 2 ? clickX - modalWidth - 150  : clickX + 150;
 }
-const handleToastClose = () => {
-  isToastOpen.value = false
+  
+const closeModal = () => {
+  showModal.value = false
+  selectedEvent.value = null
+  editing.value = false
 }
+
+
+const handleEvents = async (events) => {
+  try{
+    const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/item", {
+      method: 'PUT',
+      credentials: "include",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        workspace: props.workspace._id,
+        item: item.value
+      })
+    });
+
+    if (!response.ok){
+      console.error('Error al actualizar el evento')
+    }
+  } catch (error){
+    console.log(error)
+  }
+}
+
+// const handleEventChange = async (changeInfo) => {
+//   if (editing) return;
+//   item.events = item.events.map(e => {
+//     if (e._id === changeInfo.event.id){
+//       e.name = changeInfo.event.title;
+//       e.start = new Date(changeInfo.event.start);
+//       e.end = new Date(changeInfo.event.end);
+//     }
+//     return e;
+//   })
+//   try{
+//     const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/item", {
+//       method: 'PUT',
+//       credentials: "include",
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify({
+//         workspace: workspace._id,
+//         item: item
+//       })
+//     });
+
+//     if (!response.ok){
+//       item.events = item.events.map(e => {
+//         if (e._id === changeInfo.event.id){
+//             e.name = changeInfo.oldEvent.title;
+//             e.start = new Date(changeInfo.oldEvent.start);
+//             e.end = new Date(changeInfo.oldEvent.end);
+//           }
+//           return e;
+//       });
+//       changeInfo.revert();
+//       console.error('Error al actualizar el evento')
+//     }
+    
+//   } catch (error){
+//     item.events = item.events.map(e => {
+//     if (e._id === changeInfo.event.id){
+//       e.name = changeInfo.oldEvent.title;
+//       e.start = new Date(changeInfo.oldEvent.start);
+//       e.end = new Date(changeInfo.oldEvent.end);
+//     }
+//     return e;
+//   })
+//     changeInfo.revert();
+//     console.log(error)
+  
+//   }
+// }
 
 const calendarOptions = {
-    plugins: [
-        dayGridPlugin,
-        timeGridPlugin,
-        interactionPlugin 
-    ],
-    headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    initialView: 'dayGridMonth',
-    initialEvents: INITIAL_EVENTS, // alternatively, use the `events` setting to fetch from a feed
-    editable: true,
-    selectable: true,
-    selectMirror: true,
-    dayMaxEvents: true,
-    weekends: true,
-    select: handleDateSelect,
-    eventClick: handleEventClick,
-    eventsSet: handleEvents
-    /* you can update a remote database when these fire:
-    eventAdd:
-    eventChange:
-    eventRemove:
-    */
-    };
-const currentEvents = []
+  plugins: [
+      dayGridPlugin,
+      timeGridPlugin,
+      interactionPlugin 
+  ],
+  headerToolbar: {
+      left: 'prev,next',
+      center: 'title',
+      right: 'today'
+  },
+  locales: [ esLocale ],
+  timeZone: 'UTC',
+  height: 650,
+  initialView: 'dayGridMonth',
+  initialEvents: events, // alternatively, use the `events` setting to fetch from a feed
+  editable: true,
+  selectable: true,
+  selectMirror: true,
+  dayMaxEvents: true,
+  weekends: true,
+  eventClick: handleEventClick,
+  eventsSet: handleEvents,
+  
+  /* you can update a remote database when these fire:
+  eventAdd:
+  eventChange: handleEventChange,
+  eventRemove:
+  */
+};
 
+const handleStartEdit = (selectedEvent) => {
+  editingEvent.value = {
+    id: selectedEvent.id,
+    title: selectedEvent.title,
+    start: parseDate(selectedEvent.start),
+    end: parseFormEndDate(selectedEvent.end, true)
+  };
+  editing.value = true;
+}
+
+const handleFinishEdit = () => {
+  if (!editingEvent.value.title || editingEvent.value.title.trim()=="" || !editingEvent.value.start || editingEvent.value.start.trim() == ""){
+    alert('Por favor, rellene al menos los campos de título y fecha de inicio.')
+    return;
+  }
+  if(editingEvent.value.id){
+    const event = calendar.value.getApi().getEventById(editingEvent.value.id);
+    if (event.title !== editingEvent.value.title){
+      event.setProp('title', editingEvent.value.title);
+    }
+    editing.value = false;
+    event.setDates(parseDate(new Date(editingEvent.value.start)), parseFormEndDate(new Date(editingEvent.value.end), false));
+    selectedEvent.value = event;
+    closeModal();
+  }else{
+    const newEvent = {
+      title: editingEvent.value.title,
+      start: parseDate(new Date(editingEvent.value.start)),
+      end: parseFormEndDate(new Date(editingEvent.value.end), false),
+      allDay: true
+    }
+    console.log(item)
+    item.value.events.push(newEvent);
+    newEvent.id = createEventId();
+    calendar.value.getApi().addEvent(newEvent);
+    editing.value = false;
+    closeModal();
+  }
+}
+onBeforeMount(() => {
+  item.value.events.forEach(event => {
+    events.push({
+      id: event._id,
+      title: event.name,
+      start: parseDate(event.start),
+      end: parseDate(event.end),
+      allDay: true
+    })
+  })
+})
+
+watch(props.item, (newVal, _ ) => {
+  item.value = newVal;
+  events = [];
+  item.value.events.forEach(event => {
+    events.push({
+      id: event._id,
+      title: event.name,
+      start: parseDate(event.start),
+      end: parseDate(event.end),
+      allDay: true
+    })
+  })
+  calendar.value.getApi().refetchEvents();
+})
 
 </script>
 
 <template>
-  <h1>CALENDARIO</h1>
-  <div class='demo-app'>
-    <div class='demo-app-sidebar'>
-      <div class='demo-app-sidebar-section'>
-        <h2>Instructions</h2>
-        <ul>
-          <li>Select dates and you will be prompted to create a new event</li>
-          <li>Drag, drop, and resize events</li>
-          <li>Click an event to delete it</li>
-        </ul>
+  <h1>Calendario {{ item.name }}</h1>
+  <div style="padding: 40px;background-color: #1E2B37;border-radius: 35px;">
+    <FullCalendar ref="calendar" style="color: white;" :options='calendarOptions'>
+      <template v-slot:eventContent='arg'>
+        <b>{{ arg.timeText }}</b>
+        <i>{{ arg.event.title }}</i>
+      </template>
+    </FullCalendar>
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal" :style="{ top: modalTop + 'px', left: modalLeft + 'px' }" @click.stop>
+        <div v-if="!editing">
+          <h2>{{ selectedEvent.title }}</h2>
+          <p>Inicio: {{ parseSpanishStartDate(selectedEvent.start) }}</p>
+          <p> {{ selectedEvent.end?"Fin: " + parseSpanishEndDate(selectedEvent.end):"" }}</p>
+          <button @click="handleStartEdit(selectedEvent)">Editar</button>
+        </div>
+        <div class="modal-form" v-else style="display: flex; flex-direction: column; align-items: center;">
+          <h2>Editar evento</h2>
+          <input class="modal-input" type="text" v-model="editingEvent.title" style="width: 100%; background-color: white; color: black; margin-bottom:10px">
+          <input class="modal-input" type="date" v-model="editingEvent.start" style="width: 200px;background-color: white; color: black; margin-bottom:10px">
+          <input type="date" v-model="editingEvent.end" style="width: 200px;background-color: white; color: black; margin-bottom:10px">
+          <button @click="handleFinishEdit" style="width: 100px;">Guardar</button>
+        </div>
       </div>
-      <div class='demo-app-sidebar-section'>
-        <label>
-          <input
-            type='checkbox'
-            :checked='calendarOptions.weekends'
-            @change='handleWeekendsToggle'
-          />
-          toggle weekends
-        </label>
-      </div>
-      <div class='demo-app-sidebar-section'>
-        <h2>All Events ({{ currentEvents.length }})</h2>
-        <ul>
-          <li v-for='event in currentEvents' :key='event.id'>
-            <b>{{ event.startStr }}</b>
-            <i>{{ event.title }}</i>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class='demo-app-main'>
-      <FullCalendar
-        class='demo-app-calendar'
-        :options='calendarOptions'
-      >
-        <template v-slot:eventContent='arg'>
-          <b>{{ arg.timeText }}</b>
-          <i>{{ arg.event.title }}</i>
-        </template>
-      </FullCalendar>
     </div>
   </div>
+  
 </template>
 
-<style scoped>
-
-h2 {
-  margin: 0;
-  font-size: 16px;
+<style>
+.modal-form{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-ul {
-  margin: 0;
-  padding: 0 0 0 1.5em;
+.modal-form input{
+  width: 200px;
+  background-color: white;
+  color: black; 
+  margin-bottom: 10px;
 }
 
-li {
-  margin: 1.5em 0;
-  padding: 0;
+.modal-form button{
+  width: 50px;
+  
 }
 
-b { /* used for event dates/times */
+
+b { 
+  color: black;
   margin-right: 3px;
 }
 
-.demo-app {
-  display: flex;
-  min-height: 100%;
-  font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
-  font-size: 14px;
-}
-
-.demo-app-sidebar {
-  width: 300px;
-  line-height: 1.5;
-  background: #eaf9ff;
-  border-right: 1px solid #d3e2e8;
-}
-
-.demo-app-sidebar-section {
-  padding: 2em;
-}
-
-.demo-app-main {
-  flex-grow: 1;
-  padding: 3em;
-}
-
-.fc { /* the calendar root */
+.fc {
   max-width: 1100px;
   margin: 0 auto;
+}
+
+.fc .fc-day-today {
+  background-color: #61556e9c !important; 
+}
+
+.fc .fc-daygrid-day-number {
+  color: white; /*Días del mes */
+}
+
+.fc .fc-col-header-cell-cushion { 
+   color: white; /*Días de la semana */
+}
+
+.fc .fc-event {
+  background-color: #c8b1e4da;
+  border-color: #c8b1e4da; 
+  color: black;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc .fc-event-main {
+  color: black;
+  border-color: #1E2B37;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* background: rgba(0, 0, 0, 0.5); */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+.modal {
+  background-color: #61556e;
+  border: 3px solid #1E2B37;
+  padding: 20px;
+  border-radius: 5px;
+  position: absolute;
+  width: 550px;
+  
+}
+.modal h2 {
+  color: white;
+  margin-bottom: 10px;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.i{
+  word-wrap: break-word;  
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc-daygrid-more-link {
+  color: white;
+} 
+
+.fc-daygrid-more-link:hover {
+  color: white;
 }
 
 </style>

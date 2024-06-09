@@ -47,7 +47,7 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
-  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', user: currentUser.value._id, workspaceId: workspace.value._id }));
 }
 
 const formatDate = (date) => {
@@ -170,6 +170,7 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', closeSidebar);
 }); 
+
 </script>
  
 <template>
