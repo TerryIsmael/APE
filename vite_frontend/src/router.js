@@ -4,6 +4,7 @@ import register from './components/register.vue'
 import workspace from './components/workspace.vue'
 import notices from './components/notices.vue'
 import favorites from './components/favorites.vue'
+import workspaceDetails from './components/workspaceDetails.vue'
 import test from './components/test.vue'
 
 const router = createRouter({
@@ -13,6 +14,8 @@ const router = createRouter({
         {path: '/register', name: 'register', component: register},
         {path: '/notices', name: 'notices', component: notices},
         {path: '/favorites', name: 'favorites', component: favorites},
+        {path: '/notices', name: 'notices', component: notices},
+        {path: '/wsDetails', name: 'wsDetails', component: workspaceDetails},
         {path: '/workspace/:path*', name: 'workspace', component: workspace},
         {path: '/test', name: 'test', component:test},
     ] 
