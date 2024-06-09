@@ -59,17 +59,25 @@ export const fileSchema = new mongoose.Schema<IFile>({
 });
 
 export const eventSchema = new mongoose.Schema<IEvent>({
-    initDate: { 
+    title: { 
+        type: String, 
+        required: [true, "El título del evento es obligatorio"],
+        validate: {  
+            validator: (value: string) => value.trim().length > 0,
+            message: `El título del evento no puede estar vacío`
+        } 
+    },
+    start: { 
         type: Date, 
         required: [true, "La fecha de inicio del evento es obligatoria"],
         default: Date.now
     },
-    finalDate: { 
+    end: { 
         type: Date, 
         validate: [
             {
                 validator: function(this: IEvent, value: Date) {
-                    return value.getTime() > this.initDate.getTime();
+                    return value.getTime() >= this.start.getTime();
                 },                
                 message: "La fecha de finalización del evento no puede ser anterior a la fecha de inicio"
             }

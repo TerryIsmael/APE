@@ -37,6 +37,7 @@ const editing = ref(false)
 const currentEvents = []
 const editingEvent = ref({})
 const calendar = ref(null)
+const isNewEvent = ref(false)
 
 const createEventId = () => {
   return String(eventGuid.value++)
@@ -68,20 +69,20 @@ const parseFormEndDate = (date, init) => {
   return parseDate(parsedDate);
 }
  
-const events = [
-  {
-    id: createEventId(),
-    title: 'All-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day event',
-    start: "2024-06-02",
-    end: "2024-06-27",
-    allDay: true
-  },
-  {
-    id: createEventId(),
-    title: 'Timed event',
-    start: todayStr,
-    allDay: true
-  }
+let events = [
+  // {
+  //   id: createEventId(),
+  //   title: 'All-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day event',
+  //   start: "2024-06-02",
+  //   end: "2024-06-27",
+  //   allDay: true
+  // },
+  // {
+  //   id: createEventId(),
+  //   title: 'Timed event',
+  //   start: todayStr,
+  //   allDay: true
+  // }
 ]
 
 const handleWeekendsToggle = () => {
@@ -89,20 +90,12 @@ const handleWeekendsToggle = () => {
 }
 
 const handleDateSelect = (selectInfo) => {
-  let title = prompt('Please enter a new title for your event')
-  let calendarApi = selectInfo.view.calendar
-
-  calendarApi.unselect() // clear date selection
-
-  if (title) {
-    calendarApi.addEvent({
-      id: createEventId(),
-      title,
-      start: selectInfo.startStr,
-      end: selectInfo.endStr,
-      allDay: selectInfo.allDay
-    })
-  }
+  selectedEvent.value = selectInfo;
+  showModal.value = true;
+  placeModal(selectInfo);
+  editing.value = true;
+  isNewEvent.value = true;
+  handleStartEdit(selectInfo);
 }
 
 const modalStyle = computed(() => {
@@ -112,10 +105,7 @@ const modalStyle = computed(() => {
   }
 })
 
-const handleEventClick = (clickInfo) => {
-  selectedEvent.value = clickInfo.event;
-  console.log(selectedEvent.value.end)
-  showModal.value = true;
+const placeModal = (clickInfo) => {
   const modalWidth = 300
   const modalHeight = 200 
   const screenWidth = window.innerWidth;
@@ -125,11 +115,18 @@ const handleEventClick = (clickInfo) => {
   modalTop.value = clickY > screenHeight / 2 ? clickY - modalHeight + 100 : clickY + 100;
   modalLeft.value = clickX > screenWidth / 2 ? clickX - modalWidth - 150  : clickX + 150;
 }
+
+const handleEventClick = (clickInfo) => {
+  selectedEvent.value = clickInfo.event;
+  showModal.value = true;
+  placeModal(clickInfo);
+}
   
 const closeModal = () => {
   showModal.value = false
   selectedEvent.value = null
   editing.value = false
+  isNewEvent.value = false
 }
 
 
@@ -227,6 +224,7 @@ const calendarOptions = {
   selectMirror: true,
   dayMaxEvents: true,
   weekends: true,
+  select: handleDateSelect,
   eventClick: handleEventClick,
   eventsSet: handleEvents,
   
@@ -242,7 +240,7 @@ const handleStartEdit = (selectedEvent) => {
     id: selectedEvent.id,
     title: selectedEvent.title,
     start: parseDate(selectedEvent.start),
-    end: parseFormEndDate(selectedEvent.end, true)
+    end: selectedEvent.end?parseFormEndDate(selectedEvent.end, true):parseDate(selectedEvent.start)
   };
   editing.value = true;
 }
@@ -254,11 +252,19 @@ const handleFinishEdit = () => {
   }
   if(editingEvent.value.id){
     const event = calendar.value.getApi().getEventById(editingEvent.value.id);
+    item.value.events = item.value.events.map(e => {
+      if (e._id === editingEvent.value.id){
+        e.title = editingEvent.value.title;
+        e.start = new Date(editingEvent.value.start);
+        e.end = new Date(editingEvent.value.end);
+      }
+      return e;
+    })
     if (event.title !== editingEvent.value.title){
       event.setProp('title', editingEvent.value.title);
     }
     editing.value = false;
-    event.setDates(parseDate(new Date(editingEvent.value.start)), parseFormEndDate(new Date(editingEvent.value.end), false));
+    event.setDates(parseDate(new Date(editingEvent.value.start)), editingEvent.value.end?parseFormEndDate(new Date(editingEvent.value.end), false):parseDate(new Date(editingEvent.value.start)), {allDay: true});
     selectedEvent.value = event;
     closeModal();
   }else{
@@ -268,7 +274,7 @@ const handleFinishEdit = () => {
       end: parseFormEndDate(new Date(editingEvent.value.end), false),
       allDay: true
     }
-    console.log(item)
+
     item.value.events.push(newEvent);
     newEvent.id = createEventId();
     calendar.value.getApi().addEvent(newEvent);
@@ -280,7 +286,7 @@ onBeforeMount(() => {
   item.value.events.forEach(event => {
     events.push({
       id: event._id,
-      title: event.name,
+      title: event.title,
       start: parseDate(event.start),
       end: parseDate(event.end),
       allDay: true
@@ -294,7 +300,7 @@ watch(props.item, (newVal, _ ) => {
   item.value.events.forEach(event => {
     events.push({
       id: event._id,
-      title: event.name,
+      title: event.title,
       start: parseDate(event.start),
       end: parseDate(event.end),
       allDay: true

@@ -12,7 +12,7 @@ import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, St
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
-import type { IEvent, INote, INotice, ITimer } from '../models/typeItem.ts';
+import type { ICalendar, IEvent, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 
@@ -132,9 +132,8 @@ export const editItem = async (req: any, res: any) => {
                 (item as INotice).text = itemData.text;
                 (item as INotice).important = itemData.important;
                 break;
-            case ItemType.Event:
-                (item as IEvent).initDate = itemData.initDate;
-                (item as IEvent).finalDate = itemData.finalDate;
+            case ItemType.Calendar:
+                (item as ICalendar).events = itemData.events;
                 break;
             default:
                 break;
@@ -212,7 +211,6 @@ export const createFile = async (req: any, _: any, next: NextFunction) => {
         req.params.itemId = item.id;
         next();
     } catch (error) {
-        console.log(error);
         next(error);
     }
 };
