@@ -24,8 +24,9 @@ export interface IFolder extends IItem {
 }
 
 export interface IEvent extends IItem {
-    initDate: Date;
-    finalDate: Date;
+    title: string;
+    start: Date;
+    end: Date;
 }
 
 export interface ICalendar extends IItem {

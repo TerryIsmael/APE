@@ -40,7 +40,6 @@ wsServer.on('connection', (ws) => {
           connectionByUser.set(userId, ws);
         }
       }
- 
     } else {
       // Aquí puedes manejar otros tipos de mensajes
     }
