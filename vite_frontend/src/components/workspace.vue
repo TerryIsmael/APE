@@ -247,12 +247,11 @@ const saveNote = async () => {
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server',currentUser.value?._id,workspace.value?._id);
+    console.log('Connected to server');
     ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
-        console.log(jsonEvent);
         if (jsonEvent.type === 'workspaceUpdated') {
             await fetchWorkspace();
             initPath();

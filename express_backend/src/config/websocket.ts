@@ -13,7 +13,7 @@ wsServer.on('connection', (ws) => {
   ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message.toString());
     if (parsedMessage.type === 'workspaceIdentification') {
-      console.log('Mensaje de identificación de workspace recibido', parsedMessage);
+      //console.log('Mensaje de identificación de workspace recibido', parsedMessage);
       const workspaceId = parsedMessage.workspaceId;
       const userId = parsedMessage.userId;
       if (!workspaceId || !userId) {
