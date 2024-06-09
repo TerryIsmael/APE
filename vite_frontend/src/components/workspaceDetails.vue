@@ -54,7 +54,7 @@ const editing = ref(false);
 const loading = ref(true);
 
 const isUserInModalProfile = (user) => {
-  WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
+  return WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
 };
 
 const handleSelectProfile = (profile) => {
@@ -274,7 +274,6 @@ onMounted(() => {
         </div>
 
         <div style="display: flex; width: 100%">
-
           <div style="text-align: left; flex: 1; max-width: 45%;"> 
             <h2 style="margin-left: 0; margin-right: 0; margin-bottom: 0;">Detalles del workspace</h2>
             <hr style="width: 90%; display: flex; margin-left: 0%;">
@@ -303,7 +302,6 @@ onMounted(() => {
           </div>
 
           <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 55%;">
-            
             <div style="display:flex; justify-content:space-between; align-items:center"> 
               <h2 style="text-align: left; margin-bottom: 5px;">Nombre del workspace</h2>
 
@@ -354,15 +352,12 @@ onMounted(() => {
                     <option value="Admin">Admin</option>
                   </select>
                 </div>
-                
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
-    
   </div>
 
   <!-- Main sidebar -->
