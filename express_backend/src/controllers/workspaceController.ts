@@ -188,7 +188,7 @@ export const changeWSPerms = async (req: any, res: any) => {
           return;
       }
       const reqPerm = await getWSPermission(req.user._id, wsId);
-      if (reqPerm !== WSPermission.Owner) {
+      if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
           res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
           return;
       }

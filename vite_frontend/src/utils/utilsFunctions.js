@@ -72,14 +72,14 @@ class UtilsFunctions {
 
   static translatePerm(perm) {
     switch (perm) {
-      case 'owner':
+      case 'Owner':
         return 'Propietario';
-      case 'write':
+      case 'Write':
         return 'Escritura';
-      case 'read':
+      case 'Read':
         return 'Lectura';
-      case 'view':
-        return 'Vista';
+      case 'Admin':
+        return 'Admin';
       default:
         return 'Ninguno';
     }
