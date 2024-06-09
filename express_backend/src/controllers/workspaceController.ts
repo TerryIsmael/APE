@@ -184,15 +184,19 @@ export const changeWSPerms = async (req: any, res: any) => {
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
       if (!workspace) {
-          res.status(404).json({ error: 'No se ha encontrado el workspace' });
-          return;
+        res.status(404).json({ error: 'No se ha encontrado el workspace' });
+        return;
       }
       const reqPerm = await getWSPermission(req.user._id, wsId);
       if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
           res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
           return;
       }
-      const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id === profileId);
+      if (reqPerm === WSPermission.Admin && (perm === WSPermission.Owner || perm === WSPermission.Admin)) {
+          res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de otros administradores' });
+          return;
+      }
+      const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id.toString() === profileId.toString());
       if (!profile) {
           res.status(404).json({ error: 'El usuario no está en este workspace' });
           return;

@@ -1,3 +1,6 @@
+import WorkspaceUtils from "./WorkspaceFunctions.js";
+import Utils from "./UtilsFunctions.js";
+
 class WorkspaceDetails {
 
     static isUserInModalProfile = (user, modalProfile) => {
@@ -45,7 +48,38 @@ class WorkspaceDetails {
         workspace.value.profiles.forEach(profile => {
           profileWsPerms.value[profile._id] = profile.wsPerm;
         });
-    }
+    };
+
+    static changeWsPerms = async (perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+        try { 
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/perms', {
+                body: JSON.stringify({ profileId: profileId, perm: perm, wsId: workspace.value._id }),
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+                errorMessage.value = [];
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al cambiar permisos");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
 }
 
 export default WorkspaceDetails;

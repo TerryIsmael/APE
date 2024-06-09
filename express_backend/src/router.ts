@@ -8,6 +8,7 @@ import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavori
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
+import { validateWsPerms } from './middlewares/workspaceMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
@@ -119,7 +120,8 @@ router.delete('/item', isLogged, (req: Request, res: Response) => {
         res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
     }
 });
-router.put('/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+
+router.put('/perms', isLogged, validateWsPerms, async (req: Request, res: Response) => {
     try {
         await changeWSPerms(req, res);
     } catch(error) {
