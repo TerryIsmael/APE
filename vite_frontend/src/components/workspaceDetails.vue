@@ -277,7 +277,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="!loading">
+  <div v-if="loading">
+    <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
+  </div>
+  <div v-else>
     <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
       <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined" style="z-index: 1002">chevron_right</span>
       <span v-else @click="showMainSidebar = false" class="material-symbols-outlined" style="z-index: 1002">chevron_left</span>

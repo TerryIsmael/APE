@@ -13,6 +13,7 @@ const props = defineProps({
   },
 });
 
+const loading = ref(true);
 const ws = ref(null);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
@@ -58,6 +59,7 @@ const fetchUser = async () => {
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
   if(routedItem.value) routedItem.value = items.value.find(item => item._id == routedItem.value._id);
+  loading.value = false;
 }
 
 const formatDate = (date) => {
@@ -303,136 +305,140 @@ watch(
 </script>
 
 <template>
-  <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
-  <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></Calendar>
-  <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
-    <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
-      <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
-        style="z-index: 1002">chevron_right</span>
-      <span v-else @click="showMainSidebar = false" class="material-symbols-outlined"
-        style="z-index: 1002">chevron_left</span>
-    </div>
-    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; width: 82%;">
-      <div style="display:flex; justify-content: start;  width: 10vw;">
-        <button style=" " @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+  <div v-if="loading">
+    <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
+  </div>
+  <div v-else>
+    <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
+    <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></Calendar>
+    <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
+      <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
+        <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
+          style="z-index: 1002">chevron_right</span>
+        <span v-else @click="showMainSidebar = false" class="material-symbols-outlined"
+          style="z-index: 1002">chevron_left</span>
       </div>
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }} 
-      </h1>
-      <div style="display:flex; justify-content: end;  width: 10vw;" >
-        <button @click="openFormEditNote" v-if="!editing">Editar</button>
-      </div>
-    </div>
-    <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
-      <div class="notebook" style="color:black; width: 80%; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
-        <h1 style="text-align: center; margin-top: 20px; margin-bottom:30px;">{{ routedItem.name }}</h1>
-        <p style="white-space: pre-line; font-size: 2vh">{{ routedItem.text }}</p>
-      </div>
-      <div class="notebook" style="color:black; width: 80%; height: 70vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
-        <textarea v-model="titleText" style="height: 10vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
-        <textarea v-model="noteText" style="color:black; width: 100%; height: 70%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
-        <div style="margin:5px">
-          <button style="margin-right:5px" @click="saveNote">Guardar</button>
-          <button style="margin-left:5px; background-color: #c55e5e" @click="editing=!editing">Cancelar</button>
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; width: 82%;">
+        <div style="display:flex; justify-content: start;  width: 10vw;">
+          <button style=" " @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+        </div>
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }} 
+        </h1>
+        <div style="display:flex; justify-content: end;  width: 10vw;" >
+          <button @click="openFormEditNote" v-if="!editing">Editar</button>
         </div>
       </div>
-    </div>
-  </div>
-  <div v-if="routedItem == 'Not found'">
-    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-         {{ workspace?.name }}
-      </h1>
-    </div>
-    <h2>No se encuentra el item. Puede que haya sido movido o eliminado.</h2>
-  </div>
-
-  <div v-if="!routedItem">
-    <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ workspace?.name }}
-      </h1>
-    </div>
-
-    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
-
-      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-        <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
-          <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-          <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
-            <h2 style="margin-right: 1%">Ruta actual:</h2>
-            <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-            <h2 v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
+        <div class="notebook" style="color:black; width: 80%; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
+          <h1 style="text-align: center; margin-top: 20px; margin-bottom:30px;">{{ routedItem.name }}</h1>
+          <p style="white-space: pre-line; font-size: 2vh">{{ routedItem.text }}</p>
+        </div>
+        <div class="notebook" style="color:black; width: 80%; height: 70vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
+          <textarea v-model="titleText" style="height: 10vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
+          <textarea v-model="noteText" style="color:black; width: 100%; height: 70%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
+          <div style="margin:5px">
+            <button style="margin-right:5px" @click="saveNote">Guardar</button>
+            <button style="margin-left:5px; background-color: #c55e5e" @click="editing=!editing">Cancelar</button>
           </div>
         </div>
+      </div>
+    </div>
+    <div v-if="routedItem == 'Not found'">
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }}
+        </h1>
+      </div>
+      <h2>No se encuentra el item. Puede que haya sido movido o eliminado.</h2>
+    </div>
 
-        <div style="display: flex; justify-content: flex-end; width: 15%;">
-          <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
-            <span class="material-symbols-outlined">info</span>
-          </button>
-          <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
-            <span class="material-symbols-outlined">create_new_folder</span>
-          </button>
-          <div class="dropdown">
-            <button style="max-height: 50px;" @click="openDropdown">
-              <span class="material-symbols-outlined">add</span>
+    <div v-if="!routedItem">
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }}
+        </h1>
+      </div>
+
+      <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+
+        <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+          <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+            <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+            <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
+              <h2 style="margin-right: 1%">Ruta actual:</h2>
+              <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
+              <h2 v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; width: 15%;">
+            <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
+              <span class="material-symbols-outlined">info</span>
             </button>
-            <div style="z-index: 1002;" class="dropdown-content">
-              <div @click="openNewItemModal('Notice')">Anuncio</div>
-              <div @click="openNewItemModal('Calendar')">Calendario</div>
-              <div @click="openNewItemModal('Note')">Nota</div>
-              <div @click="openNewItemModal('Timer')">Temporizador</div>
-              <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
-              <div @click="selectUploadFile" value="File">Archivo</div>
+            <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
+              <span class="material-symbols-outlined">create_new_folder</span>
+            </button>
+            <div class="dropdown">
+              <button style="max-height: 50px;" @click="openDropdown">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+              <div style="z-index: 1002;" class="dropdown-content">
+                <div @click="openNewItemModal('Notice')">Anuncio</div>
+                <div @click="openNewItemModal('Calendar')">Calendario</div>
+                <div @click="openNewItemModal('Note')">Nota</div>
+                <div @click="openNewItemModal('Timer')">Temporizador</div>
+                <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
+                <div @click="selectUploadFile" value="File">Archivo</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="main-content container">
-        <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
-        <div v-if="existFolder && items.length === 0">
-          <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
-        </div>
-
-        <div v-else>
-          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
-            <div>
-              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
-                {{ error }}
-              </p>
-            </div>
-            <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
-              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
-            </button>
+        <div class="main-content container">
+          <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
+          <div v-if="existFolder && items.length === 0">
+            <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
           </div>
 
-          <div class="items-container">
-            <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)"
-              draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event, item)"
-              v-bind="getItemBindings(item)">
+          <div v-else>
+            <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
               <div>
-                <div v-if="currentUser?.favorites?.includes(item._id)">
-                  <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
-                  <span v-if="currentUser?.favorites?.includes(item._id)"
-                    class="material-symbols-outlined filled-heart absolute-heart">favorite</span>
-                </div>
-                <div v-else>
-                  <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
-                </div>
-                <div style="display:flex; align-items: center;">
-                  <p class="item-name">{{ item.name }} </p>
+                <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                  {{ error }}
+                </p>
+              </div>
+              <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+                <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div class="items-container">
+              <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)"
+                draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event, item)"
+                v-bind="getItemBindings(item)">
+                <div>
+                  <div v-if="currentUser?.favorites?.includes(item._id)">
+                    <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                    <span v-if="currentUser?.favorites?.includes(item._id)"
+                      class="material-symbols-outlined filled-heart absolute-heart">favorite</span>
+                  </div>
+                  <div v-else>
+                    <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                  </div>
+                  <div style="display:flex; align-items: center;">
+                    <p class="item-name">{{ item.name }} </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
     </div>
   </div>
-  </div>
-
   <!-- Main sidebar -->
   <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
 

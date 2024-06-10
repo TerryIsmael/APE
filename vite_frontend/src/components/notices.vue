@@ -155,7 +155,10 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div v-if="!loading">
+  <div v-if="loading">
+    <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
+  </div>
+  <div v-else>
     <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
       <h1 @click="$router.push('/workspace/')"
         style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
