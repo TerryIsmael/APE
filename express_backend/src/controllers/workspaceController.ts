@@ -282,3 +282,52 @@ export const saveProfile = async (req: any, res: any) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const deleteProfile = async (req: any, res: any) => {
+  const wsId = req.body.wsId;
+  const profileId = req.body.profileId;
+
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado a eliminar perfiles' });
+      return;
+    }
+
+    const profile = await Profile.findOne({ _id: profileId });
+    if (!profile) {
+      res.status(404).json({ error: 'No se ha encontrado el perfil' });
+      return;
+    }
+
+    if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin)) {
+      res.status(401).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
+      return;
+    }
+
+    if (profile.profileType === ProfileType.Individual) { 
+      const profiles = (workspace.profiles as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId>[]).filter(
+        (prof): prof is IProfile => 
+          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes(profile.users[0] as mongoose.Types.ObjectId)
+      );
+
+      for (const prof of profiles) {
+        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== profile.users[0]?.toString());
+        await prof.save();
+      }
+    }
+
+    await Profile.deleteOne({ _id: profileId });
+    await workspace.save();
+    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    res.status(201).json(workspace);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};

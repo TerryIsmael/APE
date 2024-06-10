@@ -80,6 +80,7 @@ const toggleEdit = () => {
 
 const saveProfile = async () => {
   await WorkspaceDetailsUtils.saveProfile(modalProfile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
 const fetchUser = async () => {
@@ -172,7 +173,7 @@ const getGroupProfiles = computed(() => {
 
 const getIndividualProfiles = computed(() => {
   const profiles = workspace.value.profiles.filter(profile => {
-    const name = profile.users[0].username;
+    const name = profile.users[0]?.username;
     const profileType = profile.profileType === 'Individual';
     const matchesSearchTerm = searchModalProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchModalProfileTerm.value.toLowerCase().trim());
     return (profileType && matchesSearchTerm);
@@ -180,8 +181,8 @@ const getIndividualProfiles = computed(() => {
 
   const orderedUsers = [];
   const users = profiles.map(profile => profile.users[0])
-  const withoutPerms = users.filter(user => !modalProfile.value.users?.includes(user));
-  const withPerms = users.filter(user => modalProfile.value.users?.includes(user));
+  const withoutPerms = users.filter(user => !isUserInModalProfile(user));
+  const withPerms = users.filter(user => isUserInModalProfile(user));
 
   withPerms.length != 0 ? orderedUsers.push(...withPerms) : null;
   orderedUsers.push(...withoutPerms);
@@ -194,20 +195,19 @@ const clearErrorMessage = () => {
 
 const changeWsPerms = async (perm, profileId) => {
   await WorkspaceDetailsUtils.changeWsPerms(perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+};
+
+const deleteProfile = async (profileId) => {
+  await WorkspaceDetailsUtils.deleteProfile(profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
 const logout = async () => {
   await Utils.logout(router);
 };
 
-const saveNote = async () => { // Adaptar a ws
-  editing.value = false;
-  routedItem.value.name = titleText.value;
-  routedItem.value.text = noteText.value;
-  await modifyItem(routedItem.value);
-};
-
-const websocketEventAdd = () => { // He quitado initPath
+const websocketEventAdd = () => { // Hacer bien
   props.ws.addEventListener('open', async (event) => {
     websocketEventAdd();
   });
@@ -347,7 +347,8 @@ onMounted(() => {
                   <div style="display: inline-flex; align-items: center; justify-content: left; width: 75%;">
                     <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
                     <span v-if="profile.profileType !== 'Individual'" @click="handleSelectProfile(profile)" style="vertical-align: middle; cursor: pointer; margin-right: 2px;" class="material-symbols-outlined">edit</span>
-                    <span @click="deleteProfile(profile)" style="vertical-align: middle; cursor: pointer; margin: 0;" class="material-symbols-outlined">delete</span>
+                    <span v-if="profile.profileType === 'Group'" @click="deleteProfile(profile._id)" style="vertical-align: middle; cursor: pointer; margin: 0;" class="material-symbols-outlined">delete</span>
+                    <span v-if="profile.profileType === 'Individual'"  @click="deleteProfile(profile._id)" style="vertical-align: middle; cursor: pointer; margin: 0;" class="material-symbols-outlined">person_remove</span>
                   </div>
 
                   <select v-model="profileWsPerms[profile._id]" @change="changeWsPerms(profileWsPerms[profile._id], profile._id)" class="text-input" style="width: 25%; margin: 0%; padding: 0;">
