@@ -1,5 +1,5 @@
-import Utils from './utilsFunctions.js';
-import WorkspaceUtils from './workspaceFunctions.js';
+import Utils from './UtilsFunctions.js';
+import WorkspaceUtils from './WorkspaceFunctions.js';
 
 class WorkspaceDetails {
 

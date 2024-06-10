@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
-import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation } from './controllers/workspaceController.ts';
+import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
@@ -54,6 +54,7 @@ router.post('/logout', (req: Request, res: Response) => {
 
 router.get('/workspace/:wsId', isLogged, getWorkspace);
 router.get('/workspace/', isLogged, getWorkspace);
+router.get('/workspaces/', isLogged, getUserWorkspaces);
 
 router.post('/workspace/notices', isLogged, async (req: Request, res: Response) => {
     try {
@@ -134,6 +135,14 @@ router.delete('/profile', isLogged, async (req: Request, res: Response) => {
         await deleteProfile(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al borrar el perfil. ' + error });
+    }
+});
+
+router.delete('/leave', isLogged, async (req: Request, res: Response) => { 
+    try {
+        await leaveWorkspace(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al dejar el workspace. ' + error });
     }
 });
 

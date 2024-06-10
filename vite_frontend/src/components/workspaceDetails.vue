@@ -304,7 +304,7 @@ onMounted(() => {
           </div>
 
           <div style="display: flex; justify-content: flex-end; width: 20%;">
-            <button v-if="userWsPerms === 'Owner'" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
+            <button v-if="userWsPerms === 'Owner' && !workspace.default" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
           </div>
       </div>
       
@@ -777,4 +777,4 @@ table {
   scroll-behavior: smooth;
 }
 
-</style>
+</style>../utils/utilsFunctions.js

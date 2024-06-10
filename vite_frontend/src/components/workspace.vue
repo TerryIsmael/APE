@@ -672,14 +672,17 @@ watch(
 
 .sidebar {
   z-index: 1000;
+  position: fixed;
+  top: 0;
+  right: -300px;
   width: 300px;
-  height: 100vh;
   height: 100%;
   background-color: #2F184B;
   transition: right 0.3s ease;
 }
 
-.sidebar.show+.sidebar-overlay {
+.sidebar.show {
+  right: 0;
   display: block;
 }
 
@@ -697,35 +700,6 @@ watch(
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  right: -300px;
-  width: 300px;
-  height: 100%;
-  background-color: #2F184B;
-  transition: right 0.3s ease;
-}
-
-.sidebar.show {
-  right: 0;
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  display: none;
-}
-
-.sidebar.show+.sidebar-overlay {
-  display: block;
 }
 
 .main-sidebar {
@@ -929,4 +903,4 @@ watch(
 .notebook p {
   line-height: 1.5;
 }
-</style>
+</style>../utils/utilsFunctions.js

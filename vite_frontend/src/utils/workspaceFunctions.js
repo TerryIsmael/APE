@@ -1,4 +1,4 @@
-import Utils from './utilsFunctions.js';
+import Utils from './UtilsFunctions.js';
 
 class WorkspaceUtils {
 

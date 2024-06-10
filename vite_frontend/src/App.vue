@@ -34,3 +34,4 @@ onBeforeMount(() => {
 <template>
   <router-view :ws="ws"></router-view>
 </template>
+./utils/UtilsFunctions.js
