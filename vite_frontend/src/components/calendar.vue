@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, defineComponent, onMounted, onBeforeMount } from 'vue'
+import { useRouter } from 'vue-router';
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -7,6 +8,8 @@ import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es';
 import path from 'path';
 import Utils from '../utils/utilsFunctions.js';
+import WorkspaceUtils from '../utils/workspaceFunctions.js';
+
 const props = defineProps({
   ws: {
     ws: Object,
@@ -26,6 +29,8 @@ const props = defineProps({
   }
 
 });
+
+const router = useRouter();
 const item = ref(props.item);
 const eventGuid = ref(0)
 const todayStr = new Date().toString().replace(/T.*$/, '') // YYYY-MM-DD of today
@@ -39,10 +44,14 @@ const editingEvent = ref({})
 const calendar = ref(null)
 const isNewEvent = ref(false)
 
+const navigateToPreviousFolder = () => {
+  WorkspaceUtils.navigateToPreviousFolder(ref(props.path), router);
+}
+
 const createEventId = () => {
   return String(eventGuid.value++)
 }
- 
+
 const parseDate = (date) => {
   const parsedDate = new Date(date);
   const year = parsedDate.getFullYear();
@@ -69,21 +78,7 @@ const parseFormEndDate = (date, init) => {
   return parseDate(parsedDate);
 }
  
-let events = [
-  // {
-  //   id: createEventId(),
-  //   title: 'All-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day eventAll-day event',
-  //   start: "2024-06-02",
-  //   end: "2024-06-27",
-  //   allDay: true
-  // },
-  // {
-  //   id: createEventId(),
-  //   title: 'Timed event',
-  //   start: todayStr,
-  //   allDay: true
-  // }
-]
+let events = []
 
 const handleWeekendsToggle = () => {
   this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
@@ -312,8 +307,20 @@ watch(props.item, (newVal, _ ) => {
 </script>
 
 <template>
-  <h1>Calendario {{ item.name }}</h1>
-  <div style="padding: 40px;background-color: #1E2B37;border-radius: 35px;">
+  <div style="display:flex; flex-direction: column; align-items: center;" >
+  <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; width: 91.5%;">
+      <div style="display:flex; justify-content: start;  width: 10vw;">
+        <button style=" " @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+      </div>
+      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        Calendario {{ item.name }} 
+      </h1>
+      <div style="width: 10vw;" >
+        
+      </div>
+    </div>
+  <div style="padding: 40px;background-color: #1E2B37;border-radius: 35px; width: 90%;">
     <FullCalendar ref="calendar" style="color: white;" :options='calendarOptions'>
       <template v-slot:eventContent='arg'>
         <b>{{ arg.timeText }}</b>
@@ -338,7 +345,7 @@ watch(props.item, (newVal, _ ) => {
       </div>
     </div>
   </div>
-  
+  </div>
 </template>
 
 <style>

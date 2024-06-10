@@ -89,7 +89,8 @@ export async function getUserPermission(userId: any, workspace: any, item?: any)
         if(item) return await getItemPermission(userId, workspace, item);
         else return Permission.Write;
     }else if (profile === WSPermission.Read) {
-        return Permission.Read;
+        if(item) return await getItemPermission(userId, workspace, item);
+        else return Permission.Read;
     }
     return profile;
 }

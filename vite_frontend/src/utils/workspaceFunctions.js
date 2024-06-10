@@ -155,7 +155,7 @@ class WorkspaceUtils {
   static verifyPerms = async (item, workspace, currentUser) => {
     const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
     const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x => x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
-    if (wsPerm[1] === 2) {
+    if ([2,1].includes(wsPerm[1])) {
       const filePermLevels = { 'Owner': 3, 'Write': 2, 'Read': 1 }
       const perm = item.profilePerms.map(x=>{
         return {
