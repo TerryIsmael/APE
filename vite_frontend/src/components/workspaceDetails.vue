@@ -35,13 +35,16 @@ const seconds = ref(0);
 const workspaceId = ref(null);
 const workspace = ref({});
 const newWorkspace = ref({});
-const inviteProfile = ref('');
-const inviteUser = ref('');
+const inviteProfile = ref('none');
+const userToInvite = ref('');
+const permToInvite = ref('Read');
 const isModalOpened = ref(false);
 const searchModalProfileTerm = ref('');
 const searchGroupProfileTerm = ref('');
 const modalProfile = ref({});
 const selectedProfile = ref(null);
+const linkDuration = ref('day');
+const invitations = ref([]);
 
 const folders = ref([]);
 const showMainSidebar = ref(false);
@@ -52,6 +55,15 @@ const isNewItemModalOpened = ref(false);
 const newItem = ref({});
 const editing = ref(false);
 const loading = ref(true);
+
+
+const fetchInvitations = async () => {
+  await WorkspaceDetailsUtils.fetchInvitations(workspace, invitations, errorMessage, router);
+};
+
+const createInvitationLink = async (profile) => {
+  await WorkspaceDetailsUtils.createInvitationLink(workspace, inviteProfile, linkDuration, invitations, errorMessage, router);
+};
 
 const isUserInModalProfile = (user) => {
   return WorkspaceDetailsUtils.isUserInModalProfile(user, modalProfile);
@@ -124,6 +136,27 @@ const handleNewItemForm = async () => {
 
 const navigateToPreviousFolder = () => {
   WorkspaceUtils.navigateToPreviousFolder(path, router);
+};
+
+const toggleActiveInvitation = async (invitation) => {
+  await WorkspaceDetailsUtils.toggleActiveInvitation(workspace, invitation, invitations, errorMessage, router);
+};
+
+const deleteInvitation = async (invitation) => {
+  await WorkspaceDetailsUtils.deleteInvitation(workspace, invitation, invitations, errorMessage, router);
+};
+
+const inviteUser = async () => {
+  await WorkspaceDetailsUtils.inviteUser(workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router);
+};
+
+const copyInvitation = async (invitation) => {
+  await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + invitation.code);
+  var message = document.getElementById("message");
+  message.style.visibility = "visible";
+  setTimeout(function() {
+          message.style.visibility = "hidden";
+        }, 3000);
 };
 
 const getFilteredProfiles = computed(() => {
@@ -228,6 +261,7 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchWorkspace();
+  await fetchInvitations();
   loading.value = false;
 });
 
@@ -266,7 +300,7 @@ onMounted(() => {
       <div class="main-content" style="width: 90%;">
         <div class="error" v-if="errorMessage.length !== 0 && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
           <div>
-            <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;"> {{ error }} </p>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;"> {{ error }} </p>
           </div>
           <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
             <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
@@ -274,7 +308,7 @@ onMounted(() => {
         </div>
 
         <div style="display: flex; width: 100%">
-          <div style="text-align: left; flex: 1; max-width: 45%;"> 
+          <div style="text-align: left; flex: 1; max-width: 50%;"> 
             <h2 style="margin-left: 0; margin-right: 0; margin-bottom: 0;">Detalles del workspace</h2>
             <hr style="width: 90%; display: flex; margin-left: 0%;">
 
@@ -283,25 +317,51 @@ onMounted(() => {
             <h2 style="margin: 0;">Invitación al workspace</h2>
             <hr style="width: 90%; display: flex; margin-left: 0%;">
 
+            <h3 style="margin: 0; margin-top: 5px; margin-bottom: 5px;">Mediante nombre de usuario</h3>
+            <div style="display: flex; justify-content: space-between; align-items: baseline">
+              <input type="text" class="text-input" style=" " v-model="userToInvite" placeholder="Username del nuevo miembro..."></input>
+              <select v-model="permToInvite" class="text-input" style="width: 32%; margin-left:3px">
+                  <option :value="'Read'">Lectura</option>
+                  <option :value="'Write'">Escritura</option>
+                  <option :value="'Admin'">Administrador</option>
+              </select> 
+              <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
+            </div>
+
             <h3 style="margin-left: 0; margin-right: 0; margin-top: 5px; margin-bottom: 5px;">Mediante link de invitación</h3>
             
             <p style="margin: 0%; margin-bottom: 5px;">Seleccione un perfil para generar el link:</p>
             <div style="display: flex; justify-content: space-between; width: 100%;">
               <select v-model="inviteProfile" class="text-input" style="width: 60%;">
-                  <option :value="None"> Ninguno - Lectura </option>
+                  <option :value="'none'"> Ninguno - Lectura </option>
                   <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile.name">{{ profile.name }} </option>
               </select>
-              <button class="invite-button" @click="generateLink">Generar</button>
+              <select v-model="linkDuration" class="text-input" style="width: 20%; margin-left:3px">
+                  <option :value="'day'"> 1 día </option>
+                  <option :value="'week'">1 semana</option>
+                  <option :value="'month'">1 mes</option>
+                  <option :value="'none'">Para siempre</option>
+              </select>
+              <button class="invite-button" @click="createInvitationLink" >Generar</button>
             </div>
-
-            <h3 style="margin: 0; margin-top: 5px; margin-bottom: 5px;">Mediante nombre de usuario</h3>
-            <div style="display: flex; justify-content: space-between;">
-              <input type="text" class="text-input" style="width: 56.5%;" v-model="inviteUser" placeholder="Username del nuevo miembro..."></input>
-              <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
-            </div>
+            <div id="message">Enlace copiado al portapapeles</div>
+            <table style="width: 90.5%; margin-top:2%">
+              <tr>
+                <th style="width:30%">Perfil</th>
+                <th style="width:26%">Duración</th>
+                <th style="width:6%">Activo</th>
+                <th style="width:8%; margin-left:5%; text-align: end;">Eliminar</th>
+              </tr>
+              <tr v-for="invitation in invitations" :key="invitation._id">  
+                <td >{{ invitation.profile?(invitation.profile.name, "-", invitation.profile.wsPerm):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
+                <td>{{ invitation.expirationDate?Utils.formatDate(invitation.expirationDate):"Indefinida" }}</td>
+                <td class="td-center"><span @click="toggleActiveInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">{{ invitation.active ? 'check' : 'close' }}</span></td>
+                <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>
+              </tr>
+            </table>
           </div>
 
-          <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 55%;">
+          <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 50%;">
             <div style="display:flex; justify-content:space-between; align-items:center"> 
               <h2 style="text-align: left; margin-bottom: 5px;">Nombre del workspace</h2>
 
@@ -467,6 +527,34 @@ onMounted(() => {
 </template>
 
 <style scoped>
+
+#message {
+      visibility: hidden;
+      background-color: #C8B1E4;
+      color: #000000;
+      text-align: center;
+      border-radius: 5px;
+      padding: 10px;
+      position: fixed;
+      z-index: 1;
+      font-size: 1em;
+      font-weight: 500;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-left: -50px;
+    } 
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .td-center {
+    text-align: center;
+    padding: 8px;
+    padding-right: 4%;
+  }
+
 .container {
   display: flex;
   align-items: center;
@@ -615,12 +703,13 @@ onMounted(() => {
 
 .invite-button {
   margin: 0;
-  margin-right: 24%;
+  flex-shrink: 0;
+  margin-right: 9%;
   margin-left: 15px;
   height: 30px;
   width: 80px;
   border-radius: 8px;
-  padding: 0em 0.7em;
+  padding: 0;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
