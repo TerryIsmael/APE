@@ -17,7 +17,7 @@ import type { IInvitation } from '../models/invitation.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
-    const wsId = req.query.workspace;
+    const wsId = req.params.wsId;
     if (!wsId) {
       const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
       const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
