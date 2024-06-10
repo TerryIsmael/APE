@@ -78,8 +78,8 @@ const toggleEdit = () => {
   WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace);
 };
 
-const saveProfile = async () => { 
-  await WorkspaceUtils.saveProfile(modalProfile, errorMessage, router); // Adaptar parámetros a lo que haga falta al final
+const saveProfile = async () => {
+  await WorkspaceDetailsUtils.saveProfile(modalProfile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
 
 const fetchUser = async () => {

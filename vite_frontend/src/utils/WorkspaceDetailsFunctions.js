@@ -16,6 +16,7 @@ class WorkspaceDetails {
           modalProfile.value = selectedProfile.value;
         } else {
           modalProfile.value = {};
+          modalProfile.value.users = [];
           modalProfile.value.wsPerm = 'Read';
           modalProfile.value.profileType = 'Group';
         }
@@ -29,10 +30,10 @@ class WorkspaceDetails {
     };
 
     static setModalProfileUsers = (newUser, modalProfile) => {
-        if (this.isUserInModalProfile(newUser, modalProfile)) {
+        if (!this.isUserInModalProfile(newUser, modalProfile)) {
             modalProfile.value.users.push(newUser);
         } else {
-            modalProfile.value.users = modalProfile.value.users.filter(user => user._id !== newUser._id);
+            modalProfile.value.users = modalProfile.value.users.filter(user => user._id.toString() !== newUser._id.toString());
         }
     };
 
@@ -55,6 +56,38 @@ class WorkspaceDetails {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/perms', {
                 body: JSON.stringify({ profileId: profileId, perm: perm, wsId: workspace.value._id }),
                 method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+                errorMessage.value = [];
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al cambiar permisos");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+        try { 
+            profile.value.users = profile.value.users.map(user => user._id);
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/profile', {
+                body: JSON.stringify({ profile: profile.value, wsId: workspace.value._id }),
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
