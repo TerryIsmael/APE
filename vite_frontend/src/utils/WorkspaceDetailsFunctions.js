@@ -13,7 +13,7 @@ class WorkspaceDetails {
 
     static openModal = (selectedProfile, modalProfile, isModalOpened) => {
         if (selectedProfile.value) {
-          modalProfile.value = selectedProfile.value;
+          modalProfile.value = { ...selectedProfile.value };
         } else {
           modalProfile.value = {};
           modalProfile.value.users = [];
@@ -242,7 +242,7 @@ static inviteUser = async (workspace, userToInvite, permToInvite, path, currentP
     }
 }
 
-    static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+    static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, author, profileWsPerms) => {
         try { 
             profile.value.users = profile.value.users.map(user => user._id);
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/profile', {
@@ -265,7 +265,40 @@ static inviteUser = async (workspace, userToInvite, permToInvite, path, currentP
                     if (data.error || data.errors) {
                         Utils.parseErrorMessage(data, errorMessage);
                     } else {
-                        throw new Error("Error al cambiar permisos");
+                        throw new Error("Error al guardar el perfil");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    static deleteProfile = async (profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+        try { 
+            const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este perfil?");
+            if (!confirmDelete) return;
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/profile', {
+                body: JSON.stringify({ profileId: profileId, wsId: workspace.value._id }),
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+                errorMessage.value = [];
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al eliminar perfil");
                     }
                 })
             }
