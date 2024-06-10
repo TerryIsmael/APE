@@ -74,7 +74,7 @@ export async function getItemPermission(userId: any, workspaceId: any, itemId: a
 
         return result[0]?.itemPerm;
     } catch (err) {
-        console.error('Error finding items with user:', err);
+        console.error('Error finding item perms by user. Error:', err);
         throw err;
     }
 }
