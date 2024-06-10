@@ -157,21 +157,20 @@ const fetchUserWorkspaces = async () => {
 }
 
 const openWsModal = async () => {
-  await fetchUserWorkspaces();
-  isWsModalOpened.value = true;
+  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
 }
 
 const closeWsModal = () => {
-  isWsModalOpened.value = false;
+  Utils.closeWsModal(isWsModalOpened);
 }
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace(workspaceId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  await Utils.leaveWorkspace(workspaceId, router, errorMessage, isWsModalOpened);
 }
 
-const redirectToDetails = (workspaceId) => {
+const redirectToWorkspace = (workspaceId) => {
   localStorage.setItem('workspace', workspaceId);
-  router.push('/wsDetails');
+  router.push('/workspace');
 }
 
 onBeforeMount(async () => {
@@ -391,8 +390,8 @@ onUnmounted(() => {
       <div v-for="myWorkspace in workspaces">
         <div style="display: flex; justify-content: space-between;">
           {{ myWorkspace.name }}
-          <button v-if="myWorkspace.perm == 'Owner' || myWorkspace.perm == 'Admin'" style="max-height: 50px;" @click="redirectToDetails(myWorkspace._id)">
-            <span class="material-symbols-outlined">edit</span>
+          <button style="max-height: 50px;" @click="redirectToWorkspace(myWorkspace._id)">
+            <span class="material-symbols-outlined">sync_alt</span>
           </button>
           <button v-if="myWorkspace.perm !== 'Owner'" style="max-height: 50px;" @click="leaveWorkspace(myWorkspace._id)">
             <span class="material-symbols-outlined">person_cancel</span>

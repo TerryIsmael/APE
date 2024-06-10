@@ -2,6 +2,13 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
+const props = defineProps({
+  ws: {
+    ws: Object,
+    required: true
+  },
+});
+
 const user = ref({
     username: '',
     password: '',
@@ -21,17 +28,17 @@ const login = () => {
       password: user.value.password,
     })
   }).then(response => {
-        if (response.status === 200) {
-          router.push('/workspace/');
-        } else if (response.status === 401){
-          logout();
-          login();
-        }else{
-            error.value = 'Error al iniciar sesión';
-        }
-    }).catch(error => {
-            error.value = 'Error al iniciar sesión';
-    })
+      if (response.status === 200) {
+        router.push('/workspace/');
+      } else if (response.status === 401){
+        logout();
+        login();
+      } else {
+          error.value = 'Error al iniciar sesión';
+      }
+  }).catch(error => {
+          error.value = 'Error al iniciar sesión';
+  })
 };
 
 const logout = async () => {

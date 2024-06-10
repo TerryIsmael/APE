@@ -2,6 +2,13 @@
 import { ref, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
+const props = defineProps({
+  ws: {
+    ws: Object,
+    required: true
+  },
+});
+
 const user = ref({
   username: "",
   password: "",
