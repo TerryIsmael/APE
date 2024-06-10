@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
-import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, saveProfile, deleteProfile } from './controllers/workspaceController.ts';
+import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
@@ -191,6 +191,46 @@ router.post('/item/timer', isLogged, async (req: Request, res: Response) => {
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener el timer. ' + error });
     }   
+});
+
+router.get('/invitation/:workspace', isLogged, async (req: Request, res: Response) => {
+    try{
+        getInvitations(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener las invitaciones. ' + error });
+    }
+});
+
+router.post('/invitation', isLogged, async (req: Request, res: Response) => {
+    try{
+        createInvitation(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener las invitaciones. ' + error });
+    }
+});
+
+router.put('/invitation', isLogged, async (req: Request, res: Response) => {
+    try{
+        toggleActiveInvitation(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener las invitaciones. ' + error });
+    }
+});
+
+router.delete('/invitation', isLogged, async (req: Request, res: Response) => {
+    try{
+        deleteInvitation(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener las invitaciones. ' + error });
+    }
+});
+
+router.get('/invite/:code', async (req: Request, res: Response) => {
+    try{
+        useInvitation(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener la invitación. ' + error });
+    }
 });
 
 export default router;

@@ -1,5 +1,5 @@
-import WorkspaceUtils from "./WorkspaceFunctions.js";
-import Utils from "./UtilsFunctions.js";
+import Utils from './utilsFunctions.js';
+import WorkspaceUtils from './workspaceFunctions.js';
 
 class WorkspaceDetails {
 
@@ -50,6 +50,105 @@ class WorkspaceDetails {
           profileWsPerms.value[profile._id] = profile.wsPerm;
         });
     };
+    static fetchInvitations = async (workspace, invitations, errorMessage, router) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/'+workspace.value._id, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                invitations.value = data;
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                response.json().then((data) => { 
+                    if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                    throw new Error("Error al obtener datos del workspace");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    static createInvitationLink = async (workspace, inviteProfile, linkDuration, invitations, errorMessage, router) => {
+        const invitation = {
+          workspace: workspace.value._id,
+          linkDuration: linkDuration.value
+        };
+        console.log(linkDuration.value)
+        if (inviteProfile.value != 'none') {
+          invitation.profile = inviteProfile.value._id;
+        } 
+        try{
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+                body: JSON.stringify(invitation),
+            });
+
+            if (response.ok) {
+            const data = await response.json();
+            console.log(data.invitation.code)
+            await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + data.invitation.code);
+            await this.fetchInvitations(workspace, invitations, errorMessage);
+            }  else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                response.json().then((data) => { 
+                    if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                    throw new Error("Error al obtener datos del workspace");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    static toggleActiveInvitation = async (workspace, invitation, invitations, errorMessage, router) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+                body: JSON.stringify({ invId: invitation._id }),
+            });
+            if (response.ok) {
+                await this.fetchInvitations(workspace, invitations, errorMessage);
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                response.json().then((data) => { 
+                    if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                    throw new Error("Error al obtener datos del workspace");
+                }
+            })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    };
 
     static changeWsPerms = async (perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
         try { 
@@ -81,6 +180,67 @@ class WorkspaceDetails {
             console.log(error);
         }
     };
+    static deleteInvitation = async (workspace, invitation, invitations, errorMessage, router) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+                body: JSON.stringify({ invId: invitation._id }),
+            });
+            if (response.ok) {
+                await this.fetchInvitations(workspace, invitations, errorMessage);
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                response.json().then((data) => { 
+                    if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                    throw new Error("Error al obtener datos del workspace");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
+    try{
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                workspace: workspace.value._id,
+                username: userToInvite.value,
+                perm: permToInvite.value}),
+        });
+        if (response.ok) {
+        const data = await response.json();
+        await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+        }  else if (response.status === 401) {
+            router.push({ name: 'login' });
+        } else {
+            errorMessage.value = [];
+            response.json().then((data) => { 
+                if (data.error || data.errors) {
+                Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                throw new Error("Error al obtener datos del workspace");
+                }
+            })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
 
     static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, author, profileWsPerms) => {
         try { 

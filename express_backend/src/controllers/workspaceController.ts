@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
+import Invitation from '../schemas/invitationSchema.ts';
+import type { IInvitation } from '../models/invitation.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -147,11 +149,11 @@ export const createWorkspace = async (req: any, res: any) => {
 };
 
 export const addUserToWorkspace = async (req: any, res: any) => {
-  const wsId = req.body.wsId;
+  const wsId = req.body.workspace;
   const username = req.body.username;
   const perm = req.body.perm;
   try {
-    const workspace = await Workspace.findOne({ _id: wsId });
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
   if (!workspace) {
     res.status(404).json({ error: 'No se ha encontrado el workspace' });
     return;
@@ -166,7 +168,10 @@ export const addUserToWorkspace = async (req: any, res: any) => {
     res.status(404).json({ error: 'No se ha encontrado el usuario' });
     return;
   }
-
+  if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === user._id.toString()))) {
+    res.status(409).json({ error: 'El usuario ya está en el workspace' });
+    return;
+  }
   const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: perm, users: [user] });
   await profile.save();
   workspace.profiles.push(profile._id);
@@ -211,6 +216,162 @@ export const changeWSPerms = async (req: any, res: any) => {
     res.status(404).json({ error: error.message });
   }
 };
+
+export const createInvitation = async (req: any, res: any) => {
+  const wsId = req.body.workspace;
+  const profile = req.body.profile;
+  const linkDuration = req.body.linkDuration;
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId });
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado para crear invitaciones en este workspace' });
+      return;
+    }
+    const code = Math.random().toString(36).substring(2, 18);
+    let expirationDate: Date | undefined = undefined;
+    switch (linkDuration) {
+      case 'day':
+        expirationDate = new Date(Date.now() + 86400000);
+        break;
+      case 'week':
+        expirationDate = new Date(Date.now() + 604800000);
+        break;
+      case 'month':
+        expirationDate = new Date(Date.now() + 2592000000);
+        break;
+      case 'none':
+        break;
+      default:
+        res.status(400).json({ error: 'Duración de la invitación no válida' });
+        return;
+    }
+    const invitation = new Invitation({ code: code, workspace: wsId, profile: profile, expirationDate: expirationDate });
+    await invitation.save();
+    res.status(201).json({success: true, invitation: invitation});
+  }
+  catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export const getInvitations = async (req: any, res: any) => {
+  const wsId = req.params.workspace;
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId });
+    if (!wsId) {
+      res.status(400).json({ error: 'No se ha especificado el workspace' });
+      return;
+    }
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado para ver las invitaciones de este workspace' });
+      return;
+    }
+    const invitations = await Invitation.find({ workspace: wsId }).populate('profile');
+    res.status(200).json(invitations);
+  }
+  catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
+
+export const toggleActiveInvitation = async (req: any, res: any) => {
+  const invId = req.body.invId;
+  try {
+    const invitation: mongoose.Document<IInvitation> | null = await Invitation.findOne({ _id: invId });
+    if (!invitation) {
+      res.status(404).json({ error: 'No se ha encontrado la invitación' });
+      return;
+    }
+    const wsId = invitation.get("workspace")._id.toString();
+    const workspace = await Workspace.findOne({ _id: wsId });
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado para desactivar invitaciones en este workspace' });
+      return;
+    }
+    invitation.set("active",!invitation.get("active"));
+    await invitation.save();
+    res.status(200).json({ message: 'Invitación '+ (invitation.get("active") ? 'activada' : 'desactivada') });
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
+
+
+export const deleteInvitation = async (req: any, res: any) => {
+  const invId = req.body.invId;
+  try {
+    const invitation = await Invitation.findOne({ _id: invId });
+    if (!invitation) {
+      res.status(404).json({ error: 'No se ha encontrado la invitación' });
+      return;
+    }
+    const wsId = invitation.get("workspace")._id.toString();
+    const workspace = await Workspace.findOne({ _id: wsId });
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
+      return;
+    }
+    console.log(invitation) 
+    await invitation.deleteOne();
+    res.status(200).json({ message: 'Invitación eliminada' });
+  }
+  catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
+
+export const useInvitation = async (req: any, res: any) => {
+  const code = req.params.code;
+  try {
+    const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace');
+    if (!invitation) {
+      res.status(404).json({ error: 'No se ha encontrado la invitación' });
+      return;
+    }
+    if (!invitation.get("active")) {
+      res.status(403).json({ error: 'La invitación ha sido desactivada' });
+      return;
+    }
+    if (invitation.get("expirationDate") < new Date()) {
+      res.status(403).json({ error: 'La invitación ha expirado' });
+      return;
+    }
+    const profile = invitation.profile;
+    const workspace = invitation.get("workspace");
+    const user = req.user;
+    const userProfile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Read, users: [user] });
+    await userProfile.save();
+    workspace.profiles.push(userProfile._id);
+    await workspace.save();
+    if (profile instanceof mongoose.Document){
+      profile.set("users",profile.get("users").push(user));
+      await profile.save();
+    }
+  }
+  catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
 
 export const saveProfile = async (req: any, res: any) => {
   const wsId = req.body.wsId;
