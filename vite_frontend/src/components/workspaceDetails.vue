@@ -240,7 +240,7 @@ const logout = async () => {
   await Utils.logout(router);
 };
 
-const websocketEventAdd = () => { // Hacer bien
+const websocketEventAdd = () => { // TODO
   props.ws.addEventListener('open', async (event) => {
     websocketEventAdd();
   });
@@ -292,12 +292,16 @@ onMounted(() => {
 
     <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
 
-      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+      <div style="display: flex; justify-content: space-around; width: 90%; align-items: center; justify-content: center;">
           <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
               <button style="max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
               <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
                 <h2 style="margin-right: 1%">Ruta actual: /{{ route.name }}</h2>
               </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; width: 20%;">
+            <button v-if="userWsPerms === 'Owner'" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
           </div>
       </div>
       
@@ -370,7 +374,7 @@ onMounted(() => {
               <h2 style="text-align: left; margin-bottom: 5px;">Nombre del workspace</h2>
 
               <div v-if="!editing" style="display: flex; justify-content: flex-end; width: 15%; margin-right: 8%">
-                <button v-if="!editing" class="workspace-name-button" @click="toggleEdit()">Editar</button>
+                <button v-if="!editing" class="workspace-name-button" style="margin-right: 0px;" @click="toggleEdit()">Editar</button>
               </div>
               <div v-else style="display: flex; justify-content: flex-end; width: 15%; margin-right: 8%">
                 <button @click="toggleEdit()" class="workspace-name-button remove-perm-button">Cancelar</button>
@@ -452,7 +456,6 @@ onMounted(() => {
       <button class="change-workspace-button">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
       <li class="li-clickable">Gestionar perfil</li>
-      <li class="li-clickable">Gestionar workspaces</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>

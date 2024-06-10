@@ -166,7 +166,7 @@ onBeforeMount(async () => {
 
     <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
 
-      <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
+      <div style="display: flex; justify-content: space-around; width: 92%; align-items: center;">
         <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
           <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
           <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
@@ -249,7 +249,6 @@ onBeforeMount(async () => {
       <button class="change-workspace-button">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
       <li class="li-clickable">Gestionar perfil</li>
-      <li class="li-clickable">Gestionar workspaces</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
