@@ -90,8 +90,8 @@ const toggleEdit = () => {
   WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace);
 };
 
-const saveProfile = async () => { 
-  await WorkspaceUtils.saveProfile(modalProfile, errorMessage, router); // Adaptar parámetros a lo que haga falta al final
+const saveProfile = async () => {
+  await WorkspaceDetailsUtils.saveProfile(modalProfile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
 
 const fetchUser = async () => {
@@ -223,6 +223,10 @@ const getIndividualProfiles = computed(() => {
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
+};
+
+const changeWsPerms = async (perm, profileId) => {
+  await WorkspaceDetailsUtils.changeWsPerms(perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
 
 const logout = async () => {
@@ -406,7 +410,7 @@ onMounted(() => {
                     <span @click="deleteProfile(profile)" style="vertical-align: middle; cursor: pointer; margin: 0;" class="material-symbols-outlined">delete</span>
                   </div>
 
-                  <select v-model="profileWsPerms[profile._id]" @change="changeProfilePerms(profileWsPerms[profile._id], profile)" class="text-input" style="width: 25%; margin: 0%; padding: 0;">
+                  <select v-model="profileWsPerms[profile._id]" @change="changeWsPerms(profileWsPerms[profile._id], profile._id)" class="text-input" style="width: 25%; margin: 0%; padding: 0;">
                     <option value="Read">Lectura</option>
                     <option value="Write">Escritura</option>
                     <option value="Admin">Admin</option>

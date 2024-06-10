@@ -168,7 +168,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
     res.status(404).json({ error: 'No se ha encontrado el usuario' });
     return;
   }
-  if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users).find((u: mongoose.Types.ObjectId) => u.toString() === user._id.toString()))) {
+  if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === user._id.toString()))) {
     res.status(409).json({ error: 'El usuario ya está en el workspace' });
     return;
   }
@@ -189,18 +189,22 @@ export const changeWSPerms = async (req: any, res: any) => {
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
       if (!workspace) {
-          res.status(404).json({ error: 'No se ha encontrado el workspace' });
-          return;
+        res.status(404).json({ error: 'No se ha encontrado el workspace' });
+        return;
       }
       const reqPerm = await getWSPermission(req.user._id, wsId);
       if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-          res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este workspace' });
-          return;
+        res.status(401).json({ error: 'No estás autorizado a cambiar los permisos de este workspace' });
+        return;
       }
-      const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id === profileId);
+      if (reqPerm === WSPermission.Admin && (perm === WSPermission.Owner || perm === WSPermission.Admin)) {
+        res.status(401).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
+        return;
+      }
+      const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id.toString() === profileId.toString());
       if (!profile) {
-          res.status(404).json({ error: 'El usuario no está en este workspace' });
-          return;
+        res.status(404).json({ error: 'El usuario no está en este workspace' });
+        return;
       }
       if (profile instanceof mongoose.Document) {
         profile.wsPerm = perm;
@@ -369,10 +373,73 @@ export const useInvitation = async (req: any, res: any) => {
   }
 }
 
+export const saveProfile = async (req: any, res: any) => {
+  const wsId = req.body.wsId;
+  const newProfileData : IProfile = req.body.profile;
 
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
 
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado a crear o editar perfiles' });
+      return;
+    }
 
+    if (!newProfileData) {
+      res.status(400).json({ error: 'No se ha especificado el perfil' });
+      return;
+    }
 
+    if (reqPerm === WSPermission.Admin && (newProfileData.wsPerm === WSPermission.Owner || newProfileData.wsPerm === WSPermission.Admin)) {
+      res.status(401).json({ error: 'No estás autorizado a poner el permiso de administrador o propietario' });
+      return;
+    }
+    
+    let areInWorkspace : mongoose.Types.ObjectId[] = [];
+    if (newProfileData.users && newProfileData.users.length !== 0) {
+      for (const userId of newProfileData.users) {
+        const existingProfile = (workspace.profiles as (mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId> | IProfile)[]).find(
+          (profile): profile is IProfile => 
+            (profile as IProfile).profileType === ProfileType.Individual && (profile as IProfile).name.toString() === userId?.toString()
+        );
 
+        if (existingProfile) {
+          areInWorkspace.push(existingProfile.users[0] as mongoose.Types.ObjectId);
+        }
+      }
 
+      if (areInWorkspace.length !== newProfileData.users.length) {
+        res.status(404).json({ error: `Hay usuarios que no existen en el workspace` });
+        return;
+      }
+    }
 
+    if (newProfileData._id) {
+      const newProfile = await Profile.findOne({ _id: newProfileData._id });
+      if (!newProfile) {
+        res.status(404).json({ error: 'No se ha encontrado el perfil' });
+        return;
+      } 
+      newProfile.name = newProfileData.name;
+      newProfile.profileType = newProfileData.profileType;
+      newProfile.wsPerm = newProfileData.wsPerm;
+      newProfile.users = areInWorkspace;
+      await newProfile.save();
+    } else {
+      const newProfile = new Profile({ _id: newProfileData._id, name: newProfileData.name, profileType: newProfileData.profileType, wsPerm: newProfileData.wsPerm, users: areInWorkspace});
+      await newProfile.save();
+      workspace.profiles.push(newProfile._id);
+    }
+
+    await workspace.save();
+    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    res.status(201).json(workspace);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};

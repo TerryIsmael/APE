@@ -16,6 +16,7 @@ class WorkspaceDetails {
           modalProfile.value = selectedProfile.value;
         } else {
           modalProfile.value = {};
+          modalProfile.value.users = [];
           modalProfile.value.wsPerm = 'Read';
           modalProfile.value.profileType = 'Group';
         }
@@ -29,10 +30,10 @@ class WorkspaceDetails {
     };
 
     static setModalProfileUsers = (newUser, modalProfile) => {
-        if (this.isUserInModalProfile(newUser, modalProfile)) {
+        if (!this.isUserInModalProfile(newUser, modalProfile)) {
             modalProfile.value.users.push(newUser);
         } else {
-            modalProfile.value.users = modalProfile.value.users.filter(user => user._id !== newUser._id);
+            modalProfile.value.users = modalProfile.value.users.filter(user => user._id.toString() !== newUser._id.toString());
         }
     };
 
@@ -48,8 +49,7 @@ class WorkspaceDetails {
         workspace.value.profiles.forEach(profile => {
           profileWsPerms.value[profile._id] = profile.wsPerm;
         });
-    }
-
+    };
     static fetchInvitations = async (workspace, invitations, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/'+workspace.value._id, {
@@ -120,6 +120,7 @@ class WorkspaceDetails {
             console.log(error);
         }
     };
+
     static toggleActiveInvitation = async (workspace, invitation, invitations, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/', {
@@ -141,13 +142,44 @@ class WorkspaceDetails {
                     Utils.parseErrorMessage(data, errorMessage);
                     } else {
                     throw new Error("Error al obtener datos del workspace");
+                }
+            })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+    };
+
+    static changeWsPerms = async (perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+        try { 
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/perms', {
+                body: JSON.stringify({ profileId: profileId, perm: perm, wsId: workspace.value._id }),
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+                errorMessage.value = [];
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al cambiar permisos");
                     }
                 })
             }
         } catch (error) {
             console.log(error);
         }
-    }
+    };
     static deleteInvitation = async (workspace, invitation, invitations, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/', {
@@ -175,41 +207,72 @@ class WorkspaceDetails {
         } catch (error) {
             console.log(error);
         }
-    }
+    };
 
-    static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
-        try{
-            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
-                method: 'PUT',
+static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
+    try{
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                workspace: workspace.value._id,
+                username: userToInvite.value,
+                perm: permToInvite.value}),
+        });
+        if (response.ok) {
+        const data = await response.json();
+        await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+        }  else if (response.status === 401) {
+            router.push({ name: 'login' });
+        } else {
+            errorMessage.value = [];
+            response.json().then((data) => { 
+                if (data.error || data.errors) {
+                Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                throw new Error("Error al obtener datos del workspace");
+                }
+            })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+    static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+        try { 
+            profile.value.users = profile.value.users.map(user => user._id);
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/profile', {
+                body: JSON.stringify({ profile: profile.value, wsId: workspace.value._id }),
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: "include",
-                body: JSON.stringify({
-                    workspace: workspace.value._id,
-                    username: userToInvite.value,
-                    perm: permToInvite.value}),
             });
+
             if (response.ok) {
-            const data = await response.json();
-            await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-            }  else if (response.status === 401) {
-                router.push({ name: 'login' });
-            } else {
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
                 errorMessage.value = [];
-                response.json().then((data) => { 
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
                     if (data.error || data.errors) {
-                    Utils.parseErrorMessage(data, errorMessage);
+                        Utils.parseErrorMessage(data, errorMessage);
                     } else {
-                    throw new Error("Error al obtener datos del workspace");
+                        throw new Error("Error al cambiar permisos");
                     }
                 })
             }
         } catch (error) {
             console.log(error);
         }
-    }
-
+    };
 }
 
 export default WorkspaceDetails;
