@@ -436,10 +436,10 @@ watch(
             <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
               <span class="material-symbols-outlined">info</span>
             </button>
-            <button style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
+            <button v-if="userWsPerms && userWsPerms != 'Read'" style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
               <span class="material-symbols-outlined">create_new_folder</span>
             </button>
-            <div class="dropdown">
+            <div v-if="userWsPerms && userWsPerms != 'Read'" class="dropdown">
               <button style="max-height: 50px;" @click="openDropdown">
                 <span class="material-symbols-outlined">add</span>
               </button>

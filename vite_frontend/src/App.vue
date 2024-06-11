@@ -9,13 +9,12 @@ const connectWs = () => {
 
   ws.value.onopen = () => {
     console.log('Connected to server');
-    wsReconnect?clearInterval(wsReconnect.value):null;
     wsReconnect?wsReconnect.value = null:null;
   };
 
   ws.value.onclose = () => {
     console.log('Disconnected from server');
-    wsReconnect?wsReconnect.value = setInterval(() => {
+    wsReconnect?wsReconnect.value = setTimeout(() => {
       console.log('Attempting to reconnect...');
       connectWs();
     }, 3000):null;
