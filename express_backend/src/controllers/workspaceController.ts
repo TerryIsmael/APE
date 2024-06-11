@@ -126,6 +126,16 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     } 
 
     await workspace.populate('items');
+    const itemsToShow = [];
+    for (const item of workspace.items) {
+      if (await getUserPermission(req.user._id, wsId, item?._id.toString())) {
+        itemsToShow.push(item);
+      }
+    }
+    console.log(itemsToShow);
+    workspace.items = itemsToShow;
+
+    await workspace.populate('items');
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
 

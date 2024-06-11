@@ -279,7 +279,7 @@ const leaveWorkspace = async (workspaceId) => {
 }
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
 }
 
 const toggleLeave = () => {
@@ -295,7 +295,7 @@ const closeNewWsModal = () => {
 }
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
 }
 
 const refreshWindow = async () => {
@@ -384,7 +384,7 @@ watch(
           {{ workspace?.name }} 
         </h1>
         <div style="display:flex; justify-content: end;  width: 10vw;" >
-          <button @click="openFormEditNote" v-if="!editing && ['Owner','Write'].includes(routedItemPerm)">Editar</button>
+          <button @click="openFormEditNote" v-if="!editing && routedItemPerm && routedItemPerm !== 'Read'">Editar</button>
         </div>
       </div>
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
@@ -432,7 +432,7 @@ watch(
             </div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; width: 15%;">
+          <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
             <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
               <span class="material-symbols-outlined">info</span>
             </button>

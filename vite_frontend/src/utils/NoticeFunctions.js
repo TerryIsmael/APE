@@ -1,4 +1,4 @@
-import Utils from './utilsFunctions.js';
+import Utils from './UtilsFunctions.js';
 
 class NoticeFunctions {
 
@@ -57,8 +57,8 @@ class NoticeFunctions {
           "profile": workspace.value.profiles.find(y=> y._id==x.profile),
           "permission": x.permission
         }
-      }).filter(x => x.profile.users.map(x => x._id).includes(currentUser.value._id)).map(y => x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
-      return perm;
+      }).filter(x => x.profile.users.map(x => x._id).includes(currentUser.value._id)).map(y => x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0];
+      return perm ? perm[0] : null;
     } else {
       return userWsPerms.value;
     }
