@@ -1,5 +1,3 @@
-import WorkspaceUtils from "./WorkspaceFunctions";
-
 class UtilsFunctions {
 
   static async fetchUser(currentUser, router) {
