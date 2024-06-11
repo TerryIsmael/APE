@@ -205,11 +205,56 @@ class UtilsFunctions {
   static openWsModal = async (isWsModalOpened, workspaces, router, errorMessage) => {
     await this.fetchUserWorkspaces(workspaces, router, errorMessage);
     isWsModalOpened.value = true;
-  }
+  };
   
   static closeWsModal = (isWsModalOpened) => {
     isWsModalOpened.value = false;
-  }
+  };
+
+  static openNewWsModal = (isWsModalOpened, isNewWsModalOpened) => {
+    isWsModalOpened.value = false;
+    isNewWsModalOpened.value = true;
+  };
+
+  static closeNewWsModal = (isNewWsModalOpened) => {
+    isNewWsModalOpened.value = false;
+  };
+
+  static createWorkspace = async (newWorkspace, router, errorMessage, isNewWsModalOpened) => {
+
+    try {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/', {
+        body: JSON.stringify( { wsName: newWorkspace }),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        errorMessage.value = [];
+        isNewWsModalOpened.value = false;
+        localStorage.setItem('workspace', data.wsId);
+        router.push('/workspace');
+      } else if (response.status === 401) {
+        router.push({ name: 'login' });
+      } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
+        response.json().then((data) => {
+          if (data.error || data.errors) {
+            this.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al crear el workspace");
+          }
+        })
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
 }
 
 export default UtilsFunctions;

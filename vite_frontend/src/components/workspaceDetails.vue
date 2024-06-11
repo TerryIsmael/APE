@@ -336,7 +336,7 @@ onMounted(() => {
               <select v-model="permToInvite" class="text-input" style="width: 32%; margin-left:3px">
                   <option :value="'Read'">Lectura</option>
                   <option :value="'Write'">Escritura</option>
-                  <option :value="'Admin'">Administrador</option>
+                  <option :value="'Admin'">Admin</option>
               </select> 
               <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
             </div>
@@ -779,4 +779,4 @@ table {
   scroll-behavior: smooth;
 }
 
-</style>../utils/utilsFunctions.js
+</style>
