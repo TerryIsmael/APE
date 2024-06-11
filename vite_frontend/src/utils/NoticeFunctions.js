@@ -1,4 +1,4 @@
-import Utils from './UtilsFunctions.js';
+import Utils from './utilsFunctions.js';
 
 class NoticeFunctions {
 

@@ -56,6 +56,21 @@ export const getWorkspace = async (req: any, res: any) => {
   }
 };
 
+export const getUserWorkspaces = async (req: any, res: any) => {
+  try {
+    const profiles = await Profile.find({ name: req.user._id });
+    const workspaces = await Workspace.find({ profiles: { $in: profiles } });
+    const formattedWorkspaces : any = [];
+    for (const ws of workspaces) {
+      formattedWorkspaces.push({ _id: ws._id, name: ws.name, perm: await getWSPermission(req.user._id, ws._id.toString()) })
+    }
+    res.status(200).json({ formattedWorkspaces });
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 export const getWorkspaceFavs = async (req: any, res: any) => {
   try {
     const wsId = req.body.wsId;
@@ -320,7 +335,6 @@ export const toggleActiveInvitation = async (req: any, res: any) => {
   }
 }
 
-
 export const deleteInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
   try {
@@ -469,13 +483,13 @@ export const deleteProfile = async (req: any, res: any) => {
       return;
     }
 
-    const profile = await Profile.findOne({ _id: profileId });
+    const profile = await Profile.findOne({ _id: { $in: workspace.profiles } });
     if (!profile) {
-      res.status(404).json({ error: 'No se ha encontrado el perfil' });
+      res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
       return;
     }
 
-    if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin)) {
+    if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin) && req.user._id.toString() !== profile?.name.toString()) {
       res.status(401).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
       return;
     }
@@ -493,6 +507,44 @@ export const deleteProfile = async (req: any, res: any) => {
     }
 
     await Profile.deleteOne({ _id: profileId });
+    await workspace.save();
+    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    res.status(201).json(workspace);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const leaveWorkspace = async (req: any, res: any) => {
+  const wsId = req.body.wsId;
+  const profileName = req.user._id;
+
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+
+    const profile = await Profile.findOne({ name: profileName, _id: { $in: workspace.profiles } });
+    if (!profile) {
+      res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
+      return;
+    }
+
+    if (profile.profileType === ProfileType.Individual) { 
+      const profiles = (workspace.profiles as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId>[]).filter(
+        (prof): prof is IProfile => 
+          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes(profile.users[0] as mongoose.Types.ObjectId)
+      );
+
+      for (const prof of profiles) {
+        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== profile.users[0]?.toString());
+        await prof.save();
+      }
+    }
+
+    await Profile.deleteOne({ _id: profile._id });
     await workspace.save();
     await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);

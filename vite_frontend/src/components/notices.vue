@@ -595,4 +595,4 @@ onBeforeMount(async () => {
   cursor: pointer;
 } 
 
-</style>
+</style>../utils/utilsFunctions.js

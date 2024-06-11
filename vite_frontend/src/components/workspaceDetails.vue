@@ -175,11 +175,13 @@ const getFilteredProfiles = computed(() => {
     });
   
   } else if (userWsPerms.value === 'Admin') {
+    const forbiddenProfiles = workspace.value.profiles.filter(profile => profile.wsPerm === 'Owner' || profile.wsPerm === 'Admin');
+
     profiles = workspace.value.profiles.filter(profile => {
-      const forbiddenProfiles = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner' || profile.wsPerm === 'Admin');
+      const isForbidden = forbiddenProfiles.includes(profile);
       const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
       const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
-      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && forbiddenProfiles) : (matchesSearchTerm && forbiddenProfiles && profile.profileType === searchTypeProfile.value);
+      return searchTypeProfile.value === 'All' ? (matchesSearchTerm && !isForbidden) : (matchesSearchTerm && !isForbidden && profile.profileType === searchTypeProfile.value);
     });
   }
 
@@ -304,7 +306,7 @@ onMounted(() => {
           </div>
 
           <div style="display: flex; justify-content: flex-end; width: 20%;">
-            <button v-if="userWsPerms === 'Owner'" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
+            <button v-if="userWsPerms === 'Owner' && !workspace.default" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
           </div>
       </div>
       
@@ -421,7 +423,7 @@ onMounted(() => {
                   <select v-model="profileWsPerms[profile._id]" @change="changeWsPerms(profileWsPerms[profile._id], profile._id)" class="text-input" style="width: 25%; margin: 0%; padding: 0;">
                     <option value="Read">Lectura</option>
                     <option value="Write">Escritura</option>
-                    <option value="Admin">Admin</option>
+                    <option v-if="userWsPerms === 'Owner'" value="Admin">Admin</option>
                   </select>
                 </div>
               </div>
@@ -777,4 +779,4 @@ table {
   scroll-behavior: smooth;
 }
 
-</style>
+</style>../utils/utilsFunctions.js

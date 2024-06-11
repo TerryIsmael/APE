@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed }
 import { useRouter, useRoute } from 'vue-router';
 import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
-import Utils from '../utils/UtilsFunctions.js';
+import Utils from '../utils/utilsFunctions.js';
 
 const props = defineProps({
   ws: {
@@ -40,6 +40,12 @@ const newItem = ref({});
 const hours = ref(0);
 const minutes = ref(0);
 const seconds = ref(0);
+
+const currentPath = ref('');
+const existFolder = ref(false);
+
+const workspaces = ref([]);
+const isWsModalOpened = ref(false);
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -146,6 +152,27 @@ const checkDictUserItemPerms = (profileId) => {
   }
 }
 
+const fetchUserWorkspaces = async () => {
+  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
+}
+
+const openWsModal = async () => {
+  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+}
+
+const closeWsModal = () => {
+  Utils.closeWsModal(isWsModalOpened);
+}
+
+const leaveWorkspace = async (workspaceId) => {
+  await Utils.leaveWorkspace(workspaceId, router, errorMessage, isWsModalOpened);
+}
+
+const redirectToWorkspace = (workspaceId) => {
+  localStorage.setItem('workspace', workspaceId);
+  router.push('/workspace');
+}
+
 onBeforeMount(async () => {
     path.value = "/" + route.name;
     ws.value = props.ws;
@@ -250,7 +277,7 @@ onUnmounted(() => {
           <p style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"> {{ workspace?.name }} </p> 
         </li>        
         
-        <button class="change-workspace-button">Cambiar</button>
+        <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
         <li class = "main-sidebar-title">Inicio</li>
         <li class="li-clickable">Gestionar perfil</li>
 
@@ -291,7 +318,6 @@ onUnmounted(() => {
   </Modal>
 
   <!-- Sidebar de detalles -->
-  <div class="sidebar-overlay" v-if="showSidebar && selectedItem.itemType !== 'Folder'" @click="closeSidebar"></div>
     <div class="sidebar" :class="{ 'show': showSidebar }">
       <ul>
         <li style="margin-bottom: 2px;"> Archivo: </li>
@@ -343,6 +369,34 @@ onUnmounted(() => {
               <option value="Write">Escritura</option>
             </select>
           </div>
+        </div>
+      </div>
+    </template>
+    <template #footer></template>
+  </Modal>
+
+  <!-- Modal de gestion de worskpaces -->
+  <Modal class="modal" :isOpen="isWsModalOpened" @modal-close="closeWsModal" name="workspace-modal">
+    <template #header><strong>Tus workspaces</strong></template>
+    <template #content>  
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="display: flex; justify-content: right;">
+        <span @click="openNewWsModal()" style="cursor: pointer; margin-right: 10px" class="material-symbols-outlined">add</span>
+      </div>
+
+      <div v-for="myWorkspace in workspaces">
+        <div style="display: flex; justify-content: space-between;">
+          {{ myWorkspace.name }}
+          <button style="max-height: 50px;" @click="redirectToWorkspace(myWorkspace._id)">
+            <span class="material-symbols-outlined">sync_alt</span>
+          </button>
+          <button v-if="myWorkspace.perm !== 'Owner'" style="max-height: 50px;" @click="leaveWorkspace(myWorkspace._id)">
+            <span class="material-symbols-outlined">person_cancel</span>
+          </button>
+
         </div>
       </div>
     </template>
@@ -433,45 +487,7 @@ onUnmounted(() => {
 }
 
 .sidebar {
-  width: 300px;
-  height: 100vh;
-  height: 100%;
-  background-color: #2F184B;
-  transition: right 0.3s ease;
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  display: none;
-}
-
-.sidebar.show + .sidebar-overlay {
-  display: block;
-}
-
-.sidebar ul {
-  list-style-type: none; 
-  padding: 0; 
-}
-
-.sidebar ul li {
-  padding: 0 10px;
-  margin: 15px 0;
-  word-wrap: break-word; 
-  display: -webkit-box; 
-  -webkit-line-clamp: 4; 
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar {
+  z-index: 1000;
   position: fixed;
   top: 0;
   right: -300px;
@@ -483,21 +499,23 @@ onUnmounted(() => {
 
 .sidebar.show {
   right: 0;
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  display: none;
-}
-
-.sidebar.show + .sidebar-overlay {
   display: block;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  padding: 0 10px;
+  margin: 15px 0;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main-sidebar {
@@ -642,4 +660,4 @@ onUnmounted(() => {
   scrollbar-color: #C8B1E4 transparent;
   scroll-behavior: smooth;
 }
-</style>
+</style>../utils/utilsFunctions.js

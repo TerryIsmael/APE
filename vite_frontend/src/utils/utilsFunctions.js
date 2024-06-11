@@ -1,3 +1,5 @@
+import WorkspaceUtils from "./WorkspaceFunctions";
+
 class UtilsFunctions {
 
   static async fetchUser(currentUser, router) {
@@ -132,6 +134,84 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
+  static fetchUserWorkspaces = async (workspaces, router, errorMessage) => {
+    try { 
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspaces/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        workspaces.value = data.formattedWorkspaces;
+        errorMessage.value = [];
+      } else if (response.status === 401) {
+        router.push({ name: 'login' });
+      } else if (response.status === 400 || response.status === 404) {
+        errorMessage.value = [];
+        response.json().then((data) => {
+          if (data.error || data.errors) {
+            this.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al obtener workspaces del usuario");
+          }
+        })
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  static leaveWorkspace = async (workspaceId, router, errorMessage, isWsModalOpened) => {
+    try { 
+        const confirmDelete = confirm("¿Estás seguro de que deseas abandonar este workspace?");
+        if (!confirmDelete) return;
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/leave', {
+            body: JSON.stringify({ wsId: workspaceId }),
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: "include",
+        });
+
+        if (response.ok) {
+            errorMessage.value = [];
+            const currentWorkspace = localStorage.getItem('workspace');
+            if (currentWorkspace == workspaceId) {
+              localStorage.removeItem('workspace');
+              this.closeWsModal(isWsModalOpened);
+              router.push('/workspace');
+            }
+ 
+        } else if (response.status === 401) {
+            router.push({ name: 'login' });
+        } else if (response.status === 400 || response.status === 404) {
+            errorMessage.value = [];
+            response.json().then((data) => {
+                if (data.error || data.errors) {
+                    this.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al abandonar el workspace");
+                }
+            })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+  };
+
+  static openWsModal = async (isWsModalOpened, workspaces, router, errorMessage) => {
+    await this.fetchUserWorkspaces(workspaces, router, errorMessage);
+    isWsModalOpened.value = true;
+  }
+  
+  static closeWsModal = (isWsModalOpened) => {
+    isWsModalOpened.value = false;
+  }
 }
 
 export default UtilsFunctions;

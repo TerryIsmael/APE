@@ -1,4 +1,4 @@
-import Utils from './utilsFunctions.js';
+import Utils from './UtilsFunctions.js';
 
 class WorkspaceUtils {
 
@@ -65,6 +65,10 @@ class WorkspaceUtils {
         }
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
       } else if (response.status === 401) {
+        if (wsId) {
+          localStorage.removeItem('workspace');
+          return this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+        }
         router.push({ name: 'login' });
       } else {
         errorMessage.value = [];
