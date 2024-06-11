@@ -604,7 +604,7 @@ watch(
 
       <div style="margin-top: 20px">
         <p>Compartir con:</p>
-        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
+        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 10px">
           <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
           <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
             <option value="Individual">Individual</option>
@@ -613,15 +613,17 @@ watch(
           </select>
         </div>
 
-        <div v-for="profile in getFilteredProfiles" :key="profile._id">
-          <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-            <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-            {{ checkDictUserItemPerms(profile._id) }}
-            <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
-              <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
-              <option value="Read">Lectura</option>
-              <option value="Write">Escritura</option>
-            </select>
+        <div style="max-height: 35vh; overflow-y: auto;">
+          <div v-for="profile in getFilteredProfiles" :key="profile._id">
+            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
+              <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+              {{ checkDictUserItemPerms(profile._id) }}
+              <select v-model="userItemPerms[profile._id]" @change="changePerms(userItemPerms[profile._id], profile._id)" class="text-input" style="width: 25%;">
+                <option :selected="!(profile._id in userItemPerms)" value='None'>Ninguno</option>
+                <option value="Read">Lectura</option>
+                <option value="Write">Escritura</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -707,6 +709,7 @@ watch(
 }
 
 .profile-name {
+  text-align: left;
   max-width: 70%;
   margin-right: 10px;
   word-wrap: break-word; 

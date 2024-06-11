@@ -367,7 +367,7 @@ onBeforeMount(async () => {
 
       <div style="margin-top: 20px">
         <p>Hacer visible para:</p>
-        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 15px">
+        <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 10px">
           <input v-model="searchProfileTerm" placeholder="Buscar perfil por nombre..." class="text-input" style="width: 70%;"/>
           <select v-model="searchTypeProfile" class="text-input" style="width: 25%;">
             <option value="Individual">Individual</option>
@@ -376,12 +376,14 @@ onBeforeMount(async () => {
           </select>
         </div>
 
-        <div v-for="profile in getFilteredProfiles" :key="profile._id">
-          <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
-            <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
-            {{ checkDictUserItemPerms(profile._id) }}
-            <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
-            <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
+        <div style="height: 35vh; overflow-y: auto;">
+          <div v-for="profile in getFilteredProfiles" :key="profile._id">
+            <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
+              <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
+              {{ checkDictUserItemPerms(profile._id) }}
+              <button v-if="userItemPerms[profile._id] === 'Read'" @click="() => updatePermission(profile._id, 'None')" class="change-perm-button remove-perm-button">Quitar</button>
+              <button v-else @click="() => updatePermission(profile._id, 'Read')" class="change-perm-button">Añadir</button>
+            </div>
           </div>
         </div>
       </div>
@@ -406,7 +408,7 @@ onBeforeMount(async () => {
         </div>
       </div>
 
-      <div style="height: 45vh; overflow-y: auto; margin-top: 20px;">
+      <div style="max-height: 45vh; overflow-y: auto; margin-top: 20px;">
         <div v-for="myWorkspace in workspaces" style="padding-right: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <p class="ws-name">{{ myWorkspace.name }}</p>
