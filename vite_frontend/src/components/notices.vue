@@ -164,7 +164,7 @@ const leaveWorkspace = async (workspaceId) => {
 }
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
 }
 
 const toggleLeave = () => {
@@ -180,7 +180,7 @@ const closeNewWsModal = () => {
 }
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
 }
 
 const websocketEventAdd = () => {
@@ -266,9 +266,9 @@ onBeforeMount(async () => {
             <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
               <div style="display: flex; align-items: center;">
                 <h2 class="item-name"> {{ item?.notice?.name }}</h2>
-                <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice?._id)}">campaign</span>
-                <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
-                <span v-if="['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
+                <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice)}">campaign</span>
+                <span v-if="item && ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
+                <span v-if="item && ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
               </div>
 
               <h4 class="item-name" style="color: #525252">

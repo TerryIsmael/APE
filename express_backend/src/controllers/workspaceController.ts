@@ -67,7 +67,6 @@ export const getUserWorkspaces = async (req: any, res: any) => {
     }
     res.status(200).json({ formattedWorkspaces });
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 }
@@ -126,6 +125,15 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     } 
 
     await workspace.populate('items');
+    const itemsToShow = [];
+    for (const item of workspace.items) {
+      if (await getUserPermission(req.user._id, wsId, item?._id.toString())) {
+        itemsToShow.push(item);
+      }
+    }
+    workspace.items = itemsToShow;
+
+    await workspace.populate('items');
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
 
@@ -170,7 +178,6 @@ export const createWorkspace = async (req: any, res: any) => {
     }
     res.status(201).json({ wsId: workspace._id });
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
