@@ -209,7 +209,7 @@ const onDrop = async (evt, folder, back) => {
     await modifyItem(item);
   } else {
     if (item._id === folder._id) return;
-    item.path = folder.path + "/" + folder.name;
+    item.path = (folder.path?(folder.path + "/"):"")+ folder.name;
     await modifyItem(item);
   }
 };
@@ -413,8 +413,8 @@ watch(
     </div>
 
     <div v-if="!routedItem">
-      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
           <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
           {{ workspace?.name }}
         </h1>
