@@ -8,11 +8,11 @@ import { Permission } from '../models/profilePerms.ts';
 import User from '../schemas/userSchema.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
 import Item from '../schemas/itemSchema.ts';
-import { CalendarItem, EventItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
+import { CalendarItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
-import type { ICalendar, IEvent, INote, INotice, ITimer } from '../models/typeItem.ts';
+import type { ICalendar, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 
@@ -52,10 +52,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                             item = new NoticeItem({ text: itemData.text, important: itemData.important });
                             break;
                         case ItemType.Calendar:
-                            item = new CalendarItem({events:[]}); // TODO
-                            break;
-                        case ItemType.Event:
-                            item = new EventItem({ event: { initDate: itemData.initDate, finalDate: itemData.finalDate } });
+                            item = new CalendarItem({events:[]});
                             break;
                         case ItemType.StudySession:
                             item = new StudySessionItem({}); // TODO
