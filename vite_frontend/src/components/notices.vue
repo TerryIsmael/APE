@@ -32,6 +32,18 @@ const selectedItemPerms = ref(null);
 const userItemPerms = ref(null);
 const loading = ref(true);
 
+const currentPath = ref('');
+const items = ref([]);
+const folders = ref([]);
+const selectedFolder = ref(null);
+const existFolder = ref(false);
+
+const workspaces = ref([]);
+const isWsModalOpened = ref(false);
+const isLeaving = ref(false);
+const isNewWsModalOpened = ref(false);
+const newWorkspace = ref('');
+
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
 }
@@ -135,20 +147,55 @@ const logout = async () => {
   await Utils.logout(router);
 }
 
+const fetchUserWorkspaces = async () => {
+  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
+}
+
+const openWsModal = async () => {
+  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+}
+
+const closeWsModal = () => {
+  Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
+}
+
+const leaveWorkspace = async (workspaceId) => {
+  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
+}
+
+const redirectToWorkspace = async(workspaceId) => {
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+}
+
+const toggleLeave = () => {
+  isLeaving.value = !isLeaving.value;
+}
+
+const openNewWsModal = () => {
+  Utils.openNewWsModal(isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage);
+}
+
+const closeNewWsModal = () => {
+  Utils.closeNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
+}
+
+const createWorkspace = async () => {
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
+}
+
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
     ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
-        const jsonEvent = JSON.parse(event.data);
-        if (jsonEvent.type === 'workspaceUpdated') {
-          await fetchUser();
-          await fetchNotices();
-        }
-    });
+    const jsonEvent = JSON.parse(event.data);
+    if (jsonEvent.type === 'workspaceUpdated') {
+      await fetchUser();
+      await fetchNotices();
+    }
+  });
 }
-
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
@@ -265,7 +312,7 @@ onBeforeMount(async () => {
         <p style=" margin: 0%; padding: 0%; word-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"> {{ workspace?.name }} </p> 
       </li>
 
-      <button class="change-workspace-button">Cambiar</button>
+      <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
       <li class="li-clickable">Gestionar perfil</li>
 
@@ -338,6 +385,57 @@ onBeforeMount(async () => {
           </div>
         </div>
       </div>
+    </template>
+  </Modal>
+
+  <!-- Modal de gestion de worskpaces -->
+  <Modal class="modal" :isOpen="isWsModalOpened" @modal-close="closeWsModal" name="workspace-modal">
+    <template #header><strong>Tus workspaces</strong></template>
+    <template #content>  
+      <div class="error" v-if="errorMessage.length !== 0 && isWsModalOpened" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; margin-top: 10px">
+        <button :class="{'toggle-leave':true, 'red-button':!isLeaving }" @click="toggleLeave()">
+          <span v-if="isLeaving">Volver</span>
+          <span v-else>Abandonar</span>
+        </button>
+        <div>
+          <span @click="openNewWsModal()" style="cursor: pointer; margin-right: 10px" class="material-symbols-outlined">add</span>
+        </div>
+      </div>
+
+      <div style="height: 45vh; overflow-y: auto; margin-top: 20px;">
+        <div v-for="myWorkspace in workspaces" style="padding-right: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <p class="ws-name">{{ myWorkspace.name }}</p>
+            <div style="display: flex; gap: 10px; justify-content: right; align-items: center; width: 20%">
+              <button v-if="myWorkspace.perm !== 'Owner' && isLeaving" class="ws-modal-button" style="background-color: #c55e5e" @click="leaveWorkspace(myWorkspace._id)">
+                <span style="vertical-align: middle;" class="material-symbols-outlined">person_cancel</span>
+              </button>
+              <button :disabled="workspace._id.toString() == myWorkspace._id" class="ws-modal-button" @click="redirectToWorkspace(myWorkspace._id)">
+                <span style="vertical-align: middle;" class="material-symbols-outlined">sync_alt</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </Modal>
+
+  <!-- Modal de nuevo workspace -->
+  <Modal class="modal" :isOpen="isNewWsModalOpened" @modal-close="closeNewWsModal" name="new-workspace-modal">
+    <template #header><strong>Crear workspace</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0 && isNewWsModalOpened" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top: 20px">
+        <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
+      </div>
+      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>
@@ -610,5 +708,57 @@ onBeforeMount(async () => {
   font-size: 24px;
   cursor: pointer;
 } 
+
+.ws-modal-button {
+  width: 45px; 
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
+.ws-modal-button:disabled {
+  background-color: #736685; 
+  cursor: not-allowed;
+}
+
+.ws-name {
+  text-align: left;
+  width: 75%;
+  margin-right: 5px;
+  word-wrap: break-word; 
+  overflow: hidden;
+  white-space: nowrap; 
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.toggle-leave {
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  height: 30px;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+  outline: none;
+}
+
+.red-button {
+  background-color: #c55e5e; 
+}
 
 </style>

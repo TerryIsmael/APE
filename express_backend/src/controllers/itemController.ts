@@ -71,7 +71,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 item.itemType = itemData.itemType;
                 item.uploadDate = new Date();
                 item.modifiedDate = new Date();
-                const profile = await Profile.findOne({ name: req.user._id });
+                const profile = await Profile.findOne({ name: req.user._id, _id : { $in: workspace.profiles }});
                 item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
                 const perm = await getUserPermission(req.user._id, wsId);
                 if (perm === Permission.Read || !perm) {
