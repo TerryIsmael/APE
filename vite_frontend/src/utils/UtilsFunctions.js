@@ -1,3 +1,5 @@
+import WorkspaceUtils from "./WorkspaceFunctions.js";
+
 class UtilsFunctions {
 
   static async fetchUser(currentUser, router) {
@@ -183,7 +185,7 @@ class UtilsFunctions {
             if (currentWorkspace == workspaceId) {
               localStorage.removeItem('workspace');
               router.push('/workspace');
-            }else{
+            } else {
               await this.fetchUserWorkspaces(workspaces, router, errorMessage);
             }
  
@@ -228,8 +230,7 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
-  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, errorMessage) => {
-
+  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/', {
         body: JSON.stringify( { wsName: newWorkspace.value }),
@@ -245,7 +246,7 @@ class UtilsFunctions {
         errorMessage.value = [];
         isNewWsModalOpened.value = false;
         localStorage.setItem('workspace', data.wsId);
-        router.push('/workspace');
+        await this.redirectToWorkspace(data.wsId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else if (response.status === 400 || response.status === 404) {
@@ -263,9 +264,14 @@ class UtilsFunctions {
     }
   };
 
-  static redirectToWorkspace = (workspaceId, router) => {
+  static redirectToWorkspace = async (workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage) => {
     localStorage.setItem('workspace', workspaceId);
-    router.push('/workspace');
+
+    if (path && path.value === '') {
+      await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+    } else {
+      router.push('/workspace');
+    }
   };
 
 }

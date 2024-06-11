@@ -172,8 +172,8 @@ const leaveWorkspace = async (workspaceId) => {
   await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
 }
 
-const redirectToWorkspace = (workspaceId) => {
-  Utils.redirectToWorkspace(workspaceId, router);
+const redirectToWorkspace = async(workspaceId) => {
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
 }
 
 const toggleLeave = () => {
@@ -189,7 +189,7 @@ const closeNewWsModal = () => {
 }
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, errorMessage);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
 }
 
 onBeforeMount(async () => {
@@ -397,7 +397,7 @@ onUnmounted(() => {
   <Modal class="modal" :isOpen="isWsModalOpened" @modal-close="closeWsModal" name="workspace-modal">
     <template #header><strong>Tus workspaces</strong></template>
     <template #content>  
-      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+      <div class="error" v-if="errorMessage.length !== 0 && isWsModalOpened" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
         <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
@@ -411,16 +411,18 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-for="myWorkspace in workspaces" style="width: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-          <p class="ws-name">{{ myWorkspace.name }}</p>
-          <div style="display: flex; gap: 10px; justify-content: right; align-items: center; width: 20%">
-            <button v-if="myWorkspace.perm !== 'Owner' && isLeaving" class="ws-modal-button" style="background-color: #c55e5e" @click="leaveWorkspace(myWorkspace._id)">
+      <div style="height: 45vh; overflow-y: auto; margin-top: 20px;">
+        <div v-for="myWorkspace in workspaces" style="padding-right: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <p class="ws-name">{{ myWorkspace.name }}</p>
+            <div style="display: flex; gap: 10px; justify-content: right; align-items: center; width: 20%">
+              <button v-if="myWorkspace.perm !== 'Owner' && isLeaving" class="ws-modal-button" style="background-color: #c55e5e" @click="leaveWorkspace(myWorkspace._id)">
                 <span style="vertical-align: middle;" class="material-symbols-outlined">person_cancel</span>
               </button>
               <button :disabled="workspace._id.toString() == myWorkspace._id" class="ws-modal-button" @click="redirectToWorkspace(myWorkspace._id)">
                 <span style="vertical-align: middle;" class="material-symbols-outlined">sync_alt</span>
               </button>
+            </div>
           </div>
         </div>
       </div>
@@ -431,7 +433,7 @@ onUnmounted(() => {
   <Modal class="modal" :isOpen="isNewWsModalOpened" @modal-close="closeNewWsModal" name="new-workspace-modal">
     <template #header><strong>Crear workspace</strong></template>
     <template #content>
-      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+      <div class="error" v-if="errorMessage.length !== 0 && isNewWsModalOpened" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
         <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
@@ -745,7 +747,6 @@ onUnmounted(() => {
 
 .red-button {
   background-color: #c55e5e;
-  
 }
 
 .scrollable {
