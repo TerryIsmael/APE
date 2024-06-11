@@ -557,7 +557,7 @@ export const deleteWorkspace = async (req: any, res: any) => {
   const wsId = req.body.wsId;
 
   try {
-    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles').populate('items');
     if (!workspace) {
       res.status(404).json({ error: 'No se ha encontrado el workspace' });
       return;
@@ -568,6 +568,18 @@ export const deleteWorkspace = async (req: any, res: any) => {
       res.status(401).json({ error: 'No estás autorizado a borrar el workspace' });
       return;
     }
+
+    workspace.items.forEach(async (item: mongoose.PopulatedDoc<IItem, mongoose.Types.ObjectId | undefined>) => {
+      if (item instanceof mongoose.Document) {
+        await item?.deleteOne();
+      }
+    });
+
+    workspace.profiles.forEach(async (profile: mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId | undefined>) => {
+      if (profile instanceof mongoose.Document) {
+        await profile?.deleteOne();
+      }
+    });
 
     await workspace.deleteOne();
     res.status(200).json({ message: 'Workspace eliminado' });
