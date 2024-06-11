@@ -31,6 +31,7 @@ class UtilsFunctions {
         credentials: "include",
       });
       if (response.ok) {
+        localStorage.removeItem('workspace');
         router.push({ name: 'login' });
       } else if (response.status === 401){
         router.push({ name: 'login' });
@@ -43,7 +44,7 @@ class UtilsFunctions {
   static async verifyWsPerms(workspace, userWsPerms, currentUser) {
     const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
     const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x=>x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
-    userWsPerms.value = wsPerm[0];
+    userWsPerms.value = wsPerm?wsPerm[0]:null;
   };
 
   static formatDate(date) {
@@ -163,7 +164,7 @@ class UtilsFunctions {
     }
   };
 
-  static leaveWorkspace = async (workspaceId, router, errorMessage, isWsModalOpened) => {
+  static leaveWorkspace = async (workspaceId, workspaces, router, errorMessage, isWsModalOpened) => {
     try { 
         const confirmDelete = confirm("¿Estás seguro de que deseas abandonar este workspace?");
         if (!confirmDelete) return;
@@ -181,8 +182,9 @@ class UtilsFunctions {
             const currentWorkspace = localStorage.getItem('workspace');
             if (currentWorkspace == workspaceId) {
               localStorage.removeItem('workspace');
-              this.closeWsModal(isWsModalOpened);
               router.push('/workspace');
+            }else{
+              await this.fetchUserWorkspaces(workspaces, router, errorMessage);
             }
  
         } else if (response.status === 401) {
@@ -207,24 +209,30 @@ class UtilsFunctions {
     isWsModalOpened.value = true;
   };
   
-  static closeWsModal = (isWsModalOpened) => {
+  static closeWsModal = (isWsModalOpened, workspaces, errorMessage) => {
     isWsModalOpened.value = false;
+    workspaces.value = [];
+    errorMessage.value = [];
   };
 
-  static openNewWsModal = (isWsModalOpened, isNewWsModalOpened) => {
+  static openNewWsModal = (isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage) => {
+    errorMessage.value = [];
+    newWorkspace.value = '';
     isWsModalOpened.value = false;
     isNewWsModalOpened.value = true;
   };
 
-  static closeNewWsModal = (isNewWsModalOpened) => {
+  static closeNewWsModal = (isNewWsModalOpened, newWorkspace, errorMessage) => {
     isNewWsModalOpened.value = false;
+    newWorkspace.value = '';
+    errorMessage.value = [];
   };
 
-  static createWorkspace = async (newWorkspace, router, errorMessage, isNewWsModalOpened) => {
+  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, errorMessage) => {
 
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/', {
-        body: JSON.stringify( { wsName: newWorkspace }),
+        body: JSON.stringify( { wsName: newWorkspace.value }),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -253,6 +261,11 @@ class UtilsFunctions {
     } catch (error) {
       console.log(error);
     }
+  };
+
+  static redirectToWorkspace = (workspaceId, router) => {
+    localStorage.setItem('workspace', workspaceId);
+    router.push('/workspace');
   };
 
 }

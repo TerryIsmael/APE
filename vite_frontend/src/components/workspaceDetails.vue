@@ -240,6 +240,10 @@ const deleteProfile = async (profileId) => {
   WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
+const deleteWorkspace = async () => {
+  await WorkspaceDetailsUtils.deleteWorkspace(workspace, router, errorMessage);
+};
+
 const logout = async () => {
   await Utils.logout(router);
 };
@@ -360,7 +364,7 @@ onMounted(() => {
               <button class="invite-button" @click="createInvitationLink" >Generar</button>
             </div>
             <div id="message">Enlace copiado al portapapeles</div>
-            <table style="width: 90.5%; margin-top:2%">
+            <table v-if="invitations.length !== 0" style="width: 90.5%; margin-top:2%">
               <tr>
                 <th style="width:30%">Perfil</th>
                 <th style="width:26%">Duración</th>
@@ -374,6 +378,7 @@ onMounted(() => {
                 <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>
               </tr>
             </table>
+            <p v-else>Aún no hay links de invitación al workspace</p>
           </div>
 
           <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 50%;">
@@ -412,7 +417,7 @@ onMounted(() => {
                 </select>
               </div>
               
-              <div v-for="profile in getFilteredProfiles" :key="profile._id" style="width: 100%;">
+              <div v-if="getFilteredProfiles.length !== 0" v-for="profile in getFilteredProfiles" :key="profile._id" style="width: 100%;">
                 <div style="display: inline-flex; width: 91.5%; height: 40px; align-items: center; justify-content: space-between;">
 
                   <div style="display: inline-flex; align-items: center; justify-content: left; width: 75%;">
@@ -429,6 +434,8 @@ onMounted(() => {
                   </select>
                 </div>
               </div>
+
+              <p v-else style="margin-top: 0;">Aún no hay perfiles en el workspace</p>
             </div>
           </div>
         </div>

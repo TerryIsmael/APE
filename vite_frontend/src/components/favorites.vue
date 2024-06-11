@@ -49,7 +49,7 @@ const isWsModalOpened = ref(false);
 const isLeaving = ref(false);
 
 const isNewWsModalOpened = ref(false);
-const newWorkspace = ref({});
+const newWorkspace = ref('');
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -165,16 +165,15 @@ const openWsModal = async () => {
 }
 
 const closeWsModal = () => {
-  Utils.closeWsModal(isWsModalOpened);
+  Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
 }
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace(workspaceId, router, errorMessage, isWsModalOpened);
+  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
 }
 
 const redirectToWorkspace = (workspaceId) => {
-  localStorage.setItem('workspace', workspaceId);
-  router.push('/workspace');
+  Utils.redirectToWorkspace(workspaceId, router);
 }
 
 const toggleLeave = () => {
@@ -182,7 +181,7 @@ const toggleLeave = () => {
 }
 
 const openNewWsModal = () => {
-  Utils.openNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
+  Utils.openNewWsModal(isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage);
 }
 
 const closeNewWsModal = () => {
@@ -190,7 +189,7 @@ const closeNewWsModal = () => {
 }
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(newWorkspace, router, errorMessage, isNewWsModalOpened);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, errorMessage);
 }
 
 onBeforeMount(async () => {
@@ -403,7 +402,7 @@ onUnmounted(() => {
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; margin-top: 10px">
-        <button class="toggle-leave" @click="toggleLeave()">
+        <button :class="{'toggle-leave':true, 'red-button':!isLeaving }" @click="toggleLeave()">
           <span v-if="isLeaving">Volver</span>
           <span v-else>Abandonar</span>
         </button>
@@ -419,7 +418,7 @@ onUnmounted(() => {
             <button v-if="myWorkspace.perm !== 'Owner' && isLeaving" class="ws-modal-button" style="background-color: #c55e5e" @click="leaveWorkspace(myWorkspace._id)">
                 <span style="vertical-align: middle;" class="material-symbols-outlined">person_cancel</span>
               </button>
-              <button class="ws-modal-button" @click="redirectToWorkspace(myWorkspace._id)">
+              <button :disabled="workspace._id.toString() == myWorkspace._id" class="ws-modal-button" @click="redirectToWorkspace(myWorkspace._id)">
                 <span style="vertical-align: middle;" class="material-symbols-outlined">sync_alt</span>
               </button>
           </div>
@@ -437,9 +436,9 @@ onUnmounted(() => {
       </div>
 
       <div style="margin-top: 20px">
-        <input type="text" v-model="newWorkspace.name" placeholder="Nombre de workspace..." class="text-input" style="margin-bottom: 5px;"/>
+        <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>
@@ -710,6 +709,11 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+.ws-modal-button:disabled {
+  background-color: #736685; 
+  cursor: not-allowed;
+}
+
 .ws-name {
   text-align: left;
   width: 75%;
@@ -722,7 +726,9 @@ onUnmounted(() => {
 }
 
 .toggle-leave {
-  width: 20%; 
+  display:flex;
+  justify-content: center;
+  align-items: center;
   height: 30px;
   text-align: center;
   border-radius: 8px;
@@ -734,6 +740,12 @@ onUnmounted(() => {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
+  outline: none;
+}
+
+.red-button {
+  background-color: #c55e5e;
+  
 }
 
 .scrollable {
