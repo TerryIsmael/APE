@@ -32,6 +32,7 @@ const selectedItemPerms = ref(null);
 const selectedFolder = ref('');
 const existFolder = ref(false);
 const routedItem = ref(null);
+const routedItemPerm = ref(null);
 const showSidebar = ref(false);
 const showMainSidebar = ref(false);
 const isModalOpened = ref(false);
@@ -64,7 +65,10 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  if(routedItem.value) routedItem.value = items.value.find(item => item._id == routedItem.value._id);
+  if(routedItem.value) {
+    routedItem.value = items.value.find(item => item._id == routedItem.value._id);
+    routedItemPerm.value = await verifyPerms(routedItem.value);
+  }
   loading.value = false;
 }
 
@@ -130,6 +134,10 @@ const showFolderDetails = async () => {
 
 const changePerms = async (perm, profileId) => {
   await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+}
+
+const verifyPerms = (item) => {
+  return WorkspaceUtils.verifyPerms(item, workspace, currentUser);
 }
 
 const getFilteredProfiles = computed(() => {
@@ -290,18 +298,24 @@ const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
 }
 
+const refreshWindow = async () => {
+  await fetchWorkspace();
+  initPath();
+  await selectItem(selectedItem.value, true);
+}
+
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
     ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
-        const jsonEvent = JSON.parse(event.data);
-        if (jsonEvent.type === 'workspaceUpdated') {
-            await fetchWorkspace();
-            initPath();
-        }
-    });
+    const jsonEvent = JSON.parse(event.data);
+    if (jsonEvent.type === 'workspaceUpdated') {
+        await fetchWorkspace();
+        initPath();
+    }
+  });
 }
 
 onBeforeMount(async () => {
@@ -370,7 +384,7 @@ watch(
           {{ workspace?.name }} 
         </h1>
         <div style="display:flex; justify-content: end;  width: 10vw;" >
-          <button @click="openFormEditNote" v-if="!editing">Editar</button>
+          <button @click="openFormEditNote" v-if="!editing && ['Owner','Write'].includes(routedItemPerm)">Editar</button>
         </div>
       </div>
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">

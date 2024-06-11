@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeMount, computed } from 'vue';
+import { ref, onMounted, onBeforeMount, onUnmounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import WorkspaceDetailsUtils from "../utils/WorkspaceDetailsFunctions.js";
@@ -97,7 +97,11 @@ const toggleEdit = () => {
 
 const saveProfile = async () => {
   await WorkspaceDetailsUtils.saveProfile(modalProfile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+  
+  if (errorMessage.value.length === 0) {
+    WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+    closeModal();
+  }
 };
 
 const fetchUser = async () => {
@@ -210,9 +214,7 @@ const getGroupProfiles = computed(() => {
 const getIndividualProfiles = computed(() => {
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.users[0]?.username;
-    const profileType = profile.profileType === 'Individual';
-    const matchesSearchTerm = searchModalProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchModalProfileTerm.value.toLowerCase().trim());
-    return (profileType && matchesSearchTerm);
+    return (profile.profileType === 'Individual' && (searchModalProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchModalProfileTerm.value.toLowerCase().trim())));
   });
 
   const orderedUsers = [];
@@ -283,17 +285,23 @@ const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspaceName, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage);
 }
 
-const websocketEventAdd = () => { // TODO
+const refreshWindow = async () => {
+  await fetchWorkspace();
+  await fetchInvitations();
+};
+
+const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
-    websocketEventAdd();
+    console.log('Connected to server');
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
-        const jsonEvent = JSON.parse(event.data);
-        if (jsonEvent.type === 'workspaceUpdated') {
-          await fetchWorkspace();
-        }
-    });
-};
+    const jsonEvent = JSON.parse(event.data);
+    if (jsonEvent.type === 'workspaceUpdated') {
+      await refreshWindow();
+    }
+  });
+}
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
@@ -311,11 +319,16 @@ onBeforeMount(async () => {
   await fetchWorkspace();
   await fetchInvitations();
   loading.value = false;
+  websocketEventAdd();
 });
 
 onMounted(() => {
   workspaceId.value = localStorage.getItem('workspace');
   websocketEventAdd();
+});
+
+onUnmounted(() => {
+  ws.value.removeEventListener('open', websocketEventAdd);
 });
 
 </script>
@@ -578,7 +591,7 @@ onMounted(() => {
       </div>
     </template>
     <template #footer>
-      <button style="margin-top:15px" @click="saveProfile().then(() => closeModal())">Guardar</button>
+      <button style="margin-top:15px" @click="saveProfile()">Guardar</button>
     </template>
   </Modal>
 

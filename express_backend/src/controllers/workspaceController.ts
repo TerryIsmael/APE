@@ -424,6 +424,12 @@ export const saveProfile = async (req: any, res: any) => {
       res.status(401).json({ error: 'No estás autorizado a poner el permiso de administrador o propietario' });
       return;
     }
+
+    const sameNameProfile = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile instanceof mongoose.Document && profile.name == newProfileData.name);
+    if (sameNameProfile && (!newProfileData._id || sameNameProfile._id.toString() !== newProfileData._id.toString())) {
+        res.status(409).json({ error: 'El perfil ya está en el workspace' });
+        return;
+    }
     
     let areInWorkspace : mongoose.Types.ObjectId[] = [];
     if (newProfileData.users && newProfileData.users.length !== 0) {
