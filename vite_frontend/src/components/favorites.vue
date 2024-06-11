@@ -46,6 +46,10 @@ const existFolder = ref(false);
 
 const workspaces = ref([]);
 const isWsModalOpened = ref(false);
+const isLeaving = ref(false);
+
+const isNewWsModalOpened = ref(false);
+const newWorkspace = ref({});
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -171,6 +175,22 @@ const leaveWorkspace = async (workspaceId) => {
 const redirectToWorkspace = (workspaceId) => {
   localStorage.setItem('workspace', workspaceId);
   router.push('/workspace');
+}
+
+const toggleLeave = () => {
+  isLeaving.value = !isLeaving.value;
+}
+
+const openNewWsModal = () => {
+  Utils.openNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
+}
+
+const closeNewWsModal = () => {
+  Utils.closeNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
+}
+
+const createWorkspace = async () => {
+  await Utils.createWorkspace(newWorkspace, router, errorMessage, isNewWsModalOpened);
 }
 
 onBeforeMount(async () => {
@@ -311,9 +331,9 @@ onUnmounted(() => {
       </div>
 
       <div style="margin-top: 20px">
-          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-        </div>
-        <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
+        <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+      </div>
+      <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 
@@ -372,7 +392,6 @@ onUnmounted(() => {
         </div>
       </div>
     </template>
-    <template #footer></template>
   </Modal>
 
   <!-- Modal de gestion de worskpaces -->
@@ -383,24 +402,45 @@ onUnmounted(() => {
         <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
       </div>
 
-      <div style="display: flex; justify-content: right;">
-        <span @click="openNewWsModal()" style="cursor: pointer; margin-right: 10px" class="material-symbols-outlined">add</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; margin-top: 10px">
+        <button class="toggle-leave" @click="toggleLeave()">
+          <span v-if="isLeaving">Volver</span>
+          <span v-else>Abandonar</span>
+        </button>
+        <div>
+          <span @click="openNewWsModal()" style="cursor: pointer; margin-right: 10px" class="material-symbols-outlined">add</span>
+        </div>
       </div>
 
-      <div v-for="myWorkspace in workspaces">
-        <div style="display: flex; justify-content: space-between;">
-          {{ myWorkspace.name }}
-          <button style="max-height: 50px;" @click="redirectToWorkspace(myWorkspace._id)">
-            <span class="material-symbols-outlined">sync_alt</span>
-          </button>
-          <button v-if="myWorkspace.perm !== 'Owner'" style="max-height: 50px;" @click="leaveWorkspace(myWorkspace._id)">
-            <span class="material-symbols-outlined">person_cancel</span>
-          </button>
-
+      <div v-for="myWorkspace in workspaces" style="width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <p class="ws-name">{{ myWorkspace.name }}</p>
+          <div style="display: flex; gap: 10px; justify-content: right; align-items: center; width: 20%">
+            <button v-if="myWorkspace.perm !== 'Owner' && isLeaving" class="ws-modal-button" style="background-color: #c55e5e" @click="leaveWorkspace(myWorkspace._id)">
+                <span style="vertical-align: middle;" class="material-symbols-outlined">person_cancel</span>
+              </button>
+              <button class="ws-modal-button" @click="redirectToWorkspace(myWorkspace._id)">
+                <span style="vertical-align: middle;" class="material-symbols-outlined">sync_alt</span>
+              </button>
+          </div>
         </div>
       </div>
     </template>
-    <template #footer></template>
+  </Modal>
+
+  <!-- Modal de nuevo workspace -->
+  <Modal class="modal" :isOpen="isNewWsModalOpened" @modal-close="closeNewWsModal" name="new-workspace-modal">
+    <template #header><strong>Crear workspace</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+        <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top: 20px">
+        <input type="text" v-model="newWorkspace.name" placeholder="Nombre de workspace..." class="text-input" style="margin-bottom: 5px;"/>
+      </div>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
+    </template>
   </Modal>
 </template>
 
@@ -656,8 +696,48 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+.ws-modal-button {
+  width: 45px; 
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
+.ws-name {
+  text-align: left;
+  width: 75%;
+  margin-right: 5px;
+  word-wrap: break-word; 
+  overflow: hidden;
+  white-space: nowrap; 
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.toggle-leave {
+  width: 20%; 
+  height: 30px;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
 .scrollable {
   scrollbar-color: #C8B1E4 transparent;
   scroll-behavior: smooth;
 }
-</style>../utils/utilsFunctions.js
+</style>

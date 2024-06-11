@@ -147,57 +147,6 @@ const handleEvents = async (events) => {
   }
 }
 
-// const handleEventChange = async (changeInfo) => {
-//   if (editing) return;
-//   item.events = item.events.map(e => {
-//     if (e._id === changeInfo.event.id){
-//       e.name = changeInfo.event.title;
-//       e.start = new Date(changeInfo.event.start);
-//       e.end = new Date(changeInfo.event.end);
-//     }
-//     return e;
-//   })
-//   try{
-//     const response = await fetch(import.meta.env.VITE_BACKEND_URL + "/item", {
-//       method: 'PUT',
-//       credentials: "include",
-//       headers: {
-//         'Content-Type': 'application/json'
-//       },
-//       body: JSON.stringify({
-//         workspace: workspace._id,
-//         item: item
-//       })
-//     });
-
-//     if (!response.ok){
-//       item.events = item.events.map(e => {
-//         if (e._id === changeInfo.event.id){
-//             e.name = changeInfo.oldEvent.title;
-//             e.start = new Date(changeInfo.oldEvent.start);
-//             e.end = new Date(changeInfo.oldEvent.end);
-//           }
-//           return e;
-//       });
-//       changeInfo.revert();
-//       console.error('Error al actualizar el evento')
-//     }
-    
-//   } catch (error){
-//     item.events = item.events.map(e => {
-//     if (e._id === changeInfo.event.id){
-//       e.name = changeInfo.oldEvent.title;
-//       e.start = new Date(changeInfo.oldEvent.start);
-//       e.end = new Date(changeInfo.oldEvent.end);
-//     }
-//     return e;
-//   })
-//     changeInfo.revert();
-//     console.log(error)
-  
-//   }
-// }
-
 const calendarOptions = {
   plugins: [
       dayGridPlugin,
@@ -213,7 +162,7 @@ const calendarOptions = {
   timeZone: 'UTC',
   height: 650,
   initialView: 'dayGridMonth',
-  initialEvents: events, // alternatively, use the `events` setting to fetch from a feed
+  initialEvents: events,
   editable: true,
   selectable: true,
   selectMirror: true,
@@ -222,12 +171,6 @@ const calendarOptions = {
   select: handleDateSelect,
   eventClick: handleEventClick,
   eventsSet: handleEvents,
-  
-  /* you can update a remote database when these fire:
-  eventAdd:
-  eventChange: handleEventChange,
-  eventRemove:
-  */
 };
 
 const handleStartEdit = (selectedEvent) => {
@@ -363,10 +306,8 @@ watch(props.item, (newVal, _ ) => {
 }
 
 .modal-form button{
-  width: 50px;
-  
+  width: 50px; 
 }
-
 
 b { 
   color: black;
@@ -419,7 +360,6 @@ b {
   left: 0;
   right: 0;
   bottom: 0;
-  /* background: rgba(0, 0, 0, 0.5); */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -471,4 +411,3 @@ b {
 }
 
 </style>
-../utils/UtilsFunctions.js../utils/WorkspaceFunctions.js
