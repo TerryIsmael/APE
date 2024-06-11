@@ -32,6 +32,7 @@ const selectedItemPerms = ref(null);
 const selectedFolder = ref('');
 const existFolder = ref(false);
 const routedItem = ref(null);
+const routedItemPerm = ref(null);
 const showSidebar = ref(false);
 const showMainSidebar = ref(false);
 const isModalOpened = ref(false);
@@ -58,7 +59,10 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  if(routedItem.value) routedItem.value = items.value.find(item => item._id == routedItem.value._id);
+  if(routedItem.value) {
+    routedItem.value = items.value.find(item => item._id == routedItem.value._id);
+    routedItemPerm.value = await verifyPerms(routedItem.value);
+  }
   loading.value = false;
 }
 
@@ -124,6 +128,10 @@ const showFolderDetails = async () => {
 
 const changePerms = async (perm, profileId) => {
   await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+}
+
+const verifyPerms = (item) => {
+  return WorkspaceUtils.verifyPerms(item, workspace, currentUser);
 }
 
 const getFilteredProfiles = computed(() => {
@@ -247,6 +255,13 @@ const saveNote = async () => {
   await modifyItem(routedItem.value);
 }
 
+const refreshWindow = async () => {
+  await fetchWorkspace();
+  initPath();
+  await selectItem(selectedItem.value, true);
+
+}
+
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
@@ -327,7 +342,7 @@ watch(
           {{ workspace?.name }} 
         </h1>
         <div style="display:flex; justify-content: end;  width: 10vw;" >
-          <button @click="openFormEditNote" v-if="!editing">Editar</button>
+          <button @click="openFormEditNote" v-if="!editing && ['Owner','Write'].includes(routedItemPerm)">Editar</button>
         </div>
       </div>
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
