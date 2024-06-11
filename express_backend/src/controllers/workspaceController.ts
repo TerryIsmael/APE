@@ -67,7 +67,6 @@ export const getUserWorkspaces = async (req: any, res: any) => {
     }
     res.status(200).json({ formattedWorkspaces });
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 }
@@ -132,7 +131,6 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
         itemsToShow.push(item);
       }
     }
-    console.log(itemsToShow);
     workspace.items = itemsToShow;
 
     await workspace.populate('items');
@@ -180,7 +178,6 @@ export const createWorkspace = async (req: any, res: any) => {
     }
     res.status(201).json({ wsId: workspace._id });
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
