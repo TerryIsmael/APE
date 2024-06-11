@@ -92,7 +92,11 @@ const toggleEdit = () => {
 
 const saveProfile = async () => {
   await WorkspaceDetailsUtils.saveProfile(modalProfile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+  
+  if (errorMessage.value.length === 0) {
+    WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
+    closeModal();
+  }
 };
 
 const fetchUser = async () => {
@@ -209,9 +213,7 @@ const getGroupProfiles = computed(() => {
 const getIndividualProfiles = computed(() => {
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.users[0]?.username;
-    const profileType = profile.profileType === 'Individual';
-    const matchesSearchTerm = searchModalProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchModalProfileTerm.value.toLowerCase().trim());
-    return (profileType && matchesSearchTerm);
+    return (profile.profileType === 'Individual' && (searchModalProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchModalProfileTerm.value.toLowerCase().trim())));
   });
 
   const orderedUsers = [];
@@ -533,7 +535,7 @@ onMounted(() => {
       </div>
     </template>
     <template #footer>
-      <button style="margin-top:15px" @click="saveProfile().then(() => closeModal())">Guardar</button>
+      <button style="margin-top:15px" @click="saveProfile()">Guardar</button>
     </template>
   </Modal>
 
