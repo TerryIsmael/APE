@@ -192,6 +192,21 @@ const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, errorMessage);
 }
 
+const websocketEventAdd = () => {
+  props.ws.addEventListener('open', async (event) => {
+    console.log('Connected to server');
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
+  });
+  props.ws.addEventListener('message', async (event) => {
+        const jsonEvent = JSON.parse(event.data);
+        if (jsonEvent.type === 'workspaceUpdated') {
+          await fetchUser();
+          await fetchWorkspace();
+        }
+    });
+}
+
+
 onBeforeMount(async () => {
     path.value = "/" + route.name;
     ws.value = props.ws;
@@ -206,6 +221,7 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchWorkspace();
+  websocketEventAdd();
   loading.value = false;
 });
 

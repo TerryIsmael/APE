@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeMount, computed } from 'vue';
+import { ref, onMounted, onBeforeMount, onUnmounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import WorkspaceDetailsUtils from "../utils/WorkspaceDetailsFunctions.js";
@@ -248,17 +248,25 @@ const logout = async () => {
   await Utils.logout(router);
 };
 
-const websocketEventAdd = () => { // TODO
+const refreshWindow = async () => {
+  await fetchWorkspace();
+  await fetchInvitations();
+};
+
+const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
-    websocketEventAdd();
+    console.log('Connected to server');
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
         if (jsonEvent.type === 'workspaceUpdated') {
-          await fetchWorkspace();
+          await refreshWindow();
+
         }
     });
-};
+}
+
 
 onBeforeMount(async () => {
   ws.value = props.ws;
@@ -275,11 +283,16 @@ onBeforeMount(async () => {
   await fetchWorkspace();
   await fetchInvitations();
   loading.value = false;
+  websocketEventAdd();
 });
 
 onMounted(() => {
   workspaceId.value = localStorage.getItem('workspace');
   websocketEventAdd();
+});
+
+onUnmounted(() => {
+  ws.value.removeEventListener('open', websocketEventAdd);
 });
 
 </script>
