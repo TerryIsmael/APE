@@ -3,6 +3,7 @@ import { ProfileType, WSPermission } from '../models/profile.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
 import Profile from '../schemas/profileSchema.ts';
 import User from '../schemas/userSchema.ts';
+import Item from '../schemas/itemSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { getUserPermission, getWSPermission } from '../utils/permsFunctions.ts';
 import { ItemType, type IItem } from '../models/item.ts';
@@ -155,7 +156,8 @@ export const createWorkspace = async (req: any, res: any) => {
   const wsName = req.body.wsName;
   const user = req.user;
   try {
-    const profile = { name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] };
+    const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] });
+    profile.save();
     const workspace = new Workspace({ name: wsName, items: [], profiles: [profile] });
     try {
       workspace.validateSync();
@@ -168,7 +170,8 @@ export const createWorkspace = async (req: any, res: any) => {
     }
     res.status(201).json({ wsId: workspace._id });
   } catch (error: any) {
-    res.status(409).json({ error: error.message });
+    console.log(error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -483,29 +486,30 @@ export const deleteProfile = async (req: any, res: any) => {
       return;
     }
 
-    const profile = await Profile.findOne({ _id: { $in: workspace.profiles } });
+    const profile = workspace.profiles.find(profile => profile?._id.toString() === profileId) as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId | undefined>;
     if (!profile) {
       res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
       return;
     }
 
-    if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin) && req.user._id.toString() !== profile?.name.toString()) {
+    if (reqPerm === WSPermission.Admin && ((profile as IProfile).wsPerm === WSPermission.Owner || (profile as IProfile).wsPerm === WSPermission.Admin) && req.user._id.toString() !== (profile as IProfile)?.name.toString()) {
       res.status(401).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
       return;
     }
 
-    if (profile.profileType === ProfileType.Individual) { 
+    if ((profile as IProfile).profileType === ProfileType.Individual) { 
       const profiles = (workspace.profiles as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId>[]).filter(
         (prof): prof is IProfile => 
-          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes(profile.users[0] as mongoose.Types.ObjectId)
+          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes((profile as IProfile).users[0] as mongoose.Types.ObjectId)
       );
 
       for (const prof of profiles) {
-        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== profile.users[0]?.toString());
+        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== (profile as IProfile).users[0]?.toString());
         await prof.save();
       }
     }
-
+    
+    workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
     await Profile.deleteOne({ _id: profileId });
     await workspace.save();
     await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
@@ -543,7 +547,7 @@ export const leaveWorkspace = async (req: any, res: any) => {
         await prof.save();
       }
     }
-
+    workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
     await Profile.deleteOne({ _id: profile._id });
     await workspace.save();
     sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
@@ -569,7 +573,16 @@ export const deleteWorkspace = async (req: any, res: any) => {
       return;
     }
 
+    for (const profile of workspace.profiles) {
+      await Profile.deleteOne({ _id: profile });
+    }
+
+    for (const item of workspace.items) {
+      await Item.deleteOne({ _id: item });
+    }
+
     await workspace.deleteOne();
+
     res.status(200).json({ message: 'Workspace eliminado' });
   }
   catch (error: any) {

@@ -101,7 +101,6 @@ class WorkspaceDetails {
 
             if (response.ok) {
             const data = await response.json();
-            console.log(data.invitation.code)
             await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + data.invitation.code);
             await this.fetchInvitations(workspace, invitations, errorMessage);
             }  else if (response.status === 401) {
@@ -142,12 +141,12 @@ class WorkspaceDetails {
                     Utils.parseErrorMessage(data, errorMessage);
                     } else {
                     throw new Error("Error al obtener datos del workspace");
-                }
-            })
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
         }
-    } catch (error) {
-        console.log(error);
-    }
     };
 
     static changeWsPerms = async (perm, profileId, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
@@ -180,6 +179,7 @@ class WorkspaceDetails {
             console.log(error);
         }
     };
+
     static deleteInvitation = async (workspace, invitation, invitations, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/', {
@@ -209,38 +209,36 @@ class WorkspaceDetails {
         }
     };
 
-static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
-    try{
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: "include",
-            body: JSON.stringify({
-                workspace: workspace.value._id,
-                username: userToInvite.value,
-                perm: permToInvite.value}),
-        });
-        if (response.ok) {
-        const data = await response.json();
-        await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-        }  else if (response.status === 401) {
-            router.push({ name: 'login' });
-        } else {
-            errorMessage.value = [];
-            response.json().then((data) => { 
-                if (data.error || data.errors) {
-                Utils.parseErrorMessage(data, errorMessage);
-                } else {
-                throw new Error("Error al obtener datos del workspace");
-                }
-            })
+    static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+                body: JSON.stringify({ workspace: workspace.value._id, username: userToInvite.value, perm: permToInvite.value}),
+            });
+            if (response.ok) {
+                userToInvite.value = '';
+                permToInvite.value = 'Read';
+                await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                response.json().then((data) => { 
+                    if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                    throw new Error("Error al obtener datos del workspace");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
         }
-    } catch (error) {
-        console.log(error);
-    }
-}
+    };
 
     static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, author, profileWsPerms) => {
         try { 
@@ -299,6 +297,39 @@ static inviteUser = async (workspace, userToInvite, permToInvite, path, currentP
                         Utils.parseErrorMessage(data, errorMessage);
                     } else {
                         throw new Error("Error al eliminar perfil");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    static deleteWorkspace = async (workspace, router, errorMessage) => {
+        try { 
+            const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este workspace?");
+            if (!confirmDelete) return;
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace', {
+                body: JSON.stringify({ wsId: workspace.value._id }),
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                localStorage.removeItem('workspace');
+                router.push('/workspace');
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al eliminar el workspace");
                     }
                 })
             }
