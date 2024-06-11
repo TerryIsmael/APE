@@ -613,7 +613,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div style="height: 45vh; overflow-y: auto; margin-top: 20px;">
+      <div style="max-height: 45vh; overflow-y: auto; margin-top: 20px;">
         <div v-for="myWorkspace in workspaces" style="padding-right: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <p class="ws-name">{{ myWorkspace.name }}</p>

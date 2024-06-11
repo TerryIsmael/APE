@@ -376,7 +376,7 @@ onBeforeMount(async () => {
           </select>
         </div>
 
-        <div style="height: 35vh; overflow-y: auto;">
+        <div style="max-height: 35vh; overflow-y: auto;">
           <div v-for="profile in getFilteredProfiles" :key="profile._id">
             <div style="display: inline-flex; width: 90%; height: 40px; align-items: center; justify-content: space-between;">
               <p class="profile-name">{{ profile.profileType == 'Individual' ? profile.users[0].username : profile.name }}</p>
