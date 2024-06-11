@@ -4,7 +4,7 @@ import Workspace from '../schemas/workspaceSchema.ts';
 import Profile from '../schemas/profileSchema.ts';
 import User from '../schemas/userSchema.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
-import { getWSPermission } from '../utils/permsFunctions.ts';
+import { getUserPermission, getWSPermission } from '../utils/permsFunctions.ts';
 import { ItemType, type IItem } from '../models/item.ts';
 import { Permission } from '../models/profilePerms.ts';
 import type { IProfilePerms } from '../models/profilePerms.ts';
@@ -35,6 +35,15 @@ export const getWorkspace = async (req: any, res: any) => {
 
       if (await getWSPermission(req.user._id, wsId)){
         await workspace.populate('items');
+        const itemsToShow = [];
+        for (const item of workspace.items) {
+          if (await getUserPermission(req.user._id, wsId, item?._id.toString())) {
+            itemsToShow.push(item);
+          }
+        }
+        workspace.items = itemsToShow;
+        await workspace.populate('items');
+        await workspace?.populate('items.profilePerms.profile');
         await workspace.populate('profiles');
         await workspace.populate('profiles.users');
         return res.status(200).json(workspace);
@@ -331,7 +340,6 @@ export const deleteInvitation = async (req: any, res: any) => {
       res.status(401).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
       return;
     }
-    console.log(invitation) 
     await invitation.deleteOne();
     res.status(200).json({ message: 'Invitación eliminada' });
   }

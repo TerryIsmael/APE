@@ -159,7 +159,7 @@ class WorkspaceUtils {
       const filePermLevels = { 'Owner': 3, 'Write': 2, 'Read': 1 }
       const perm = item.profilePerms.map(x=>{
         return {
-          "profile": workspace.profiles.find(y=>y._id==x.profile),
+          "profile": workspace.value.profiles.find(y=>y._id==x.profile._id),
           "permission": x.permission
         }
       }).filter(x => x.profile.users.map(x => x._id).includes(currentUser.value._id)).map(y => x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
