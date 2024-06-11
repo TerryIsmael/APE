@@ -15,7 +15,8 @@ export const modifyTimer = async (req: any, res: any) => {
     if (Workspace.findById(wsId) === null) {
         return res.status(404).json({ success: false, error: 'Workspace no encontrado' });
     } 
-    if (![Permission.Owner, Permission.Write].includes(await getUserPermission(req.user._id, req.body.workspace, timerId))) {
+    const perm = await getUserPermission(req.user._id, req.body.workspace, timerId);
+    if (!perm || ![Permission.Owner, Permission.Write].includes(perm)) {
         return res.status(403).json({ success: false, error: 'No tienes permisos para modificar el timer' });
     }
     if (!timer) {

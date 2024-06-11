@@ -166,7 +166,7 @@ export const createWorkspace = async (req: any, res: any) => {
     if (!fs.existsSync(`uploads/${workspace._id}`)) {
       fs.mkdirSync(`uploads/${workspace._id}`, { recursive: true });
     }
-    res.status(201).json(workspace);
+    res.status(201).json({ wsId: workspace._id });
   } catch (error: any) {
     res.status(409).json({ error: error.message });
   }
@@ -546,9 +546,33 @@ export const leaveWorkspace = async (req: any, res: any) => {
 
     await Profile.deleteOne({ _id: profile._id });
     await workspace.save();
-    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const deleteWorkspace = async (req: any, res: any) => {
+  const wsId = req.body.wsId;
+
+  try {
+    const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+
+    const reqPerm = await getWSPermission(req.user._id, wsId);
+    if (reqPerm !== WSPermission.Owner) {
+      res.status(401).json({ error: 'No estás autorizado a borrar el workspace' });
+      return;
+    }
+
+    await workspace.deleteOne();
+    res.status(200).json({ message: 'Workspace eliminado' });
+  }
+  catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
