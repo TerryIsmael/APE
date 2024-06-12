@@ -25,13 +25,12 @@ class FavoriteUtils {
         router.push({ name: 'login' });
       } else {
         errorMessage.value = [];
-        response.json().then((data) => { 
-          if (data.error || data.errors) {
-            Utils.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al cargar favoritos");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al cargar favoritos");
+        }
       }
     } catch (error) {
       console.log(error);
@@ -75,13 +74,12 @@ class FavoriteUtils {
         router.push({ name: 'login' });
       } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            Utils.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al eliminar item");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al eliminar item");
+        }
       }
     } catch (error) {
       console.log(error);
@@ -105,15 +103,14 @@ class FavoriteUtils {
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else if (response.status === 400 || response.status === 404) {
+      } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            Utils.parseErrorMessage(data, errorMessage);
-          } else {
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
           throw new Error("Error al crear item");
-          }
-        })
+        }
       }
     } catch (error) {
       console.log(error);
@@ -137,15 +134,14 @@ class FavoriteUtils {
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else if (response.status === 400 || response.status === 404) {
+      } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            Utils.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al cambiar permisos");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al cambiar permisos");
+        }
       }
     } catch (error) {
       console.log(error);
@@ -169,13 +165,12 @@ class FavoriteUtils {
         router.push({ name: 'login' });
       } else {
         errorMessage.value = [];
-        response.json().then((data) => { 
-          if (data.error || data.errors) {
-            Utils.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al cambiar favorito");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al cambiar favorito");
+        }
       }
     } catch (error) {
       console.log(error);

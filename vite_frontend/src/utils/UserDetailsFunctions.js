@@ -20,13 +20,12 @@ class UserDetails {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => {
+                const data = await response.json();
                 if (data.error || data.errors) {
-                    Utils.parseErrorMessage(data, errorMessage);
+                    this.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al eliminar item");
                 }
-              })
             }
         } catch (error) {
             console.log(error);
