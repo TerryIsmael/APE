@@ -6,6 +6,7 @@ import notices from './components/notices.vue'
 import favorites from './components/favorites.vue'
 import workspaceDetails from './components/workspaceDetails.vue'
 import test from './components/test.vue'
+import chats from './components/chats.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -17,7 +18,9 @@ const router = createRouter({
         {path: '/notices', name: 'notices', component: notices},
         {path: '/wsDetails', name: 'wsDetails', component: workspaceDetails},
         {path: '/workspace/:path*', name: 'workspace', component: workspace},
-        {path: '/test', name: 'test', component:test},
+        {path: '/test', name: 'test', component:test}, //TODO: Quitar test용
+        {path: '/chats/:chatId', name: 'chats', component: chats},
+        {path: '/', redirect: '/workspace'}
     ] 
 })
 

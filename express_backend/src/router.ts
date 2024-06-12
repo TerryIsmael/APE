@@ -13,6 +13,7 @@ import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
 import Workspace from './schemas/workspaceSchema.ts';
+import { addMessage, createChat, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
 
 dotenv.config();  
 const router = Router();
@@ -256,6 +257,54 @@ router.get('/invite/:code', async (req: Request, res: Response) => {
         useInvitation(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener la invitación. ' + error });
+    }
+});
+
+router.get('/chats', isLogged, async (req: Request, res: Response) => {
+    try{
+        getChats(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener los chats. ' + error });
+    }
+});
+
+router.get('/chat', isLogged, async (req: Request, res: Response) => {
+    try{
+        getChat(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener el chat. ' + error });
+    }
+});
+
+router.post('/chat', isLogged, async (req: Request, res: Response) => {
+    try{
+        createChat(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al crear el chat. ' + error });
+    }
+});
+
+router.get('/chat/message', isLogged, async (req: Request, res: Response) => {
+    try{
+        getChatMessages(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener los mensajes. ' + error });
+    }
+});
+
+router.post('/chat/message', isLogged, async (req: Request, res: Response) => {
+    try{
+        addMessage(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al enviar el mensaje. ' + error });
+    }
+});
+
+router.delete('/chat', isLogged, async (req: Request, res: Response) => {
+    try{
+        leaveChat(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al borrar el chat. ' + error });
     }
 });
 

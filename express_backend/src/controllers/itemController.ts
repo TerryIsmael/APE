@@ -43,7 +43,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                             item = new FolderItem();
                             break;
                         case ItemType.Timer:
-                            item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.remainingTime, initialDate: itemData.initialDate });
+                            item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.duration, initialDate: new Date() });
                             break;
                         case ItemType.Note:
                             item = new NoteItem({ text: itemData.text });

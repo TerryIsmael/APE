@@ -1,10 +1,6 @@
 import mongoose from '../config/mongoose.ts';
-import { ItemType } from '../models/item.ts';
+import type { IInvitation } from '../models/invitation.ts';
 import type { IProfile } from '../models/profile.ts';
-import type { IProfilePerms } from '../models/profilePerms.ts';
-import { Permission } from '../models/profilePerms.ts';
-import type { INote, INotice, ITimer, IFolder, ICalendar, IEvent, IFile, IStudySession } from '../models/typeItem.ts';
-import { noteSchema, noticeSchema, timerSchema, folderSchema, calendarSchema, eventSchema, fileSchema, studySessionSchema } from './typeItemSchema.ts';
 
 // code: string;
 // workspace: mongoose.Types.ObjectId;
@@ -12,7 +8,7 @@ import { noteSchema, noticeSchema, timerSchema, folderSchema, calendarSchema, ev
 // expirationDate: Date;
 // active: boolean;
 
-const invitationSchema = new mongoose.Schema<IProfilePerms>({
+const invitationSchema = new mongoose.Schema<IInvitation>({
     code: {
         type: String,
         required: [true, "El código de la invitación es obligatorio"],

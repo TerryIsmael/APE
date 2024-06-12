@@ -1,4 +1,3 @@
-import { connection } from 'mongoose';
 import WebSocket from 'ws';
 
 const usersByWorkspace: Map<string, string[]> = new Map();
@@ -7,8 +6,6 @@ const connectionByUser: Map<string, WebSocket> = new Map();
 const wsServer = new WebSocket.Server({ noServer: true });
 
 wsServer.on('connection', (ws) => {
-
-  let workspaceId: string | undefined;
 
   ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message.toString());
@@ -23,7 +20,7 @@ wsServer.on('connection', (ws) => {
         usersByWorkspace.set(workspaceId, []);
       }
 
-      usersByWorkspace.forEach((users, key) => {
+      usersByWorkspace.forEach((users, _) => {
         const index = users.indexOf(userId);
         if (index !== -1) {
           users.splice(index, 1);
@@ -40,8 +37,6 @@ wsServer.on('connection', (ws) => {
           connectionByUser.set(userId, ws);
         }
       }
-    } else {
-      // Aquí puedes manejar otros tipos de mensajes
     }
   });
 
@@ -50,7 +45,7 @@ wsServer.on('connection', (ws) => {
     if (userId) {
       const workspaceEntry = [...usersByWorkspace.entries()].find(([_, users]) => users.includes(userId));
       if (workspaceEntry) {
-        const [workspaceId, users] = workspaceEntry;
+        const [_, users] = workspaceEntry;
         const index = users.indexOf(userId);
         if (index !== -1) {
           users.splice(index, 1);
@@ -73,4 +68,11 @@ function sendMessageToWorkspace(workspaceId: string, message: any) {
   }
 }
 
-export { wsServer, sendMessageToWorkspace };
+function sendMessageToUsers(users: string[], message: any) {
+  const conns = users.map((userId: string) => connectionByUser.get(userId)) as WebSocket[];
+  for (const ws of conns) {
+    ws.send(JSON.stringify(message));
+  }
+}
+
+export { wsServer, sendMessageToWorkspace, sendMessageToUsers };
