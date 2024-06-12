@@ -39,7 +39,7 @@ class WorkspaceDetails {
 
     static toggleEdit = (editing, newWorkspace, workspace) => {
         editing.value = !editing.value;
-        newWorkspace.value = workspace.value;
+        newWorkspace.value = {...workspace.value};        
     };
 
     static populateVariables = (workspace, author, profileWsPerms) => {
@@ -50,6 +50,7 @@ class WorkspaceDetails {
           profileWsPerms.value[profile._id] = profile.wsPerm;
         });
     };
+    
     static fetchInvitations = async (workspace, invitations, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation/'+workspace.value._id, {
@@ -296,6 +297,40 @@ class WorkspaceDetails {
                         Utils.parseErrorMessage(data, errorMessage);
                     } else {
                         throw new Error("Error al eliminar perfil");
+                    }
+                })
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    static editWorkspace = async (newWorkspace, workspace, router, errorMessage, author, profileWsPerms, editing) => {
+        try { 
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/edit', {
+                body: JSON.stringify({ workspace: newWorkspace.value }),
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                workspace.value = data;
+                editing.value = false;
+                this.populateVariables(workspace, author, profileWsPerms);
+                errorMessage.value = [];
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else if (response.status === 400 || response.status === 404) {
+                errorMessage.value = [];
+                response.json().then((data) => {
+                    if (data.error || data.errors) {
+                        Utils.parseErrorMessage(data, errorMessage);
+                    } else {
+                        throw new Error("Error al editar workspace");
                     }
                 })
             }

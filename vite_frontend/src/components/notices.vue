@@ -147,10 +147,6 @@ const logout = async () => {
   await Utils.logout(router);
 }
 
-const fetchUserWorkspaces = async () => {
-  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
-}
-
 const openWsModal = async () => {
   await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
 }
@@ -314,19 +310,19 @@ onBeforeMount(async () => {
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable">Gestionar perfil</li>
+      <li class="li-clickable" @click="selectItem('userDetails', true)">Gestionar perfil</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
         <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
-      <li @click="selectItem('notices')" :class="{ 'li-clickable': true, 'selected-folder': true }">Anuncios</li>
-      <li @click="selectItem('favorites')" :class="{ 'li-clickable': true }">Favoritos</li>
+      <li @click="selectItem('notices')" class="li-clickable selected-folder">Anuncios</li>
+      <li @click="selectItem('favorites')" class="li-clickable">Favoritos</li>
 
       <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
         <div v-for="folder in workspace?.folders" :key="folder._id" style="word-wrap: break-word;">
-          <li @click="selectItem(folder)" :class="{ 'li-clickable': true }"> {{ folder.name }}</li>
+          <li @click="selectItem(folder)" class="li-clickable"> {{ folder.name }}</li>
         </div>
       </div>
 

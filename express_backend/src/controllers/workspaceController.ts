@@ -69,7 +69,7 @@ export const getUserWorkspaces = async (req: any, res: any) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
 export const getWorkspaceFavs = async (req: any, res: any) => {
   try {
@@ -127,12 +127,12 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
     await workspace.populate('items');
     const itemsToShow = [];
     for (const item of workspace.items) {
-      if (await getUserPermission(req.user._id, wsId, item?._id.toString())) {
+      if (await getUserPermission(req.user._id, wsId, item?._id.toString()) && item && ((item as IItem).itemType === ItemType.Folder || (item as IItem).itemType === ItemType.Notice)) {
         itemsToShow.push(item);
       }
     }
-    workspace.items = itemsToShow;
 
+    workspace.items = itemsToShow;
     await workspace.populate('items');
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
@@ -158,7 +158,46 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
-}
+};
+
+export const getWorkspaceFolders = async (req: any, res: any) => {
+  try {
+    const wsId = req.body.wsId;
+    const userId = req.user._id;
+
+    if (!wsId) {
+      res.status(400).json({ error: 'No se ha especificado el workspace' });
+      return;
+    }
+
+    const workspace = await Workspace.findOne({ _id: wsId });
+
+    if (!workspace) {
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
+    }
+    if (!(await getWSPermission(req.user._id, wsId))) {
+      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+    } 
+
+    await workspace.populate('items');
+    const foldersToShow = [];
+    for (const item of workspace.items) {
+      if (await getUserPermission(req.user._id, wsId, item?._id.toString()) && item && (item as IItem).itemType === ItemType.Folder) {
+        foldersToShow.push(item);
+      }
+    }
+
+    workspace.items = foldersToShow;
+    await workspace.populate('items');
+    await workspace.populate('profiles');
+    await workspace.populate('profiles.users');
+    const wsPerm = await getWSPermission(userId, wsId);
+    res.status(200).json({_id: workspace._id, name: workspace.name, folders: foldersToShow, permission: wsPerm});
+    return;
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const createWorkspace = async (req: any, res: any) => {
   const wsName = req.body.wsName;
@@ -181,6 +220,32 @@ export const createWorkspace = async (req: any, res: any) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const editWorkspace = async (req: any, res: any) => {
+  const newWs = req.body.workspace;
+  try {
+    const workspace = await Workspace.findOne({ _id: newWs._id });
+    if (!workspace) {
+      res.status(404).json({ error: 'No se ha encontrado el workspace' });
+      return;
+    }
+    const reqPerm = await getWSPermission(req.user._id, newWs._id);
+    if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
+      res.status(401).json({ error: 'No estás autorizado a editar el workspace' });
+      return;
+    }
+    workspace.name = newWs.name;
+    await workspace.save();
+    await workspace?.populate('items');
+    await workspace?.populate('items.profilePerms.profile');
+    await workspace?.populate('profiles');
+    await workspace?.populate('profiles.users');
+    res.status(201).json(workspace);
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+}
 
 export const addUserToWorkspace = async (req: any, res: any) => {
   const wsId = req.body.workspace;
@@ -291,7 +356,7 @@ export const createInvitation = async (req: any, res: any) => {
   catch (error: any) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
 export const getInvitations = async (req: any, res: any) => {
   const wsId = req.params.workspace;
@@ -316,7 +381,7 @@ export const getInvitations = async (req: any, res: any) => {
   catch (error: any) {
     res.status(404).json({ error: error.message });
   }
-}
+};
 
 export const toggleActiveInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
@@ -343,7 +408,7 @@ export const toggleActiveInvitation = async (req: any, res: any) => {
   } catch (error: any) {
     res.status(404).json({ error: error.message });
   }
-}
+};
 
 export const deleteInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
@@ -370,7 +435,7 @@ export const deleteInvitation = async (req: any, res: any) => {
   catch (error: any) {
     res.status(404).json({ error: error.message });
   }
-}
+};
 
 export const useInvitation = async (req: any, res: any) => {
   const code = req.params.code;
@@ -403,7 +468,7 @@ export const useInvitation = async (req: any, res: any) => {
   catch (error: any) {
     res.status(404).json({ error: error.message });
   }
-}
+};
 
 export const saveProfile = async (req: any, res: any) => {
   const wsId = req.body.wsId;
@@ -601,4 +666,4 @@ export const deleteWorkspace = async (req: any, res: any) => {
   catch (error: any) {
     res.status(500).json({ error: error.message });
   }
-}
+};

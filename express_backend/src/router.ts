@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData } from './controllers/userController.ts';
-import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
@@ -62,7 +62,14 @@ router.post('/workspace', isLogged, async (req: Request, res: Response) => {
         createWorkspace(req, res);
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error al crear el workspace. ' + error });
-    
+    }
+});
+
+router.post('/workspace/edit', isLogged, async (req: Request, res: Response) => {
+    try {
+        editWorkspace(req, res);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al crear el workspace. ' + error });
     }
 });
 
@@ -87,6 +94,14 @@ router.post('/workspace/favorites', isLogged, async (req: Request, res: Response
         getWorkspaceFavs(req, res);
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error al obtener los favoritos. ' + error });
+    }
+});
+
+router.post('/workspace/folders', isLogged, async (req: Request, res: Response) => {
+    try {
+        getWorkspaceFolders(req, res);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al obtener las carpetas del workspace. ' + error });
     }
 });
 
