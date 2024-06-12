@@ -103,12 +103,7 @@ watch([() => user.value.password, passwordMatch], checkPassword);
             </div>
             <div class="form-group">
               <label for="password">Contraseña:</label>
-              <input
-                type="password"
-                id="password"
-                v-model="user.password"
-                required
-              />
+              <input type="password" id="password" v-model="user.password" required/>
             </div>
           </div>
 
@@ -123,12 +118,7 @@ watch([() => user.value.password, passwordMatch], checkPassword);
             </div>
             <div class="form-group">
               <label for="confirmPassword">Confirmar Contraseña:</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                v-model="passwordMatch"
-                required
-              />
+              <input type="password" id="confirmPassword" v-model="passwordMatch" required/>
             </div>
           </div>
         </div>

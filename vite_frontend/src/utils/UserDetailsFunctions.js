@@ -29,11 +29,18 @@ class UserDetails {
               })
             }
         } catch (error) {
-        console.log(error);
+            console.log(error);
         }
     };
 
-
+    static toggleEdit = (editing, newUser, currentUser, errorMessage) => {
+        editing.value = !editing.value;
+        newUser.value = {...currentUser.value};
+        newUser.value.password = '';
+        if (editing.value) {
+            errorMessage.value = [];
+        }
+    };
 
 }
 

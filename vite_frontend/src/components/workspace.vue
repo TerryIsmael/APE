@@ -61,7 +61,7 @@ const newWorkspace = ref('');
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
-}
+};
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
@@ -70,35 +70,35 @@ const fetchWorkspace = async () => {
     routedItemPerm.value = await verifyPerms(routedItem.value);
   }
   loading.value = false;
-}
+};
 
 const formatDate = (date) => {
   return Utils.formatDate(date);
-}
+};
 
 const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
-}
+};
 
 const toggleLike = async (item) => {
   await WorkspaceUtils.toggleLike(item, workspace, router, currentUser, path, items, folders, errorMessage);
-}
+};
 
 const translateItemType = (item) => {
   return Utils.translateItemType(item);
-}
+};
 
 const translatePerm = (perm) => {
   return Utils.translatePerm(perm);
-}
+};
 
 const deleteItem = async (item) => {
   await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar, errorMessage);
-}
+};
 
 const selectImage = (item) => {
   return Utils.selectImage(item);
-}
+};
 
 const openNewItemModal = (itemType) => {
   WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
@@ -110,11 +110,11 @@ const closeNewItemModal = () => {
 
 const handleNewItemForm = async () => {
   await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-}
+};
 
 const navigateToPreviousFolder = () => {
   WorkspaceUtils.navigateToPreviousFolder(path, router);
-}
+};
 
 const openModal = () => {
   Utils.openModal(isModalOpened, errorMessage);
@@ -130,15 +130,15 @@ const closeSidebar = (event) => {
 
 const showFolderDetails = async () => {
   await WorkspaceUtils.showFolderDetails(selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser, errorMessage);
-}
+};
 
 const changePerms = async (perm, profileId) => {
   await WorkspaceUtils.changePerms(perm, profileId, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-}
+};
 
 const verifyPerms = (item) => {
   return WorkspaceUtils.verifyPerms(item, workspace, currentUser);
-}
+};
 
 const getFilteredProfiles = computed(() => {
   const fileOwnerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
@@ -161,11 +161,11 @@ const getFilteredProfiles = computed(() => {
 
 const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, selectedItem, errorMessage);
-}
+};
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
-}
+};
 
 const selectUploadFile = () => {
   errorMessage.value = [];
@@ -174,17 +174,17 @@ const selectUploadFile = () => {
 
 const uploadFile = async (event) => {
   await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, fileInput);
-}
+};
 
 const logout = async () => {
   await Utils.logout(router);
-}
+};
 
 const checkDictUserItemPerms = (profileId) => {
   if (!userItemPerms.value[profileId]) {
     userItemPerms.value[profileId] = 'None';
   }
-}
+};
 
 const handleRightClick = (event, item) => {
   selectItem(item, false);
@@ -192,7 +192,7 @@ const handleRightClick = (event, item) => {
 
 const modifyItem = async (item) => {
   await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-}
+};
 
 const startDrag = (evt, item) => {
   evt.dataTransfer.setData('itemId', item._id);
@@ -247,58 +247,61 @@ const initPath = () => {
     routedItem.value = null;
   }
   showSidebar.value = false;
-}
+};
 
 const openFormEditNote = () => {
   editing.value = true;
   titleText.value = routedItem.value.name;
   noteText.value = routedItem.value.text;
-}
+};
 
 const saveNote = async () => {
   editing.value = false;
   routedItem.value.name = titleText.value;
   routedItem.value.text = noteText.value;
   await modifyItem(routedItem.value);
-}
+};
 
 const openWsModal = async () => {
   await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
-}
+};
 
 const closeWsModal = () => {
   Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
-}
+};
 
 const leaveWorkspace = async (workspaceId) => {
   await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
-}
+};
 
 const redirectToWorkspace = async(workspaceId) => {
   await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+};
 
 const toggleLeave = () => {
   isLeaving.value = !isLeaving.value;
-}
+};
 
 const openNewWsModal = () => {
   Utils.openNewWsModal(isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage);
-}
+};
 
 const closeNewWsModal = () => {
   Utils.closeNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
-}
+};
 
 const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+  if (errorMessage.value.length === 0) {
+    closeNewWsModal();
+  }
+};
 
 const refreshWindow = async () => {
   await fetchWorkspace();
   initPath();
   await selectItem(selectedItem.value, true);
-}
+};
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
@@ -308,11 +311,11 @@ const websocketEventAdd = () => {
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {
-        await fetchWorkspace();
-        initPath();
+      await fetchWorkspace();
+      initPath();
     }
   });
-}
+};
 
 onBeforeMount(async () => {
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
@@ -457,7 +460,7 @@ watch(
           </div>
 
           <div v-else>
-            <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
               <div>
                 <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                   {{ error }}
@@ -674,7 +677,7 @@ watch(
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>

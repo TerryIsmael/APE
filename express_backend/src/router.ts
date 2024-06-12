@@ -8,7 +8,7 @@ import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavori
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
-import { validateProfilePerm, validateWsPerms } from './middlewares/workspaceMiddleware.ts';
+import { validateProfilePerm, validateWsPerms, validateNewWsName, validateEditWsName } from './middlewares/workspaceMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
@@ -57,7 +57,7 @@ router.get('/workspace/:wsId', isLogged, getWorkspace);
 router.get('/workspace/', isLogged, getWorkspace);
 router.get('/workspaces/', isLogged, getUserWorkspaces);
 
-router.post('/workspace', isLogged, async (req: Request, res: Response) => {
+router.post('/workspace', isLogged, validateNewWsName, async (req: Request, res: Response) => {
     try {
         createWorkspace(req, res);
     } catch (error) {
@@ -65,7 +65,7 @@ router.post('/workspace', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.post('/workspace/edit', isLogged, async (req: Request, res: Response) => {
+router.post('/workspace/edit', isLogged, validateEditWsName, async (req: Request, res: Response) => {
     try {
         editWorkspace(req, res);
     } catch (error) {

@@ -249,15 +249,14 @@ class UtilsFunctions {
         await this.redirectToWorkspace(data.wsId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else if (response.status === 400 || response.status === 404) {
+      } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            this.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al crear el workspace");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al crear el workspace");
+        }
       }
     } catch (error) {
       console.log(error);

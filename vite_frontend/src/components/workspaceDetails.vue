@@ -80,11 +80,11 @@ const handleSelectProfile = (profile) => {
 };
 
 const openModal = () => {
-  WorkspaceDetailsUtils.openModal(selectedProfile, modalProfile, isModalOpened);
+  WorkspaceDetailsUtils.openModal(selectedProfile, modalProfile, isModalOpened, errorMessage);
 };
 
 const closeModal = () => {
-  WorkspaceDetailsUtils.closeModal(selectedProfile, modalProfile, isModalOpened);
+  WorkspaceDetailsUtils.closeModal(selectedProfile, modalProfile, isModalOpened, errorMessage);
 };
 
 const setModalProfileUsers = (user) => {
@@ -92,7 +92,7 @@ const setModalProfileUsers = (user) => {
 };
 
 const toggleEdit = () => {
-  WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace);
+  WorkspaceDetailsUtils.toggleEdit(editing, newWorkspace, workspace, errorMessage);
 };
 
 const saveProfile = async () => {
@@ -135,18 +135,6 @@ const translateItemType = (item) => {
 
 const translatePerm = (perm) => {
   return Utils.translatePerm(perm);
-};
-
-const openNewItemModal = (itemType) => {
-  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
-};
-
-const closeNewItemModal = () => {
-  WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-};
-
-const handleNewItemForm = async () => {
-  await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, ref(''), workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
 };
 
 const toggleActiveInvitation = async (invitation) => {
@@ -256,35 +244,38 @@ const logout = async () => {
 
 const openWsModal = async () => {
   await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
-}
+};
 
 const closeWsModal = () => {
   Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
-}
+};
 
 const leaveWorkspace = async (workspaceId) => {
   await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
-}
+};
 
 const redirectToWorkspace = async(workspaceId) => {
   await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+};
 
 const toggleLeave = () => {
   isLeaving.value = !isLeaving.value;
-}
+};
 
 const openNewWsModal = () => {
   Utils.openNewWsModal(isWsModalOpened, newWorkspaceName, isNewWsModalOpened, errorMessage);
-}
+};
 
 const closeNewWsModal = () => {
   Utils.closeNewWsModal(isNewWsModalOpened, newWorkspaceName, errorMessage);
-}
+};
 
 const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspaceName, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+  if (errorMessage.value.length === 0) {
+    closeNewWsModal();
+  }
+};
 
 const refreshWindow = async () => {
   await fetchWorkspace();
@@ -302,7 +293,7 @@ const websocketEventAdd = () => {
       await refreshWindow();
     }
   });
-}
+};
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
@@ -351,7 +342,7 @@ onUnmounted(() => {
       </h1>
     </div>
 
-    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+    <div class="main-content" style="display:flex; flex-direction: column; align-items: center; margin-bottom: 3%;">
 
       <div style="display: flex; justify-content: space-around; width: 90%; align-items: center; justify-content: center;">
           <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
@@ -367,7 +358,7 @@ onUnmounted(() => {
       </div>
       
       <div class="main-content" style="width: 90%;">
-        <div class="error" v-if="errorMessage.length !== 0 && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
           <div>
             <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;"> {{ error }} </p>
           </div>
@@ -377,7 +368,7 @@ onUnmounted(() => {
         </div>
 
         <div style="display: flex; width: 100%">
-          <div style="text-align: left; flex: 1; max-width: 50%;"> 
+          <div class="column"> 
             <h2 style="margin-left: 0; margin-right: 0; margin-bottom: 0;">Detalles del workspace</h2>
             <hr style="width: 90%; display: flex; margin-left: 0%;">
 
@@ -431,7 +422,7 @@ onUnmounted(() => {
             <p v-else>Aún no hay links de invitación al workspace</p>
           </div>
 
-          <div style="text-align: left; flex: 1; padding-left: 5px; max-width: 50%;">
+          <div class="column" style="padding-left: 5px;">
             <div style="display:flex; justify-content:space-between; align-items:center"> 
               <h2 style="text-align: left; margin-bottom: 5px;">Nombre del workspace</h2>
 
@@ -523,7 +514,6 @@ onUnmounted(() => {
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
-        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
       <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
@@ -543,21 +533,6 @@ onUnmounted(() => {
     </ul>
   </div>
   
-  <!-- Modal de nuevo item --> 
-  <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-    <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>
-    <template #content>
-      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
-          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
-      </div>
-
-      <div style="margin-top: 20px">              
-          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-      </div>
-      <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-    </template>
-  </Modal>
-
   <!-- Modal de perfil --> 
   <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="profile-modal">
     <template #header v-if="selectedProfile"><strong>Editar perfil</strong></template>
@@ -643,7 +618,7 @@ onUnmounted(() => {
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspaceName" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>
@@ -651,45 +626,37 @@ onUnmounted(() => {
 <style scoped>
 
 #message {
-      visibility: hidden;
-      background-color: #C8B1E4;
-      color: #000000;
-      text-align: center;
-      border-radius: 5px;
-      padding: 10px;
-      position: fixed;
-      z-index: 1;
-      font-size: 1em;
-      font-weight: 500;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      margin-left: -50px;
-    } 
+  visibility: hidden;
+  background-color: #C8B1E4;
+  color: #000000;
+  text-align: center;
+  border-radius: 5px;
+  padding: 10px;
+  position: fixed;
+  z-index: 1;
+  font-size: 1em;
+  font-weight: 500;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-left: -50px;
+} 
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .td-center {
-    text-align: center;
-    padding: 8px;
-    padding-right: 4%;
-  }
-
-.container {
-  display: flex;
-  align-items: center;
-  position: relative;
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.items-container {
-  width: 80vw;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: left;
-  flex-direction: column;
+.td-center {
+  text-align: center;
+  padding: 8px;
+  padding-right: 4%;
+}
+
+.column {
+  text-align: left;
+  flex: 1; 
+  max-width: 50%;
 }
 
 .text-input {

@@ -11,7 +11,8 @@ class WorkspaceDetails {
         }
     }; 
 
-    static openModal = (selectedProfile, modalProfile, isModalOpened) => {
+    static openModal = (selectedProfile, modalProfile, isModalOpened, errorMessage) => {
+        errorMessage.value = [];
         if (selectedProfile.value) {
           modalProfile.value = { ...selectedProfile.value };
         } else {
@@ -23,10 +24,11 @@ class WorkspaceDetails {
         isModalOpened.value = true;
     };
 
-    static closeModal = (selectedProfile, modalProfile, isModalOpened) => {
+    static closeModal = (selectedProfile, modalProfile, isModalOpened, errorMessage) => {
         selectedProfile.value = null;
         isModalOpened.value = false;
         modalProfile.value = {};
+        errorMessage.value = [];
     };
 
     static setModalProfileUsers = (newUser, modalProfile) => {
@@ -37,9 +39,10 @@ class WorkspaceDetails {
         }
     };
 
-    static toggleEdit = (editing, newWorkspace, workspace) => {
+    static toggleEdit = (editing, newWorkspace, workspace, errorMessage) => {
         editing.value = !editing.value;
-        newWorkspace.value = {...workspace.value};        
+        newWorkspace.value = {...workspace.value}; 
+        errorMessage.value = [];
     };
 
     static populateVariables = (workspace, author, profileWsPerms) => {
