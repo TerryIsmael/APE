@@ -127,7 +127,7 @@ class WorkspaceUtils {
   };
 
   static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage) => {    
-    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites')) {
+    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites') || item == 'userDetails') {
       selectedFolder.value = item;
       router.push('/' + item);
       return;
@@ -258,7 +258,7 @@ class WorkspaceUtils {
     try { 
       const itemType = newItem.value.itemType;
       if (itemType == 'Timer') {
-        newItem.value.duration = ((hours.value * 3600000) + (minutes.value * 60000) + (seconds.value * 1000));
+        newItem.value.duration = ((hours.value * 3600) + (minutes.value * 60) + (seconds.value * 1));
       } else if (itemType == 'Note') {
         newItem.value.text = newItem.value.text;
       } else if (itemType == 'Notice') {

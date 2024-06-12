@@ -114,6 +114,11 @@ const fetchWorkspace = async () => {
   WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
+const editWorkspace = async () => {
+  await WorkspaceDetailsUtils.editWorkspace(newWorkspace, workspace, router, errorMessage, author, profileWsPerms, editing);
+  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+};
+
 const selectItem = async (item, direct) => {
   profileWsPerms.value = {};
   author.value = null;
@@ -249,10 +254,6 @@ const logout = async () => {
   await Utils.logout(router);
 };
 
-const fetchUserWorkspaces = async () => {
-  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
-}
-
 const openWsModal = async () => {
   await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
 }
@@ -282,7 +283,7 @@ const closeNewWsModal = () => {
 }
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspaceName, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
 }
 
 const refreshWindow = async () => {
@@ -361,7 +362,7 @@ onUnmounted(() => {
           </div>
 
           <div style="display: flex; justify-content: flex-end; width: 20%;">
-            <button v-if="userWsPerms === 'Owner' && !workspace.default" class="remove-perm-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
+            <button v-if="userWsPerms === 'Owner' && !workspace.default" class="red-button" style="margin-right: 19.5%; max-height: 50px; display:flex; justify-content: center; align-items: center;" @click="deleteWorkspace()">Eliminar workspace</button>
           </div>
       </div>
       
@@ -438,8 +439,8 @@ onUnmounted(() => {
                 <button v-if="!editing" class="workspace-name-button" style="margin-right: 0px;" @click="toggleEdit()">Editar</button>
               </div>
               <div v-else style="display: flex; justify-content: flex-end; width: 15%; margin-right: 8%">
-                <button @click="toggleEdit()" class="workspace-name-button remove-perm-button">Cancelar</button>
-                <button @click="saveWorkspace()" class="workspace-name-button">Guardar</button>
+                <button @click="toggleEdit()" class="workspace-name-button red-button">Cancelar</button>
+                <button @click="editWorkspace()" class="workspace-name-button">Guardar</button>
               </div>
             </div>
 
@@ -518,19 +519,19 @@ onUnmounted(() => {
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable">Gestionar perfil</li>
+      <li class="li-clickable" @click="selectItem('userDetails', true)">Gestionar perfil</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
         <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
-      <li @click="selectItem('notices', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'notices' }">Anuncios</li>
-      <li @click="selectItem('favorites', true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder == 'favorites' }">Favoritos</li>
+      <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
+      <li @click="selectItem('favorites', true)" class="li-clickable">Favoritos</li>
 
       <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
         <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-          <li @click="selectItem(folder, true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder === folder.name }"> {{ folder.name}} </li>
+          <li @click="selectItem(folder, true)" class="li-clickable"> {{ folder.name }} </li>
         </div>
       </div>
 
@@ -584,7 +585,7 @@ onUnmounted(() => {
         <div v-for="user in getIndividualProfiles" style="height: 80%; overflow-y: auto; width: 100%;">
           <div style="display: inline-flex; width: 95%; height: 40px; align-items: center; justify-content: space-between;">
             <p style="margin-right: 10px;">{{ user.username }}</p>
-            <button v-if="isUserInModalProfile(user)" @click="setModalProfileUsers(user)" class="change-perm-button remove-perm-button">Quitar</button>
+            <button v-if="isUserInModalProfile(user)" @click="setModalProfileUsers(user)" class="change-perm-button red-button">Quitar</button>
             <button v-else @click="setModalProfileUsers(user)" class="change-perm-button">Añadir</button>
           </div>
         </div>
@@ -866,10 +867,6 @@ table {
   background-color: #C8B1E4;
   color:black;
   cursor: pointer;
-}
-
-.remove-perm-button {
-  background-color: #c55e5e;
 }
 
 .profile-name {

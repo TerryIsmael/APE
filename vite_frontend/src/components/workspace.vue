@@ -262,10 +262,6 @@ const saveNote = async () => {
   await modifyItem(routedItem.value);
 }
 
-const fetchUserWorkspaces = async () => {
-  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
-}
-
 const openWsModal = async () => {
   await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
 }
@@ -496,6 +492,7 @@ watch(
       </div>
     </div>
   </div>
+  
   <!-- Main sidebar -->
   <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
 
@@ -522,7 +519,7 @@ watch(
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable">Gestionar perfil</li>
+      <li class="li-clickable" @click="selectItem('userDetails', true)">Gestionar perfil</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
@@ -534,7 +531,7 @@ watch(
 
       <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
         <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
-          <li @click="selectItem(folder, true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder === folder.name }"> {{ folder.name}} </li>
+          <li @click="selectItem(folder, true)" :class="{ 'li-clickable': true, 'selected-folder': selectedFolder === folder.name }"> {{ folder.name }} </li>
         </div>
       </div>
 
