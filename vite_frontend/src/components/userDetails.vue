@@ -277,7 +277,7 @@ onBeforeMount(async () => {
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable selected-folder" @click="selectItem('userDetails', true)">Gestionar perfil</li>
+      <li class="li-clickable selected-folder" @click="selectItem('userDetails', true)">Tu perfil</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(workspace.permission)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
