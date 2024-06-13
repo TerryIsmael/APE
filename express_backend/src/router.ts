@@ -18,7 +18,7 @@ import { addMessage, createChat, getChat, getChatMessages, getChats, leaveChat }
 dotenv.config();  
 const router = Router();
 
-router.post('/register', registerUser);
+router.post('/register', validateNewUser, registerUser);
 
 router.post('/login', (req: Request , res: Response, next: NextFunction) => {
     passport.authenticate('local', (err : Error, user : IUser, info: { message: any; }) => {

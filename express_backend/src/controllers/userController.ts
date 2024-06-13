@@ -60,7 +60,7 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
 
         if (newUserData.password && newUserData.password.trim() !== '') {
             if (newUserData.password.length < 12) {
-                return res.status(400).json({ error: 'La contraseña debe tener al menos 12 caracteres' });
+                return res.status(400).json({ error: 'La contraseña debe tener al menos 12 caracteres no vacíos' });
             } 
             if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/.test(newUserData.password)) {
                 return res.status(400).json({ error: 'La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un caracter especial' });

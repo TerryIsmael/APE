@@ -185,12 +185,12 @@ onBeforeMount(async () => {
       
       <div style="width: 90%; margin-bottom: 5%;">
         <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between;">
-            <div>
-              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
-                {{ error }}
-              </p>
-            </div>
+          <div>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              {{ error }}
+            </p>
           </div>
+        </div>
 
         <div style="display: flex; width: 100%">
           <div class="column">
