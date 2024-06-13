@@ -22,7 +22,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al obtener datos del autor");
         }
@@ -73,7 +73,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al obtener datos del workspace");
         }
@@ -202,7 +202,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al cambiar favorito");
         }
@@ -236,7 +236,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al eliminar item");
         }
@@ -281,7 +281,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al crear item");
         }
@@ -366,7 +366,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al descargar archivo");
         }
@@ -397,7 +397,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al subir archivo");
         }
@@ -428,7 +428,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al cambiar permisos");
         }
@@ -458,7 +458,7 @@ class WorkspaceUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al modificar item");
         }

@@ -73,7 +73,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al obtener datos del workspace");
                 }
@@ -112,7 +112,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al obtener datos del workspace");
                 }
@@ -140,7 +140,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al obtener datos del workspace");
                 }
@@ -170,7 +170,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al cambiar permisos");
                 }
@@ -198,7 +198,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al obtener datos del workspace");
                 }
@@ -228,7 +228,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al obtener datos del workspace");
                 }
@@ -259,7 +259,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                  this.parseErrorMessage(data, errorMessage);
+                  Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al guardar el perfil");
                 }
@@ -291,7 +291,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al eliminar perfil");
                 }
@@ -324,7 +324,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al editar workspace");
                 }
@@ -356,7 +356,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
+                    Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al eliminar el workspace");
                 }

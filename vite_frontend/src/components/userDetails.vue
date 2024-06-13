@@ -5,8 +5,6 @@ import Utils from '../utils/UtilsFunctions.js';
 import UserDetailsUtils from '../utils/UserDetailsFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
-const newUser = ref({})
-
 const props = defineProps({
   ws: {
     ws: Object,
@@ -48,7 +46,9 @@ const isWsModalOpened = ref(false);
 const isLeaving = ref(false);
 const isNewWsModalOpened = ref(false);
 const newWorkspace = ref('');
-const passwordMatch = ref("");
+
+const newUser = ref({});
+const passwordMatch = ref('');
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -106,7 +106,7 @@ const createWorkspace = async () => {
 };
 
 const toggleEdit = () => {
-  UserDetailsUtils.toggleEdit(editing, newUser, currentUser);
+  UserDetailsUtils.toggleEdit(editing, newUser, currentUser, passwordMatch, errorMessage);
 };
 
 const checkPassword = () => {
@@ -118,6 +118,13 @@ const checkPassword = () => {
     errorMessage.value = errorMessage.value.filter(
       (error) => error !== "Las contraseñas no coinciden"
     );
+  }
+};
+
+const editUser = async () => {
+  await UserDetailsUtils.editUser(currentUser, newUser, errorMessage, editing, router);
+  if (errorMessage.value.length === 0) {
+    toggleEdit();
   }
 };
 
@@ -157,7 +164,7 @@ onBeforeMount(async () => {
       </h1>
     </div>
 
-    <div class="container main-content">
+    <div class="container main-content" style="overflow-y: auto;">
 
       <div style="display: flex; justify-content: space-around; width: 92%; align-items: center;">
         <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
@@ -176,16 +183,13 @@ onBeforeMount(async () => {
         </div>
       </div>
       
-      <div style="width: 90%;">
-        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+      <div style="width: 90%; margin-bottom: 5%;">
+        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between;">
             <div>
-              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                 {{ error }}
               </p>
             </div>
-            <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
-              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
-            </button>
           </div>
 
         <div style="display: flex; width: 100%">
@@ -246,7 +250,7 @@ onBeforeMount(async () => {
       </div>
 
       </div>
-  </div>
+    </div>
 
   <!-- Main sidebar -->
   <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
@@ -351,10 +355,10 @@ onBeforeMount(async () => {
 <style scoped>
 .container {
   display:flex; 
+  height: 100%;
   flex-direction: column;
-  justify-content: center; 
-  align-items: center; 
-  margin-bottom: 3%;
+  justify-content: center;
+  align-items: center;
 }
 
 .column {
@@ -461,8 +465,6 @@ onBeforeMount(async () => {
   height: auto;
   background-color: rgb(151, 47, 47);
   border-radius: 10px;
-  padding-left: 1%; 
-  padding-right: 1%;
   padding: 1px 10px;
   margin-bottom: 10px;
   margin-left: auto;

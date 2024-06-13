@@ -342,7 +342,7 @@ onUnmounted(() => {
       </h1>
     </div>
 
-    <div class="main-content" style="display:flex; flex-direction: column; align-items: center; margin-bottom: 3%;">
+    <div class="main-content" style="display:flex; flex-direction: column; align-items: center; margin-bottom: 5%;">
 
       <div style="display: flex; justify-content: space-around; width: 90%; align-items: center; justify-content: center;">
           <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">

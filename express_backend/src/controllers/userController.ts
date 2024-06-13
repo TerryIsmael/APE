@@ -6,6 +6,7 @@ import { ProfileType, WSPermission} from '../models/profile.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import Profile from '../schemas/profileSchema.ts';
 import fs from 'fs';
+import type { IUser } from '../models/user.ts';
 
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -32,6 +33,50 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
+
+export const updateUser = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const newUserData = req.body.user;
+        if (req.user && (newUserData._id.toString() !== (req.user as IUser)._id.toString())) {
+            return res.status(401).json({ error: 'No tienes permisos para modificar este usuario' });
+        }
+        const user = await User.findOne({_id: newUserData._id});
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        const existingUsername = await User.findOne({ username: newUserData.username }).where('_id').ne(newUserData._id);
+        if (existingUsername) {
+            return res.status(400).json({ error: 'Este nombre de usuario ya está en uso' });
+        }
+        const existingEmail = await User.findOne({ email: newUserData.email }).where('_id').ne(newUserData._id);
+        if (existingEmail) {
+            return res.status(400).json({ error: 'Este correo electrónico ya está en uso' });
+        }
+
+        if (newUserData.username) user.username = newUserData.username; 
+        if (newUserData.firstName) user.firstName = newUserData.firstName;
+        if (newUserData.surnames) user.surnames = newUserData.surnames;
+        if (newUserData.email) user.email = newUserData.email;
+
+        if (newUserData.password && newUserData.password.trim() !== '') {
+            if (newUserData.password.length < 12) {
+                return res.status(400).json({ error: 'La contraseña debe tener al menos 12 caracteres' });
+            } 
+            if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/.test(newUserData.password)) {
+                return res.status(400).json({ error: 'La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un caracter especial' });
+            }
+            if (/\s/.test(newUserData.password)) {
+                res.status(400).json({ error: 'La contraseña no puede contener espacios' });
+            }
+            newUserData.password = bcrypt.hashSync(newUserData.password, 10);
+        }
+
+        await User.updateOne({ _id: user._id }, user);
+        return res.status(200).json(user);
+    } catch (error) {
+        return res.status(500).json({ error: 'Error en el servidor:' + error });
+    }
+}
 
 export const fetchUserData = async (req: any, res: Response): Promise<Response> => {
     try {

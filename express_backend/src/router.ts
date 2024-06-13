@@ -2,11 +2,11 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
-import { registerUser, fetchUserData } from './controllers/userController.ts';
+import { registerUser, fetchUserData, updateUser } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
-import { isLogged } from './middlewares/userMiddleware.ts';
+import { isLogged, validateNewUser, validateUser } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
 import { validateProfilePerm, validateWsPerms, validateNewWsName, validateEditWsName } from './middlewares/workspaceMiddleware.ts';
 import type { IUser } from './models/user.ts';
@@ -26,10 +26,10 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
             return next(err);
         }
         if (!user) {
-            return res.status(404).json({  success: false, error:  info.message || 'Hubo un error al intentar iniciar sesión'}); 
+            return res.status(404).json({  success: false, error: info.message || 'Hubo un error al intentar iniciar sesión'}); 
         }
         if (req.isAuthenticated()) {
-            return res.status(401).json({ success: false, error:  'Ya existe una sesión activa'});
+            return res.status(401).json({ success: false, error: 'Ya existe una sesión activa'});
         }
         req.login(user, (err: { message: any; }) => {
             if (err) {
@@ -38,6 +38,14 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
             return res.status(200).json({ message: 'Inicio de sesión exitoso' });
         });
     })(req, res, next);
+});
+
+router.post('/user/edit', isLogged, validateUser, (req: Request , res: Response) => {
+    try {
+        updateUser(req, res);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al editar el usuario. ' + error });
+    }
 });
 
 router.post('/logout', (req: Request, res: Response) => {

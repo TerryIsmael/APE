@@ -445,7 +445,7 @@ onBeforeMount(async () => {
   display: flex;
   align-items: center;
   position: relative;
-  margin-bottom: 3%;
+  margin-bottom: 5%;
 }
 
 .items-container {

@@ -27,7 +27,7 @@ class FavoriteUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al cargar favoritos");
         }
@@ -76,7 +76,7 @@ class FavoriteUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al eliminar item");
         }
@@ -107,7 +107,7 @@ class FavoriteUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al crear item");
         }
@@ -138,7 +138,7 @@ class FavoriteUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al cambiar permisos");
         }
@@ -167,7 +167,7 @@ class FavoriteUtils {
         errorMessage.value = [];
         const data = await response.json();
         if (data.error || data.errors) {
-          this.parseErrorMessage(data, errorMessage);
+          Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al cambiar favorito");
         }
