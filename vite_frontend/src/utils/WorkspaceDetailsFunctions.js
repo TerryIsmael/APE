@@ -88,7 +88,6 @@ class WorkspaceDetails {
           workspace: workspace.value._id,
           linkDuration: linkDuration.value
         };
-        console.log(linkDuration.value)
         if (inviteProfile.value != 'none') {
           invitation.profile = inviteProfile.value._id;
         } 

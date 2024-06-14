@@ -1,12 +1,16 @@
 import bcrypt from 'bcrypt';
-import User from '../schemas/userSchema.ts';
 import type { Request, Response } from 'express';
+import User from '../schemas/userSchema.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
-import { ProfileType, WSPermission} from '../models/profile.ts';
+import Item from '../schemas/itemSchema.ts';
+import { ProfileType, WSPermission } from '../models/profile.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import Profile from '../schemas/profileSchema.ts';
 import fs from 'fs';
 import type { IUser } from '../models/user.ts';
+import { deleteUserFromWs } from '../utils/deleteUserFromWs.ts';
+import { getWSPermission } from '../utils/permsFunctions.ts';
+import Invitation from '../schemas/invitationSchema.ts';
 
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -86,6 +90,43 @@ export const fetchUserData = async (req: any, res: Response): Promise<Response> 
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
         return res.status(200).json({"username": user.username, "email": user.email});
+    } catch (error) {
+        return res.status(500).json({ error: 'Error en el servidor:' + error });
+    }
+};
+
+export const deleteUser = async (req: any, res: Response): Promise<Response> => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findOne({ _id: userId });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        const userProfiles = await Profile.find({ users: user, profileType: ProfileType.Individual });
+        const userWorkspaces = await Workspace.find({ profiles: { $in: userProfiles } }).populate('profiles').populate('items');
+        
+        for (const workspace of userWorkspaces) {
+            if (await getWSPermission(userId, workspace._id.toString()) === WSPermission.Owner) {
+                await Profile.deleteMany({ _id: { $in: workspace.profiles } });
+                await Invitation.deleteMany({ workspace: workspace._id });
+
+                for (const item of workspace.items) {
+                    await Item.deleteOne({ _id: item });
+                }
+
+                await Item.deleteMany({ workspace: workspace._id });
+                fs.rmdirSync(`./uploads/${workspace._id}`, { recursive: true });
+                
+                await Workspace.deleteOne({ _id: workspace._id });
+            } else {
+                await deleteUserFromWs(userId, workspace);
+            }
+        }
+
+        await User.deleteOne({ _id: userId });
+        return res.status(200).json({ message: 'Usuario eliminado exitosamente' });
     } catch (error) {
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }

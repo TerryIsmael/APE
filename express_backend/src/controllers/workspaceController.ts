@@ -15,6 +15,7 @@ import fs from 'fs';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
+import { deleteUserFromWs } from '../utils/deleteUserFromWs.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -242,7 +243,6 @@ export const editWorkspace = async (req: any, res: any) => {
     await workspace?.populate('profiles.users');
     res.status(201).json(workspace);
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 }
@@ -576,20 +576,13 @@ export const deleteProfile = async (req: any, res: any) => {
     }
 
     if ((profile as IProfile).profileType === ProfileType.Individual) { 
-      const profiles = (workspace.profiles as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId>[]).filter(
-        (prof): prof is IProfile => 
-          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes((profile as IProfile).users[0] as mongoose.Types.ObjectId)
-      );
-
-      for (const prof of profiles) {
-        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== (profile as IProfile).users[0]?.toString());
-        await prof.save();
-      }
+      await deleteUserFromWs((profile as IProfile).name, workspace);
+    } else {
+      workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
+      await Profile.deleteOne({ _id: profileId });
+      await workspace.save();
     }
     
-    workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
-    await Profile.deleteOne({ _id: profileId });
-    await workspace.save();
     await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
@@ -613,21 +606,13 @@ export const leaveWorkspace = async (req: any, res: any) => {
       res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
       return;
     }
-
-    if (profile.profileType === ProfileType.Individual) { 
-      const profiles = (workspace.profiles as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId>[]).filter(
-        (prof): prof is IProfile => 
-          (prof as IProfile).profileType === ProfileType.Group && ((prof as IProfile).users as mongoose.Types.ObjectId[]).includes(profile.users[0] as mongoose.Types.ObjectId)
-      );
-
-      for (const prof of profiles) {
-        prof.users = (prof.users as mongoose.Types.ObjectId[]).filter((userId) => userId.toString() !== profile.users[0]?.toString());
-        await prof.save();
-      }
+    
+    if (workspace.default && (await getWSPermission(req.user._id, wsId) === WSPermission.Owner)){
+      res.status(401).json({ error: 'No puedes abandonar el workspace por defecto' });
+      return;
     }
-    workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
-    await Profile.deleteOne({ _id: profile._id });
-    await workspace.save();
+
+    await deleteUserFromWs(req.user._id, workspace);
     sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
@@ -659,8 +644,8 @@ export const deleteWorkspace = async (req: any, res: any) => {
       await Item.deleteOne({ _id: item });
     }
 
+    await Invitation.deleteMany({ workspace: workspace._id });
     await workspace.deleteOne();
-
     res.status(200).json({ message: 'Workspace eliminado' });
   }
   catch (error: any) {

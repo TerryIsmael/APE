@@ -76,6 +76,36 @@ class UserDetails {
         }
     };
 
+    static deleteUser = async (errorMessage, router) => {
+        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar tu cuenta?");
+        if (!confirmDelete) return;
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/user', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+            });
+
+            if (response.ok) {
+                Utils.logout(router);
+            } else if (response.status === 401) {
+                router.push({ name: 'login' });
+            } else {
+                errorMessage.value = [];
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al eliminar usuario");
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
 }
 
 export default UserDetails;

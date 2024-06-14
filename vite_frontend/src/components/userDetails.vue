@@ -71,7 +71,7 @@ const logout = async () => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -79,7 +79,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
@@ -128,6 +128,10 @@ const editUser = async () => {
   }
 };
 
+const deleteUser = async () => {
+  await UserDetailsUtils.deleteUser(errorMessage, router);
+};
+
 watch([() => newUser.value.password, passwordMatch], checkPassword);
 
 onBeforeMount(async () => {
@@ -145,9 +149,6 @@ onBeforeMount(async () => {
   await fetchUser();
   await fetchFolders();
   loading.value = false;
-  // No init path
-  //ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value._id }));
-  //websocketEventAdd();
 });
 </script>
 
@@ -184,7 +185,7 @@ onBeforeMount(async () => {
       </div>
       
       <div style="width: 90%; margin-bottom: 5%;">
-        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between;">
+        <div class="error" v-if="errorMessage.length !== 0 && !isWsModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between;">
           <div>
             <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
               {{ error }}
@@ -246,6 +247,9 @@ onBeforeMount(async () => {
             </div>
           </div>
 
+        </div>
+        <div v-if="!editing" style="display: flex; justify-content: flex-end; width: 100%; margin-right: 10%; margin-top: 5%;">
+          <button @click="deleteUser()" class="workspace-name-button red-button">Eliminar cuenta</button>
         </div>
       </div>
 

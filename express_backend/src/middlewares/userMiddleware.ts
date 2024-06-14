@@ -73,7 +73,6 @@ export const validateNewUser = [
 
     (req : Request, res : Response, next : NextFunction) => {
         const errors = validationResult(req);
-        console.log(req.body.user);
         if (!errors.isEmpty()) {
             res.status(400).json({ errors: errors.array().map(x => x.msg) });
         } else {

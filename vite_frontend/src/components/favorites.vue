@@ -145,7 +145,7 @@ const checkDictUserItemPerms = (profileId) => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -153,7 +153,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {

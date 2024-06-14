@@ -263,7 +263,7 @@ const saveNote = async () => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -271,7 +271,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
@@ -462,7 +462,7 @@ watch(
           <div v-else>
             <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
               <div>
-                <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                   {{ error }}
                 </p>
               </div>

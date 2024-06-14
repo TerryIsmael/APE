@@ -154,8 +154,8 @@ const copyInvitation = async (invitation) => {
   var message = document.getElementById("message");
   message.style.visibility = "visible";
   setTimeout(function() {
-          message.style.visibility = "hidden";
-        }, 3000);
+    message.style.visibility = "hidden";
+  }, 3000);
 };
 
 const getFilteredProfiles = computed(() => {
@@ -243,7 +243,7 @@ const logout = async () => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -251,7 +251,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
