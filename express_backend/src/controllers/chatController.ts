@@ -121,6 +121,10 @@ export const editChatName = async (req: any, res: any) => {
         return res.status(400).json({ error: "El nombre no puede estar vacío" });
     }
 
+    if (name.length > 60) {
+        return res.status(400).json({ error: "El nombre no puede tener más de 60 caracteres" });
+    }
+
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
         if (!chat) {

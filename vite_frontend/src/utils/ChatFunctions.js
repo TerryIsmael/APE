@@ -128,13 +128,13 @@ class ChatUtils {
                 body: JSON.stringify(newChat.value)
             });
             if (response.ok) {
-                const data= await response.json();
+                errorMessage.value = [];
+                const data = await response.json();
                 await this.fetchChats(chats, errorMessage, router);
                 selectedChat.value = data;
             } else {
                 errorMessage.value = [];
                 const data = await response.json()
-                console.log(data)
                 if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
                 } else {
@@ -217,6 +217,7 @@ class ChatUtils {
             });
             if (response.ok) {
                 editing.value = false;
+                errorMessage.value = [];
             } else {
                 errorMessage.value = [];
                 const data = await response.json();
@@ -229,7 +230,7 @@ class ChatUtils {
         } catch (error) {
             console.log(error);
         }
-    }
+    };
 }
 
 export default ChatUtils;

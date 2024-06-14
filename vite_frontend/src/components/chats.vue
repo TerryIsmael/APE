@@ -88,10 +88,24 @@ const handleEditChat = async () => {
   await ChatUtils.handleEditChat(selectedChat, editingName, editing, errorMessage);
 };
 
+const openModal = () => {
+  errorMessage.value = [];
+  isModalOpened.value = true;
+  newChat.value = { name: '', users: [] };
+  newChat.value.users.push(currentUser.value);
+  userToAdd.value = '';
+};
+
 const closeModal = () => {
+  errorMessage.value = [];
   isModalOpened.value = false;
   newChat.value = { name: '', users: [] };
   userToAdd.value = '';
+};
+
+const toggleEdit = () => {
+  editing.value = !editing.value;
+  errorMessage.value = [];
 };
 
 const getUserByUsernameOrEmail = async () => {
@@ -127,8 +141,11 @@ const initSelectedChat = () => {
 
 const openNewChat = async () => {    
   await ChatUtils.openNewChat(newChat, chats, currentUser, errorMessage, router);
-  await fetchChats();
-  isModalOpened.value = false;
+  if (errorMessage.value.length === 0) {
+    await fetchChats();
+    isModalOpened.value = false;
+    newChat.value = { name: '', users: [] };
+  }
 };
 
 const selectItem = async (item, direct) => {
@@ -151,6 +168,13 @@ const closeDetails = async () => {
   inDetails.value = false;
   await nextTick();
   scrollToBottom();
+};
+
+const createWorkspace = async () => {
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  if (errorMessage.value.length === 0) {
+    closeNewWsModal();
+  }
 };
 
 const leaveChat = async () => {
@@ -209,7 +233,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
   <div v-if="loading">
     <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
   </div>
-  <div v-else>
+  <div v-else style="max-height: 90vh;">
     <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
       <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined" style="z-index: 1002">chevron_right</span>
       <span v-else @click="showMainSidebar = false" class="material-symbols-outlined" style="z-index: 1002">chevron_left</span>
@@ -232,7 +256,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
               </div>
             </div>
           </div>
-            <button style="width: 90%; margin-left: auto; margin-right: auto;" @click="isModalOpened=true">Nuevo chat</button>
+            <button style="width: 90%; margin-left: auto; margin-right: auto;" @click="openModal()">Nuevo chat</button>
         </div>
 
         <div v-if="!inDetails" class="message-chat-container">
@@ -277,21 +301,26 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
           </div>
         </div>
         <div v-else class="info-container">
-          <div style="display:flex; justify-content: space-between; padding: 5%;">
+          <div style="display:flex; justify-content: space-between; align-items: center; padding: 5%;">
             <button @click="closeDetails()"><span class="material-symbols-outlined">arrow_back</span></button>
+
+            <div class="error" v-if="errorMessage.length !== 0 && editing" style="padding-left: 5%; padding-right: 5%; margin: auto">
+              <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+            </div>
+            
             <div v-if="!editing && selectedChat.type !== 'Workspace'">
-              <button  @click="editingName = selectedChat.name; editing=true">Editar</button>
-              <button @click="leaveChat()" class="red-button">Abandonar chat</button>
+              <button @click="editingName = selectedChat.name; editing=true">Editar</button>
+              <button @click="leaveChat()" class="red-button" style="margin-left: 5px;">Abandonar chat</button>
             </div>
           </div>
           <div v-if="!editing || selectedChat.type == 'Workspace'" style="display:flex; justify-content: center; font-size: 3vh; font-weight: bolder; padding-top:2%">
             {{ selectedChat?.name }}
           </div>
-          <div v-else style="display:flex; flex-direction: column; justify-content: center; align-items:center; font-size: 1.5vh; padding-top:2%">
-            <input v-model="editingName" style="width: 80%; font-size: 3vh; font-weight: bolder; text-align: center;"/>
+          <div v-else style="display: flex; flex-direction: column; justify-content: center; align-items:center; font-size: 1.5vh; padding-top:2%">
+            <input v-model="editingName" maxlength="60" style="width: 80%; font-size: 3vh; font-weight: bolder; text-align: center;"/>
             <div>
-              <button @click="editing=false">Cancelar</button>
-              <button @click="handleEditChat()">Guardar</button>
+              <button @click="toggleEdit()" class="red-button" style="font-size: small">Cancelar</button>
+              <button @click="handleEditChat()" style="margin-left: 5px; font-size: small">Guardar</button>
             </div>
           </div>
           <div style="display:flex; justify-content: center; padding-bottom: 3%; font-size: 2vh; font-weight: bold;">
@@ -407,7 +436,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="ws-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 

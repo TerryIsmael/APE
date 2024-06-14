@@ -9,6 +9,7 @@ import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged, validateNewUser, validateUser } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
 import { validateProfilePerm, validateWsPerms, validateNewWsName, validateEditWsName } from './middlewares/workspaceMiddleware.ts';
+import { validateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
@@ -315,7 +316,7 @@ router.get('/chats', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.post('/chat', isLogged, async (req: Request, res: Response) => {
+router.post('/chat', isLogged, validateChat, async (req: Request, res: Response) => {
     try {
         createChat(req, res);
     } catch(error) {
@@ -332,7 +333,7 @@ router.post('/chat/messages', isLogged, async (req: Request, res: Response) => {
 });
 
 router.get('/chat/message', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         getChatMessages(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener los mensajes. ' + error });
@@ -340,7 +341,7 @@ router.get('/chat/message', isLogged, async (req: Request, res: Response) => {
 });
 
 router.post('/chat/message', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         addMessage(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al enviar el mensaje. ' + error });
@@ -348,7 +349,7 @@ router.post('/chat/message', isLogged, async (req: Request, res: Response) => {
 });
 
 router.put('/chat', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         editChatName(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al salir del chat. ' + error });
@@ -356,7 +357,7 @@ router.put('/chat', isLogged, async (req: Request, res: Response) => {
 });
 
 router.delete('/chat', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         leaveChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al salir del chat. ' + error });

@@ -432,7 +432,7 @@ onUnmounted(() => {
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top: 15px">Crear</button>
     </template>
   </Modal>
 </template>
