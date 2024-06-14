@@ -156,7 +156,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace(workspaceId, isWsModalOpened, workspaces, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
@@ -200,13 +200,13 @@ onBeforeMount(async () => {
   path.value = "/" + route.name;
   wsId.value = localStorage.getItem('workspace');
   await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: "include",
-    body: JSON.stringify({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
+      body: JSON.stringify({
       username: import.meta.env.VITE_USERNAME,
       password: "12345678910aA@",
-    })
+      })
   });
   await fetchUser();
   await fetchNotices();

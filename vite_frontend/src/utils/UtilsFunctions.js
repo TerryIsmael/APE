@@ -165,7 +165,7 @@ class UtilsFunctions {
     }
   };
 
-  static leaveWorkspace = async (workspaceId, isWsModalOpened, workspaces, router, errorMessage) => {
+  static leaveWorkspace = async (workspaceId, isWsModalOpened, workspaces, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try { 
         const confirmDelete = confirm("¿Estás seguro de que deseas abandonar este workspace?");
         if (!confirmDelete) return;
@@ -181,13 +181,13 @@ class UtilsFunctions {
         if (response.ok) {
           errorMessage.value = [];
           const currentWorkspace = localStorage.getItem('workspace');
+          this.closeWsModal(isWsModalOpened, workspaces, errorMessage);
           if (currentWorkspace == workspaceId) {
             localStorage.removeItem('workspace');
-            this.closeWsModal(isWsModalOpened, workspaces, errorMessage);
-            router.push('/workspace');
-          } else {
-            await this.fetchUserWorkspaces(workspaces, router, errorMessage);
+            await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
           }
+          router.push('/workspace');
+          
         } else if (response.status === 401) {
             router.push({ name: 'login' });
         } else {

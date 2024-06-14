@@ -251,7 +251,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.leaveWorkspace(workspaceId, isWsModalOpened, workspaces,workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
