@@ -63,10 +63,11 @@ class WorkspaceUtils {
           existFolder.value = true;
         }
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
-      } else if (response.status === 401) {
+      } else if (response.status === 401 || response.status === 404) {
         if (wsId) {
-          localStorage.removeItem('workspace');
-          return this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+          await localStorage.removeItem('workspace');
+          await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+          return;
         }
         router.push({ name: 'login' });
       } else {

@@ -65,7 +65,7 @@ const closeNewWsModal = () => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -118,7 +118,7 @@ const initSelectedChat = () => {
 };
 
 const openNewChat = async () => {    
-  await ChatUtils.openNewChat(newChat, currentUser, errorMessage, router);
+  await ChatUtils.openNewChat(newChat, chats, currentUser, errorMessage, router);
   await fetchChats();
   isModalOpened.value = false;
 };

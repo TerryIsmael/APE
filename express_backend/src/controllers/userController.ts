@@ -11,6 +11,8 @@ import type { IUser } from '../models/user.ts';
 import { deleteUserFromWs } from '../utils/deleteUserFromWs.ts';
 import { getWSPermission } from '../utils/permsFunctions.ts';
 import Invitation from '../schemas/invitationSchema.ts';
+import Chat from '../schemas/chatSchema.ts';
+import { ChatType } from '../models/chat.ts';
 
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -29,11 +31,16 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         await profile.save();
         const workspace = new Workspace({ name: `Workspace de ${user.username}`, items: [], profiles: [profile], default: true });
         await workspace.save();
+
+        const chat = new Chat({ name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: [user._id], messages: [] });
+        await chat.save();
+
         fs.mkdirSync(`./uploads/${workspace._id}`);
 
         return res.status(201).json({ message: 'Usuario registrado exitosamente' });
 
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
@@ -104,6 +111,17 @@ export const deleteUser = async (req: any, res: Response): Promise<Response> => 
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
+        const chats = await Chat.find({ users: userId });
+        console.log(chats);
+        for (const chat of chats) {
+            chat.users = chat.users.filter((chatUser) => chatUser?.toString() !== userId.toString());
+            if (chat.users.length === 0) {
+                await chat.deleteOne();
+            } else {
+                await chat.save();
+            }
+        }
+
         const userProfiles = await Profile.find({ users: user, profileType: ProfileType.Individual });
         const userWorkspaces = await Workspace.find({ profiles: { $in: userProfiles } }).populate('profiles').populate('items');
         
@@ -116,9 +134,9 @@ export const deleteUser = async (req: any, res: Response): Promise<Response> => 
                     await Item.deleteOne({ _id: item });
                 }
 
+                await Chat.deleteOne({ workspace: workspace._id });
                 await Item.deleteMany({ workspace: workspace._id });
                 fs.rmdirSync(`./uploads/${workspace._id}`, { recursive: true });
-                
                 await Workspace.deleteOne({ _id: workspace._id });
             } else {
                 await deleteUserFromWs(userId, workspace);

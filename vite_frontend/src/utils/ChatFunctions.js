@@ -33,7 +33,7 @@ class ChatUtils {
 
     static fetchChat = async (chatId, chats, selectedChat, errorMessage, router) => {
         try {
-            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/chat', {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/chat/messages', {
                 body: JSON.stringify({ chatId: chatId }),
                 method: 'POST',
                 headers: {
@@ -103,7 +103,7 @@ class ChatUtils {
         }
     };
 
-    static openNewChat = async (newChat, currentUser, errorMessage, router) => {
+    static openNewChat = async (newChat, chats, currentUser, errorMessage, router) => {
         if (!newChat.value.name || newChat.value.name.trim == "") {
             errorMessage.value = ['Debes introducir un nombre para el chat'];
             return;
@@ -128,11 +128,12 @@ class ChatUtils {
             });
             if (response.ok) {
                 const data= await response.json();
-                fetchChats();
+                await this.fetchChats(chats, errorMessage, router);
                 selectedChat.value = data;
             } else {
                 errorMessage.value = [];
                 const data = await response.json()
+                console.log(data)
                 if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
                 } else {

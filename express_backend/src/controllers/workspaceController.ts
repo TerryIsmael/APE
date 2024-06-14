@@ -17,6 +17,8 @@ import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IWorkspace } from '../models/workspace.ts';
 import { deleteUserFromWs } from '../utils/deleteUserFromWs.ts';
+import Chat from '../schemas/chatSchema.ts';
+import { ChatType } from '../models/chat.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -214,6 +216,10 @@ export const createWorkspace = async (req: any, res: any) => {
       res.status(400).json({ error: parseValidationError(error) });
     }
     await workspace.save();
+
+    const chat = new Chat({ name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: [req.user], messages: [] });
+    await chat.save();
+
     if (!fs.existsSync(`uploads/${workspace._id}`)) {
       fs.mkdirSync(`uploads/${workspace._id}`, { recursive: true });
     }
@@ -238,6 +244,13 @@ export const editWorkspace = async (req: any, res: any) => {
     }
     workspace.name = newWs.name;
     await workspace.save();
+
+    const chat = await Chat.findOne({ workspace: newWs._id });
+    if(chat){
+      chat.name = newWs.name;
+      await chat.save();
+    }
+
     await workspace?.populate('items');
     await workspace?.populate('items.profilePerms.profile');
     await workspace?.populate('profiles');
@@ -276,6 +289,13 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   await profile.save();
   workspace.profiles.push(profile._id);
   await workspace.save();
+
+  const chat = await Chat.findOne({ workspace: wsId });
+  if(chat){
+    chat.users.push(user._id);
+    await chat.save();
+  }
+
   sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
   res.status(201).json(workspace);
   
@@ -461,6 +481,13 @@ export const useInvitation = async (req: any, res: any) => {
     await userProfile.save();
     workspace.set(workspace.get("profiles").push(userProfile._id));
     await workspace.save();
+
+    const chat = await Chat.findOne({ workspace: workspace._id });
+    if(chat){
+      chat.users.push(user._id);
+      await chat.save();
+    }
+
     if (profile instanceof mongoose.Document){
       profile.set("users",profile.get("users").push(user));
       await profile.save();
@@ -645,8 +672,15 @@ export const deleteWorkspace = async (req: any, res: any) => {
       await Item.deleteOne({ _id: item });
     }
 
+    await Chat.deleteMany({ workspace: wsId });
     await Invitation.deleteMany({ workspace: workspace._id });
     await workspace.deleteOne();
+
+    const chat = await Chat.findOne({ workspace: wsId });
+    if(chat){
+      await Chat.deleteOne( { _id: chat._id } );
+    }
+
     res.status(200).json({ message: 'Workspace eliminado' });
   }
   catch (error: any) {

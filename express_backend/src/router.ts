@@ -291,7 +291,7 @@ router.delete('/invitation', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.get('/invite/:code', async (req: Request, res: Response) => {
+router.get('/invite/:code', isLogged, async (req: Request, res: Response) => {
     try{
         useInvitation(req, res);
     } catch(error) {
@@ -309,7 +309,7 @@ router.get('/chats', isLogged, async (req: Request, res: Response) => {
 
 router.post('/chat', isLogged, async (req: Request, res: Response) => {
     try {
-        getChat(req, res);
+        createChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener el chat. ' + error });
     }
@@ -317,7 +317,7 @@ router.post('/chat', isLogged, async (req: Request, res: Response) => {
 
 router.post('/chat/messages', isLogged, async (req: Request, res: Response) => {
     try {
-        createChat(req, res);
+        getChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al crear el chat. ' + error });
     }
