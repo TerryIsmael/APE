@@ -160,7 +160,7 @@ const leaveWorkspace = async (workspaceId) => {
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
 };
 
 const toggleLeave = () => {
@@ -176,7 +176,7 @@ const closeNewWsModal = () => {
 };
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
   }
@@ -193,7 +193,7 @@ const websocketEventAdd = () => {
       await fetchUser();
       await fetchNotices();
     }
-    if ((jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) || (jsonEvent.type === 'workspaceDeleted' && jsonEvent.wsAffected === workspace.value._id.toString())) {
+    if ((jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) || jsonEvent.type === 'workspaceDeleted') {
       localStorage.removeItem('workspace');
       await router.push('/workspace');
     }

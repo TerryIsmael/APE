@@ -12,7 +12,7 @@ import type { IProfilePerms } from '../models/profilePerms.ts';
 import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
-import { sendMessageToUser, sendMessageToUsers, sendMessageToWorkspace } from '../config/websocket.ts';
+import { sendMessageToUser, sendMessageToWorkspace } from '../config/websocket.ts';
 import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IWorkspace } from '../models/workspace.ts';
@@ -78,7 +78,14 @@ export const getUserWorkspaces = async (req: any, res: any) => {
 export const getWorkspaceFavs = async (req: any, res: any) => {
   try {
     const wsId = req.body.wsId;
-    const workspace = await Workspace.findOne({ _id: wsId });
+    let workspace;
+    if (!wsId) {
+      const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
+      workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
+    }else{
+      workspace = await Workspace.findOne({ _id: wsId });
+    }
+   
     
     if (!workspace) {
       return res.status(404).json({ error: 'No se ha encontrado el workspace' });
@@ -114,12 +121,13 @@ export const getWorkspaceFavs = async (req: any, res: any) => {
 export const getWorkspaceNotices = async (req: any, res: any) => {
   try {
     const wsId = req.body.wsId;
+    let workspace;
     if (!wsId) {
-      res.status(400).json({ error: 'No se ha especificado el workspace' });
-      return;
+      const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
+      workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }}).populate('items');
+    }else{
+      workspace = await Workspace.findOne({ _id: wsId }).populate('items');
     }
-
-    const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
 
     if (!workspace) {
       return res.status(404).json({ error: 'No se ha encontrado el workspace' });
@@ -167,26 +175,25 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
 export const getWorkspaceFolders = async (req: any, res: any) => {
   try {
     const wsId = req.body.wsId;
-    const userId = req.user._id;
-
+    let workspace;
     if (!wsId) {
-      res.status(400).json({ error: 'No se ha especificado el workspace' });
-      return;
+      const profiles = await Profile.find({ name: req.user._id, wsPerm: 'Owner' }).select('_id');
+      workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
+    }else{
+      workspace = await Workspace.findOne({ _id: wsId });
     }
-
-    const workspace = await Workspace.findOne({ _id: wsId });
 
     if (!workspace) {
       return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
-    if (!(await getWSPermission(req.user._id, wsId))) {
+    const wsPerm = await getWSPermission(req.user._id, workspace._id.toString());
+    if (!wsPerm) {
       return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
     } 
-
     await workspace.populate('items');
     const foldersToShow = [];
     for (const item of workspace.items) {
-      if (await getUserPermission(req.user._id, wsId, item?._id.toString()) && item && (item as IItem).itemType === ItemType.Folder) {
+      if (await getUserPermission(req.user._id, workspace._id.toString(), item?._id.toString()) && item && (item as IItem).itemType === ItemType.Folder) {
         foldersToShow.push(item);
       }
     }
@@ -195,7 +202,6 @@ export const getWorkspaceFolders = async (req: any, res: any) => {
     await workspace.populate('items');
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
-    const wsPerm = await getWSPermission(userId, wsId);
     res.status(200).json({_id: workspace._id, name: workspace.name, folders: foldersToShow, permission: wsPerm});
     return;
   } catch (error: any) {
@@ -733,8 +739,7 @@ export const deleteWorkspace = async (req: any, res: any) => {
       fs.rmdirSync(`uploads/${wsId}`, { recursive: true });
     }
 
-    const wsIndividualProfiles = workspace.profiles.filter((profile) => (profile as IProfile)?.profileType === ProfileType.Individual && (profile as IProfile)?.wsPerm !== WSPermission.Owner).map(x => (x as IProfile).name.toString());
-    sendMessageToUsers(wsIndividualProfiles, { type: 'workspaceDeleted', wsAffected: wsId});
+    sendMessageToWorkspace(workspace._id.toString(), { type: 'workspaceDeleted'});
     res.status(200).json({ message: 'Workspace eliminado' });
   }
   catch (error: any) {

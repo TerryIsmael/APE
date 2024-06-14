@@ -83,7 +83,7 @@ const leaveWorkspace = async (workspaceId) => {
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
 };
 
 const toggleLeave = () => {
@@ -99,7 +99,7 @@ const closeNewWsModal = () => {
 };
 
 const createWorkspace = async () => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
   }
@@ -132,6 +132,19 @@ const deleteUser = async () => {
   await UserDetailsUtils.deleteUser(errorMessage, router);
 };
 
+const websocketEventAdd = () => {
+  props.ws.addEventListener('open', async (event) => {
+    console.log('Connected to server');
+    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
+  });
+  props.ws.addEventListener('message', async (event) => {
+    const jsonEvent = JSON.parse(event.data);
+    if (jsonEvent.type === 'workspaceDeleted') {
+      await fetchFolders();
+    }
+  });
+};
+
 watch([() => newUser.value.password, passwordMatch], checkPassword);
 
 onBeforeMount(async () => {
@@ -148,6 +161,7 @@ onBeforeMount(async () => {
   });
   await fetchUser();
   await fetchFolders();
+  websocketEventAdd();
   loading.value = false;
 });
 </script>
