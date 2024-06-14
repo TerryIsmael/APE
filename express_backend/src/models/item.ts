@@ -5,7 +5,6 @@ export enum ItemType {
     Calendar = 'Calendar',
     Note = 'Note',
     Timer = 'Timer',
-    StudySession = 'Study Session',
     Folder = 'Folder',
     File = 'File',
     Notice = 'Notice',

@@ -8,7 +8,7 @@ import { Permission } from '../models/profilePerms.ts';
 import User from '../schemas/userSchema.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
 import Item from '../schemas/itemSchema.ts';
-import { CalendarItem, FileItem, FolderItem, NoteItem, NoticeItem, StudySessionItem, TimerItem } from '../schemas/itemSchema.ts';
+import { CalendarItem, FileItem, FolderItem, NoteItem, NoticeItem, TimerItem } from '../schemas/itemSchema.ts';
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
@@ -53,9 +53,6 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                             break;
                         case ItemType.Calendar:
                             item = new CalendarItem({events:[]});
-                            break;
-                        case ItemType.StudySession:
-                            item = new StudySessionItem({}); // TODO
                             break;
                         default:
                             res.status(400).json({ error: 'Tipo de item no válido' });

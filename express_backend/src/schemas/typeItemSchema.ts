@@ -1,5 +1,5 @@
 import mongoose from '../config/mongoose.ts';
-import type { INote, INotice, ITimer, IFile, IFolder, ICalendar, IEvent, IStudySession } from '../models/typeItem.ts';
+import type { INote, INotice, ITimer, IFile, IFolder, ICalendar, IEvent } from '../models/typeItem.ts';
 
 export const noteSchema = new mongoose.Schema<INote>({
     text: { 
@@ -96,8 +96,5 @@ export const calendarSchema = new mongoose.Schema<ICalendar>({
     }
 });
 
-export const studySessionSchema = new mongoose.Schema<IStudySession>({
-    //TODO: Define properties
-});
 
 

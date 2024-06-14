@@ -33,8 +33,4 @@ export interface ICalendar extends IItem {
     events: Array<IEvent>;
 }
 
-export interface IStudySession extends IItem {
-    //TODO: Define study session properties
-}
-
 
