@@ -151,22 +151,21 @@ class UtilsFunctions {
         errorMessage.value = [];
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else if (response.status === 400 || response.status === 404) {
+      } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            this.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al obtener workspaces del usuario");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al obtener workspaces del usuario");
+        }
       }
     } catch (error) {
       console.log(error);
     }
   };
 
-  static leaveWorkspace = async (workspaceId, workspaces, router, errorMessage, isWsModalOpened) => {
+  static leaveWorkspace = async (workspaceId, isWsModalOpened, workspaces, router, errorMessage) => {
     try { 
         const confirmDelete = confirm("¿Estás seguro de que deseas abandonar este workspace?");
         if (!confirmDelete) return;
@@ -180,34 +179,34 @@ class UtilsFunctions {
         });
 
         if (response.ok) {
-            errorMessage.value = [];
-            const currentWorkspace = localStorage.getItem('workspace');
-            if (currentWorkspace == workspaceId) {
-              localStorage.removeItem('workspace');
-              router.push('/workspace');
-            } else {
-              await this.fetchUserWorkspaces(workspaces, router, errorMessage);
-            }
- 
+          errorMessage.value = [];
+          const currentWorkspace = localStorage.getItem('workspace');
+          if (currentWorkspace == workspaceId) {
+            localStorage.removeItem('workspace');
+            this.closeWsModal(isWsModalOpened, workspaces, errorMessage);
+            router.push('/workspace');
+          } else {
+            await this.fetchUserWorkspaces(workspaces, router, errorMessage);
+          }
         } else if (response.status === 401) {
             router.push({ name: 'login' });
-        } else if (response.status === 400 || response.status === 404) {
-            errorMessage.value = [];
-            response.json().then((data) => {
-                if (data.error || data.errors) {
-                    this.parseErrorMessage(data, errorMessage);
-                } else {
-                    throw new Error("Error al abandonar el workspace");
-                }
-            })
+        } else {
+          errorMessage.value = [];
+          const data = await response.json();
+          if (data.error || data.errors) {
+            this.parseErrorMessage(data, errorMessage);
+          } else {
+            throw new Error("Error al abandonar el workspace");
+          }
         }
     } catch (error) {
         console.log(error);
     }
   };
 
-  static openWsModal = async (isWsModalOpened, workspaces, router, errorMessage) => {
+  static openWsModal = async (isWsModalOpened, workspaces, isLeaving, router, errorMessage) => {
     await this.fetchUserWorkspaces(workspaces, router, errorMessage);
+    isLeaving.value = false;
     isWsModalOpened.value = true;
   };
   
@@ -249,15 +248,14 @@ class UtilsFunctions {
         await this.redirectToWorkspace(data.wsId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
-      } else if (response.status === 400 || response.status === 404) {
+      } else {
         errorMessage.value = [];
-        response.json().then((data) => {
-          if (data.error || data.errors) {
-            this.parseErrorMessage(data, errorMessage);
-          } else {
-            throw new Error("Error al crear el workspace");
-          }
-        })
+        const data = await response.json();
+        if (data.error || data.errors) {
+          this.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al crear el workspace");
+        }
       }
     } catch (error) {
       console.log(error);

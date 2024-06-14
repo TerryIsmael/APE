@@ -25,7 +25,7 @@ const folders = ref([]);
 const author = ref(null);
 const selectedItem = ref(null);
 const selectedItemPerms = ref(null);
-const selectedFolder = ref('favorites');
+const selectedFolder = ref('');
   
 const showSidebar = ref(false);
 const showMainSidebar = ref(false);
@@ -53,55 +53,43 @@ const newWorkspace = ref('');
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
-}
+};
 
 const fetchWorkspace = async () => {
   await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
   ws.value.send(JSON.stringify({ type: 'workspaceIdentification', user: currentUser.value._id, workspaceId: workspace.value._id }));
-}
+};
 
 const formatDate = (date) => {
   return Utils.formatDate(date);
-}
+};
 
 const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
-}
+};
 
 const handleRightClick = (event, item) => {
   selectItem(item, false);
-}
+};
 
 const toggleLike = async (item) => {
   await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms, errorMessage);
-}
+};
 
 const translateItemType = (item) => {
   return Utils.translateItemType(item);
-}
+};
 
 const translatePerm = (perm) => {
   return Utils.translatePerm(perm);
-}
+};
 
 const deleteItem = async (item) => {
   await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar, errorMessage);
-}
+};
 
 const selectImage = (item) => {
   return Utils.selectImage(item);
-}
-
-const openNewItemModal = (itemType) => {
-  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
-};
-
-const closeNewItemModal = () => {
-  WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-};
-
-const handleNewItemForm = async () => {
-  await FavoriteUtils.handleNewItemForm(newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds);
 };
 
 const openModal = () => {
@@ -118,7 +106,7 @@ const closeSidebar = (event) => {
 
 const changePerms = async (perm, profileId) => {
   await FavoriteUtils.changePerms(perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
-}
+};
 
 const getFilteredProfiles = computed(() => {
   const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
@@ -140,53 +128,56 @@ const getFilteredProfiles = computed(() => {
 
 const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, selectedItem, errorMessage);
-}
+};
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
-}
+};
 
 const logout = async () => {
   await Utils.logout(router);
-}
+};
 
 const checkDictUserItemPerms = (profileId) => {
   if (!userItemPerms.value[profileId]) {
     userItemPerms.value[profileId] = 'None';
   }
-}
+};
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
-}
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
+};
 
 const closeWsModal = () => {
   Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
-}
+};
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
-}
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
+};
 
 const redirectToWorkspace = async(workspaceId) => {
   await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+};
 
 const toggleLeave = () => {
   isLeaving.value = !isLeaving.value;
-}
+};
 
 const openNewWsModal = () => {
   Utils.openNewWsModal(isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage);
-}
+};
 
 const closeNewWsModal = () => {
   Utils.closeNewWsModal(isNewWsModalOpened, newWorkspace, errorMessage);
-}
+};
 
 const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
-}
+  if (errorMessage.value.length === 0) {
+    closeNewWsModal();
+  }
+};
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
@@ -200,8 +191,7 @@ const websocketEventAdd = () => {
           await fetchWorkspace();
         }
     });
-}
-
+};
 
 onBeforeMount(async () => {
     path.value = "/" + route.name;
@@ -257,7 +247,7 @@ onUnmounted(() => {
         </div>
 
         <div v-else> 
-          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
             <div>
               <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                 {{ error }}
@@ -310,13 +300,12 @@ onUnmounted(() => {
         
         <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
         <li class = "main-sidebar-title">Inicio</li>
-        <li class="li-clickable" @click="selectItem('userDetails', true)">Gestionar perfil</li>
+        <li class="li-clickable" @click="selectItem('userDetails', true)">Tu perfil</li>
         <li @click="selectItem('chats', true)" class="li-clickable">Chats</li>
 
         <li class="main-sidebar-subtitle">Workspace actual
-        <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
-        <span v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
-      </li>
+          <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
+        </li>
 
         <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
         <li @click="selectItem('favorites', true)" class="li-clickable selected-folder">Favoritos</li>
@@ -332,22 +321,6 @@ onUnmounted(() => {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
-
-  <!-- Modal de nuevo item --> 
-  <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-    <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>                
-    <template #content>
-
-      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
-        <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
-      </div>
-
-      <div style="margin-top: 20px">
-        <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-      </div>
-      <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-    </template>
-  </Modal>
 
   <!-- Sidebar de detalles -->
     <div class="sidebar" :class="{ 'show': showSidebar }">
@@ -455,7 +428,7 @@ onUnmounted(() => {
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>

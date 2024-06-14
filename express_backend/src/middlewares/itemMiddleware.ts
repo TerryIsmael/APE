@@ -30,7 +30,7 @@ export const validatePerm = [
     (req : Request, res : Response, next : NextFunction) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array().map(x => x.msg) });
         } else {
             next();
         }

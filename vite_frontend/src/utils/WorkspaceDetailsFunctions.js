@@ -11,22 +11,24 @@ class WorkspaceDetails {
         }
     }; 
 
-    static openModal = (selectedProfile, modalProfile, isModalOpened) => {
+    static openModal = (selectedProfile, modalProfile, isModalOpened, errorMessage) => {
+        errorMessage.value = [];
         if (selectedProfile.value) {
-          modalProfile.value = { ...selectedProfile.value };
+            modalProfile.value = { ...selectedProfile.value };
         } else {
-          modalProfile.value = {};
-          modalProfile.value.users = [];
-          modalProfile.value.wsPerm = 'Read';
-          modalProfile.value.profileType = 'Group';
+            modalProfile.value = {};
+            modalProfile.value.users = [];
+            modalProfile.value.wsPerm = 'Read';
+            modalProfile.value.profileType = 'Group';
         }
         isModalOpened.value = true;
     };
 
-    static closeModal = (selectedProfile, modalProfile, isModalOpened) => {
+    static closeModal = (selectedProfile, modalProfile, isModalOpened, errorMessage) => {
         selectedProfile.value = null;
         isModalOpened.value = false;
         modalProfile.value = {};
+        errorMessage.value = [];
     };
 
     static setModalProfileUsers = (newUser, modalProfile) => {
@@ -37,9 +39,10 @@ class WorkspaceDetails {
         }
     };
 
-    static toggleEdit = (editing, newWorkspace, workspace) => {
+    static toggleEdit = (editing, newWorkspace, workspace, errorMessage) => {
         editing.value = !editing.value;
-        newWorkspace.value = {...workspace.value};        
+        newWorkspace.value = {...workspace.value}; 
+        errorMessage.value = [];
     };
 
     static populateVariables = (workspace, author, profileWsPerms) => {
@@ -68,13 +71,12 @@ class WorkspaceDetails {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => { 
-                    if (data.error || data.errors) {
+                const data = await response.json();
+                if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
-                    } else {
+                } else {
                     throw new Error("Error al obtener datos del workspace");
-                    }
-                })
+                }
             }
         } catch (error) {
             console.log(error);
@@ -86,11 +88,10 @@ class WorkspaceDetails {
           workspace: workspace.value._id,
           linkDuration: linkDuration.value
         };
-        console.log(linkDuration.value)
         if (inviteProfile.value != 'none') {
           invitation.profile = inviteProfile.value._id;
         } 
-        try{
+        try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invitation', {
                 method: 'POST',
                 headers: {
@@ -104,17 +105,16 @@ class WorkspaceDetails {
             const data = await response.json();
             await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + data.invitation.code);
             await this.fetchInvitations(workspace, invitations, errorMessage);
-            }  else if (response.status === 401) {
+            } else if (response.status === 401) {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => { 
-                    if (data.error || data.errors) {
+                const data = await response.json();
+                if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
-                    } else {
+                } else {
                     throw new Error("Error al obtener datos del workspace");
-                    }
-                })
+                }
             }
         } catch (error) {
             console.log(error);
@@ -137,13 +137,12 @@ class WorkspaceDetails {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => { 
-                    if (data.error || data.errors) {
+                const data = await response.json();
+                if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
-                    } else {
+                } else {
                     throw new Error("Error al obtener datos del workspace");
-                    }
-                })
+                }
             }
         } catch (error) {
             console.log(error);
@@ -166,15 +165,14 @@ class WorkspaceDetails {
                 errorMessage.value = [];
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
-            } else if (response.status === 400 || response.status === 404) {
+            } else {
                 errorMessage.value = [];
-                response.json().then((data) => {
-                    if (data.error || data.errors) {
-                        Utils.parseErrorMessage(data, errorMessage);
-                    } else {
-                        throw new Error("Error al cambiar permisos");
-                    }
-                })
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al cambiar permisos");
+                }
             }
         } catch (error) {
             console.log(error);
@@ -197,13 +195,12 @@ class WorkspaceDetails {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => { 
-                    if (data.error || data.errors) {
+                const data = await response.json();
+                if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
-                    } else {
+                } else {
                     throw new Error("Error al obtener datos del workspace");
-                    }
-                })
+                }
             }
         } catch (error) {
             console.log(error);
@@ -228,13 +225,12 @@ class WorkspaceDetails {
                 router.push({ name: 'login' });
             } else {
                 errorMessage.value = [];
-                response.json().then((data) => { 
-                    if (data.error || data.errors) {
+                const data = await response.json();
+                if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
-                    } else {
+                } else {
                     throw new Error("Error al obtener datos del workspace");
-                    }
-                })
+                }
             }
         } catch (error) {
             console.log(error);
@@ -262,7 +258,7 @@ class WorkspaceDetails {
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {
-                    Utils.parseErrorMessage(data, errorMessage);
+                  Utils.parseErrorMessage(data, errorMessage);
                 } else {
                     throw new Error("Error al guardar el perfil");
                 }
@@ -290,15 +286,14 @@ class WorkspaceDetails {
                 errorMessage.value = [];
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
-            } else if (response.status === 400 || response.status === 404) {
+            } else {
                 errorMessage.value = [];
-                response.json().then((data) => {
-                    if (data.error || data.errors) {
-                        Utils.parseErrorMessage(data, errorMessage);
-                    } else {
-                        throw new Error("Error al eliminar perfil");
-                    }
-                })
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al eliminar perfil");
+                }
             }
         } catch (error) {
             console.log(error);
@@ -324,15 +319,14 @@ class WorkspaceDetails {
                 errorMessage.value = [];
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
-            } else if (response.status === 400 || response.status === 404) {
+            } else {
                 errorMessage.value = [];
-                response.json().then((data) => {
-                    if (data.error || data.errors) {
-                        Utils.parseErrorMessage(data, errorMessage);
-                    } else {
-                        throw new Error("Error al editar workspace");
-                    }
-                })
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al editar workspace");
+                }
             }
         } catch (error) {
             console.log(error);
@@ -357,15 +351,14 @@ class WorkspaceDetails {
                 router.push('/workspace');
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
-            } else if (response.status === 400 || response.status === 404) {
+            } else {
                 errorMessage.value = [];
-                response.json().then((data) => {
-                    if (data.error || data.errors) {
-                        Utils.parseErrorMessage(data, errorMessage);
-                    } else {
-                        throw new Error("Error al eliminar el workspace");
-                    }
-                })
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al eliminar el workspace");
+                }
             }
         } catch (error) {
             console.log(error);

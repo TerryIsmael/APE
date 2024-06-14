@@ -1,11 +1,9 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
 import UserDetailsUtils from '../utils/UserDetailsFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
-
-const newUser = ref({})
 
 const props = defineProps({
   ws: {
@@ -22,12 +20,11 @@ const route = useRoute();
 const path = ref('');
 const currentPath = ref('');
 
-const selectedFolder = ref('');
 const workspace = ref({});
-const items = ref([]);
-
+const selectedFolder = ref('');
 const folders = ref([]);
 const showSidebar = ref(false);
+const items = ref([]);
 const selectedItem = ref(null);
 const selectedItemPerms = ref(null);
 const userItemPerms = ref(null);
@@ -50,6 +47,9 @@ const isLeaving = ref(false);
 const isNewWsModalOpened = ref(false);
 const newWorkspace = ref('');
 
+const newUser = ref({});
+const passwordMatch = ref('');
+
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
 };
@@ -62,18 +62,6 @@ const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
 };
 
-const openNewItemModal = (itemType) => {
-  WorkspaceUtils.openNewItemModal(itemType, isNewItemModalOpened, newItem, hours, minutes, seconds, errorMessage);
-};
-
-const closeNewItemModal = () => {
-  WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-};
-
-const handleNewItemForm = async () => {
-  await WorkspaceUtils.handleNewItemForm(newItem, hours, minutes, seconds, path, workspace, errorMessage, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, isNewItemModalOpened, router);
-};
-
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
 };
@@ -83,7 +71,7 @@ const logout = async () => {
 };
 
 const openWsModal = async () => {
-  await Utils.openWsModal(isWsModalOpened, workspaces, router, errorMessage);
+  await Utils.openWsModal(isWsModalOpened, workspaces, isLeaving, router, errorMessage);
 };
 
 const closeWsModal = () => {
@@ -91,7 +79,7 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace (workspaceId, workspaces, router, errorMessage, isWsModalOpened);
+  await Utils.leaveWorkspace (workspaceId, isWsModalOpened, workspaces, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
@@ -112,7 +100,39 @@ const closeNewWsModal = () => {
 
 const createWorkspace = async () => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  if (errorMessage.value.length === 0) {
+    closeNewWsModal();
+  }
 };
+
+const toggleEdit = () => {
+  UserDetailsUtils.toggleEdit(editing, newUser, currentUser, passwordMatch, errorMessage);
+};
+
+const checkPassword = () => {
+  if (passwordMatch.value !== newUser.value.password && passwordMatch.value !== "" && newUser.value.password !== "") {
+    if (!errorMessage.value.includes("Las contraseñas no coinciden")) {
+      errorMessage.value.unshift("Las contraseñas no coinciden");
+    }
+  } else {
+    errorMessage.value = errorMessage.value.filter(
+      (error) => error !== "Las contraseñas no coinciden"
+    );
+  }
+};
+
+const editUser = async () => {
+  await UserDetailsUtils.editUser(currentUser, newUser, errorMessage, editing, router);
+  if (errorMessage.value.length === 0) {
+    toggleEdit();
+  }
+};
+
+const deleteUser = async () => {
+  await UserDetailsUtils.deleteUser(errorMessage, router);
+};
+
+watch([() => newUser.value.password, passwordMatch], checkPassword);
 
 onBeforeMount(async () => {
   path.value = '/' + route.name;
@@ -129,9 +149,6 @@ onBeforeMount(async () => {
   await fetchUser();
   await fetchFolders();
   loading.value = false;
-  // No init path
-  //ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value._id }));
-  //websocketEventAdd();
 });
 </script>
 
@@ -144,46 +161,100 @@ onBeforeMount(async () => {
       <h1 @click="$router.push('/workspace/')"
         style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        Detalles del perfil
+        Tu perfil
       </h1>
     </div>
 
-    <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
+    <div class="container main-content" style="overflow-y: auto;">
 
       <div style="display: flex; justify-content: space-around; width: 92%; align-items: center;">
         <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
           <button v-if="path !== ''" style=" max-height: 50px;" @click="$router.push('/workspace')"><span class="material-symbols-outlined">arrow_back</span></button>
           <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;"> Ruta actual: {{ path }}</h2>
         </div>
+
+        <div style="display: flex; justify-content: flex-end; width: 15%;">
+          <div v-if="!editing" style="display: flex; justify-content: flex-end; width: 15%; margin-right: 8%">
+            <button v-if="!editing" class="workspace-name-button" style="margin-right: 0px;" @click="toggleEdit()">Editar</button>
+          </div>
+          <div v-else style="display: flex; justify-content: flex-end; width: 15%; margin-right: 8%">
+            <button @click="toggleEdit()" class="workspace-name-button red-button">Cancelar</button>
+            <button @click="editUser()" style="margin-left: 10px;" class="workspace-name-button">Guardar</button>
+          </div>
+        </div>
       </div>
       
-      <div class="main-content container">
-        <div class="error" v-if="errorMessage.length !== 0 && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+      <div style="width: 90%; margin-bottom: 5%;">
+        <div class="error" v-if="errorMessage.length !== 0 && !isWsModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between;">
           <div>
-            <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
               {{ error }}
             </p>
           </div>
-          <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
-            <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
-          </button>
         </div>
 
-        <div class="items-container">
-          <div>
-            <input v-if="editing" type="text" v-model="newUser.username" :placeholder=currentUser.username class="text-input" style="margin-bottom: 5px;"/>
-            
-            <div style="width: 100%" v-else>
-              <hr style="width: 100%; display: flex; margin-left: 0%; margin-top: 0.5%">
-              <h4 style="margin-left: 0; margin-right: 0; margin-top: 0;"> {{ workspace.name }}</h4>
+        <div style="display: flex; width: 100%">
+          <div class="column">
+
+            <div class="item-container">
+              <h2 class="field-name">Nombre de usuario</h2>
+              <input v-if="editing" type="text" v-model="newUser.username" maxlength="16" :placeholder=currentUser.username class="field-input"/>
+              <div v-else>
+                <hr class="custom-hr">
+                <h4 class="field-content"> {{ currentUser.username }} </h4>
+              </div>
+            </div>
+
+            <div class="item-container">
+              <h2 class="field-name">Nombre</h2>
+              <input v-if="editing" type="text" v-model="newUser.firstName" maxlength="100" :placeholder=currentUser.firstName class="field-input"/>
+              <div v-else>
+                <hr class="custom-hr">
+                <h4 class="field-content"> {{ currentUser.firstName }} </h4>
+              </div>
+            </div>
+
+            <div v-if="editing" class="item-container">
+              <h2 class="field-name">Contraseña</h2>
+              <input type="password" v-model="newUser.password" placeholder="Nueva contraseña..." class="field-input"/>
+            </div>
+
+          </div>
+
+          <div class="column" style="padding-left: 5px;">
+
+            <div class="item-container">
+              <h2 class="field-name">Correo electrónico</h2>
+              <input v-if="editing" type="text" v-model="newUser.email" :placeholder=currentUser.email class="field-input"/>
+              <div v-else>
+                <hr class="custom-hr">
+                <h4 class="field-content"> {{ currentUser.email }} </h4>
+              </div>
+            </div>
+
+            <div class="item-container">
+              <h2 class="field-name">Apellidos</h2>
+              <input v-if="editing" type="text" v-model="newUser.surnames" maxlength="100" :placeholder=currentUser.surnames class="field-input"/>
+              <div v-else>
+                <hr class="custom-hr">
+                <h4 class="field-content"> {{ currentUser.surnames }} </h4>
+              </div>
+            </div>
+
+            <div v-if="editing" class="item-container">
+              <h2 class="field-name">Confirmar contraseña</h2>
+              <input type="password" v-model="passwordMatch" placeholder="Confirme nueva contraseña..." class="field-input"/>
             </div>
           </div>
+
         </div>
+        <div v-if="!editing" style="display: flex; justify-content: flex-end; width: 100%; margin-right: 10%; margin-top: 5%;">
+          <button @click="deleteUser()" class="workspace-name-button red-button">Eliminar cuenta</button>
+        </div>
+      </div>
 
       </div>
     </div>
-
-  </div>
 
   <!-- Main sidebar -->
   <div class="main-sidebar" :class="{ 'show': showMainSidebar }">
@@ -210,12 +281,11 @@ onBeforeMount(async () => {
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable selected-folder" @click="selectItem('userDetails', true)">Gestionar perfil</li>
+      <li class="li-clickable selected-folder" @click="selectItem('userDetails', true)">Tu perfil</li>
       <li @click="selectItem('chats', true)" class="li-clickable">Chats</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(workspace.permission)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>
-        <span v-if="['Owner', 'Admin', 'Write'].includes(workspace.permission)" @click="openNewItemModal('Folder')" style="position: absolute; right: 21%; text-align: right; cursor: pointer; vertical-align: middle" class="material-symbols-outlined">add</span>
       </li>
 
       <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
@@ -234,21 +304,6 @@ onBeforeMount(async () => {
       </li>
     </ul>
   </div>
-
-  <!-- Modal de nuevo item --> 
-  <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
-    <template #header><strong>Crear {{ translateItemType(newItem.itemType) }}</strong></template>
-    <template #content>
-      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
-          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
-      </div>
-
-      <div style="margin-top: 20px">              
-        <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
-      </div>
-      <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
-    </template>
-  </Modal>
 
   <!-- Modal de gestion de worskpaces -->
   <Modal class="modal" :isOpen="isWsModalOpened" @modal-close="closeWsModal" name="workspace-modal">
@@ -297,39 +352,31 @@ onBeforeMount(async () => {
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
     </template>
   </Modal>
 </template>
 
 <style scoped>
 .container {
-  width: 90%;
-  display: flex;
+  display:flex; 
+  height: 100%;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  position: relative;
-  overflow-x: hidden;
 }
 
-.items-container {
+.column {
+  padding-top: 1%;
+  text-align: left; 
+  flex: 1; 
+  max-width: 50%;
+}
+
+.item-container {
   width: 100%;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.profile-name {
   text-align: left;
-  max-width: 70%;
-  margin-right: 10px;
-  word-wrap: break-word; 
-  display: -webkit-box; 
-  -webkit-line-clamp: 1; 
-  -webkit-box-orient: vertical; 
-  overflow: hidden;
+  margin-top: 5px;
 }
 
 .text-input {
@@ -423,8 +470,6 @@ onBeforeMount(async () => {
   height: auto;
   background-color: rgb(151, 47, 47);
   border-radius: 10px;
-  padding-left: 1%; 
-  padding-right: 1%;
   padding: 1px 10px;
   margin-bottom: 10px;
   margin-left: auto;
@@ -528,6 +573,42 @@ onBeforeMount(async () => {
 
 .red-button {
   background-color: #c55e5e; 
+}
+
+.field-name {
+  text-align: left; 
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.field-content {
+  max-width: 85%;
+  margin-left: 0; 
+  margin-right: 0; 
+  margin-top: 0;
+  text-align: left;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.field-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px;
+  width: 90%;
+  background-color: #f2f2f2;
+  color: black;
+}
+
+.custom-hr {
+  width: 90%; 
+  display: flex; 
+  margin-left: 0%; 
+  margin-top: 0.5%;
 }
 
 </style>
