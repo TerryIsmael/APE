@@ -568,7 +568,7 @@ export const saveProfile = async (req: any, res: any) => {
     }
 
     await workspace.save();
-    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -611,7 +611,7 @@ export const deleteProfile = async (req: any, res: any) => {
       await workspace.save();
     }
     
-    await sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
