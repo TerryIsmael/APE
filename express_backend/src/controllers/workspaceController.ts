@@ -12,7 +12,7 @@ import type { IProfilePerms } from '../models/profilePerms.ts';
 import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
-import { sendMessageToWorkspace } from '../config/websocket.ts';
+import { sendMessageToUser, sendMessageToUsers, sendMessageToWorkspace } from '../config/websocket.ts';
 import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IWorkspace } from '../models/workspace.ts';
@@ -659,6 +659,7 @@ export const deleteProfile = async (req: any, res: any) => {
     }
     
     sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToUser((profile as IProfile).name, { type: 'profileDeleted', wsAffected: wsId });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -724,10 +725,16 @@ export const deleteWorkspace = async (req: any, res: any) => {
     await workspace.deleteOne();
 
     const chat = await Chat.findOne({ workspace: wsId });
-    if(chat){
+    if (chat) {
       await Chat.deleteOne( { _id: chat._id } );
     }
 
+    if (fs.existsSync(`uploads/${wsId}`)) {
+      fs.rmdirSync(`uploads/${wsId}`, { recursive: true });
+    }
+
+    const wsIndividualProfiles = workspace.profiles.filter((profile) => (profile as IProfile)?.profileType === ProfileType.Individual && (profile as IProfile)?.wsPerm !== WSPermission.Owner).map(x => (x as IProfile).name.toString());
+    sendMessageToUsers(wsIndividualProfiles, { type: 'workspaceDeleted', wsAffected: wsId});
     res.status(200).json({ message: 'Workspace eliminado' });
   }
   catch (error: any) {

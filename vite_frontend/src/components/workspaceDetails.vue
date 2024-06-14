@@ -291,6 +291,10 @@ const websocketEventAdd = () => {
     const jsonEvent = JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {
       await refreshWindow();
+    } 
+    if ((jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) || (jsonEvent.type === 'workspaceDeleted' && jsonEvent.wsAffected === workspace.value._id.toString())) {
+      localStorage.removeItem('workspace');
+      await router.push('/workspace');
     }
   });
 };

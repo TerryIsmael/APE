@@ -40,7 +40,6 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         return res.status(201).json({ message: 'Usuario registrado exitosamente' });
 
     } catch (error) {
-        console.log(error)
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
@@ -112,7 +111,6 @@ export const deleteUser = async (req: any, res: Response): Promise<Response> => 
         }
 
         const chats = await Chat.find({ users: userId });
-        console.log(chats);
         for (const chat of chats) {
             chat.users = chat.users.filter((chatUser) => chatUser?.toString() !== userId.toString());
             if (chat.users.length === 0) {
