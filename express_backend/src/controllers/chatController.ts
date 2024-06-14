@@ -115,6 +115,36 @@ export const createChat = async (req: any, res: any) => {
     }
 };
 
+export const editChatName = async (req: any, res: any) => {
+    const chatId = req.body.chatId;
+    const name = req.body.name;
+
+    if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: "El nombre no puede estar vacío" });
+    }
+
+    try {
+        const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
+        if (!chat) {
+            return res.status(404).json({ error: "Chat no encontrado" });
+        }
+        const user = chat.users.find((user: any) => user.toString() === req.user._id.toString());
+        if (!user) {
+            return res.status(403).json({ error: "No puedes cambiar el nombre de un chat en el que no estás" });
+        }
+        if (chat.type === ChatType.WORKSPACE) {
+            return res.status(403).json({ error: "No puedes cambiar el nombre de un chat de workspace" });
+        }
+
+        chat.name = name;
+        await chat.save();
+        sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "messageAddedToChat", chatId: chatId, name: name });
+        res.status(200).json({ message: "Nombre cambiado" });
+    } catch (error) {
+        res.status(500).json({ error: error });
+    }
+}
+
 export const leaveChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
 

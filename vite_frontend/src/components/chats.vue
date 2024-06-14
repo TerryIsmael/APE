@@ -39,12 +39,16 @@ const message = ref('');
 const chats = ref([]);
 const selectedChat = ref(null);
 const inDetails = ref(false);
+const editing = ref(false);
+const editingName = ref('');
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
 };
 
 const selectChat = async (chat) => {
+  editing.value = false;
+  inDetails.value = false;
   selectedChat.value = chat;
 };
 
@@ -78,6 +82,10 @@ const leaveWorkspace = async (workspaceId) => {
 
 const redirectToWorkspace = async(workspaceId) => {
   await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+};
+
+const handleEditChat = async () => {
+  await ChatUtils.handleEditChat(selectedChat, editingName, editing, errorMessage);
 };
 
 const closeModal = () => {
@@ -139,6 +147,7 @@ const scrollToBottom = () => {
 };
 
 const closeDetails = async () => {
+  editing.value = false;
   inDetails.value = false;
   await nextTick();
   scrollToBottom();
@@ -270,10 +279,20 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
         <div v-else class="info-container">
           <div style="display:flex; justify-content: space-between; padding: 5%;">
             <button @click="closeDetails()"><span class="material-symbols-outlined">arrow_back</span></button>
-            <button @click="leaveChat()" class="red-button">Abandonar chat </button>
+            <div v-if="!editing && selectedChat.type !== 'Workspace'">
+              <button  @click="editingName = selectedChat.name; editing=true">Editar</button>
+              <button @click="leaveChat()" class="red-button">Abandonar chat</button>
+            </div>
           </div>
-          <div style="display:flex; justify-content: center; font-size: 3vh; font-weight: bolder; padding-top:2%">
+          <div v-if="!editing || selectedChat.type == 'Workspace'" style="display:flex; justify-content: center; font-size: 3vh; font-weight: bolder; padding-top:2%">
             {{ selectedChat?.name }}
+          </div>
+          <div v-else style="display:flex; flex-direction: column; justify-content: center; align-items:center; font-size: 1.5vh; padding-top:2%">
+            <input v-model="editingName" style="width: 80%; font-size: 3vh; font-weight: bolder; text-align: center;"/>
+            <div>
+              <button @click="editing=false">Cancelar</button>
+              <button @click="handleEditChat()">Guardar</button>
+            </div>
           </div>
           <div style="display:flex; justify-content: center; padding-bottom: 3%; font-size: 2vh; font-weight: bold;">
             <p v-if="selectedChat?.type=='Workspace'"> Chat del workspace <p @click="$router.push('/workspace/'+selectedChat.workspace._id)"></p></p>

@@ -89,6 +89,7 @@ class ChatUtils {
             });
             if (response.ok) {
                 newChat.value.users.push(await response.json());
+                userToSearch.value = '';
             } else {
                 errorMessage.value = [];
                 const data = await response.json();
@@ -203,6 +204,32 @@ class ChatUtils {
             console.log(error);
         }
     };
+    
+    static handleEditChat = async (selectedChat, editingName, editing, errorMessage) => {
+        try {
+            const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/chat', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: "include",
+                body: JSON.stringify({ chatId: selectedChat.value._id, name: editingName.value })
+            });
+            if (response.ok) {
+                editing.value = false;
+            } else {
+                errorMessage.value = [];
+                const data = await response.json();
+                if (data.error || data.errors) {
+                    Utils.parseErrorMessage(data, errorMessage);
+                } else {
+                    throw new Error("Error al editar chat");
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
 }
 
 export default ChatUtils;

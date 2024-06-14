@@ -150,7 +150,7 @@ const inviteUser = async () => {
 };
 
 const copyInvitation = async (invitation) => {
-  await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + invitation.code);
+  await navigator.clipboard.writeText(window.location.origin + '/invite/' + invitation.code);
   var message = document.getElementById("message");
   message.style.visibility = "visible";
   setTimeout(function() {

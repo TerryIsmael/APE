@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData, updateUser, deleteUser, getUserByUsernameOrEmail } from './controllers/userController.ts';
-import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace } from './controllers/workspaceController.ts';
+import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace, getInvitation } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged, validateNewUser, validateUser } from './middlewares/userMiddleware.ts';
@@ -13,7 +13,7 @@ import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import Item from './schemas/itemSchema.ts';
 import Workspace from './schemas/workspaceSchema.ts';
-import { addMessage, createChat, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
+import { addMessage, createChat, editChatName, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
 
 dotenv.config();  
 const router = Router();
@@ -293,6 +293,14 @@ router.delete('/invitation', isLogged, async (req: Request, res: Response) => {
 
 router.get('/invite/:code', isLogged, async (req: Request, res: Response) => {
     try{
+        getInvitation(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al obtener la invitación. ' + error });
+    }
+});
+
+router.post('/invite/:code', isLogged, async (req: Request, res: Response) => {
+    try{
         useInvitation(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener la invitación. ' + error });
@@ -336,6 +344,14 @@ router.post('/chat/message', isLogged, async (req: Request, res: Response) => {
         addMessage(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al enviar el mensaje. ' + error });
+    }
+});
+
+router.put('/chat', isLogged, async (req: Request, res: Response) => {
+    try{
+        editChatName(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al salir del chat. ' + error });
     }
 });
 
