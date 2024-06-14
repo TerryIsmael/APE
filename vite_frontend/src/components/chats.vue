@@ -336,7 +336,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
 
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
-      <li class="li-clickable">Tu perfil</li>
+      <li class="li-clickable" @click="selectItem('userDetails', true)">Tu perfil</li>
       <li @click="selectItem('chats', true)" class="li-clickable selected-folder">Chats</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
@@ -405,7 +405,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
       </div>
 
       <div style="margin-top: 20px">
-        <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
+        <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="ws-input" style="margin-bottom: 5px;"/>
       </div>
       <button @click="createWorkspace().then(() => closeNewWsModal())" style="margin-top:15px">Crear</button>
     </template>
@@ -656,11 +656,8 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
 }
 
 .my-message .message-header {
-  /* padding-left: 20px; */
   margin-right: 10px;
 }
-
-
 
 .message-text {
   white-space: normal;
@@ -741,6 +738,38 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
   overflow: hidden;
 }
 
+.change-workspace-button {
+  height: auto;
+  border-radius: 8px;
+  margin-top: 1%;
+  padding: 0.4em 0.7em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
+.selected-folder {
+  margin-left: 10%; 
+  border-radius: 8px;
+  width: 80%;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  text-align: left;
+  cursor: pointer;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 1; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
+}
+
 .main-sidebar ul {
   list-style-type: none;
   padding: 0;
@@ -781,6 +810,63 @@ input {
     border: 1px solid #ccc;
     background-color: #f0f0f0;
     color: black;
+}
+
+.ws-modal-button {
+  width: 45px; 
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+}
+
+.ws-modal-button:disabled {
+  background-color: #736685; 
+  cursor: not-allowed;
+}
+
+.ws-name {
+  text-align: left;
+  width: 75%;
+  margin-right: 5px;
+  word-wrap: break-word; 
+  overflow: hidden;
+  white-space: nowrap; 
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.ws-input {
+  border-radius: 5px;
+  margin-bottom: 5px;
+  height: 30px; 
+  width: 90%;  
+  background-color: #f2f2f2; 
+  color: black;
+}
+
+.toggle-leave {
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  height: 30px;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #C8B1E4;
+  color:black;
+  cursor: pointer;
+  outline: none;
 }
 
 .red-button {
