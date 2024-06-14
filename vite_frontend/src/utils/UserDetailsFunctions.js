@@ -21,6 +21,11 @@ class UserDetails {
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
             } else {
+                if (wsId) {
+                    localStorage.removeItem('workspace');
+                    await this.fetchFolders(workspace, errorMessage, router);
+                    return;
+                }
                 errorMessage.value = [];
                 const data = await response.json();
                 if (data.error || data.errors) {

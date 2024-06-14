@@ -366,7 +366,7 @@ watch(
   </div>
   <div v-else>
     <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
-    <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></Calendar>
+    <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Calendar>
     <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
       <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
         <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"

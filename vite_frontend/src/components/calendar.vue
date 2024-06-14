@@ -9,6 +9,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import path from 'path';
 import Utils from '../utils/utilsFunctions.js';
 import WorkspaceUtils from '../utils/workspaceFunctions.js';
+import { WSPermission } from '../../../express_backend/src/models/profile';
 
 const props = defineProps({
   ws: {
@@ -19,12 +20,16 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  item:{
+  item: {
     type: Object,
     required: true
   },
-  path:{
+  path: {
     type: String,
+    required: true
+  },
+  currentUser: {
+    type: Object,
     required: true
   }
 
@@ -32,18 +37,18 @@ const props = defineProps({
 
 const router = useRouter();
 const item = ref(props.item);
-const eventGuid = ref(0)
-const todayStr = new Date().toString().replace(/T.*$/, '') // YYYY-MM-DD of today
-const showModal = ref(false)
-const selectedEvent = ref(null)
-const modalTop = ref(0)
-const modalLeft = ref(0)
-const editing = ref(false)
-const currentEvents = []
-const editingEvent = ref({})
-const calendar = ref(null)
-const isNewEvent = ref(false)
-
+const eventGuid = ref(0);
+const todayStr = new Date().toString().replace(/T.*$/, ''); // YYYY-MM-DD de hoy
+const showModal = ref(false);
+const selectedEvent = ref(null);
+const modalTop = ref(0);
+const modalLeft = ref(0);
+const editing = ref(false);
+const currentEvents = [];
+const editingEvent = ref({});
+const calendar = ref(null);
+const isNewEvent = ref(false);
+const itemPermission = ref(props.routedItemPerm);
 const navigateToPreviousFolder = () => {
   WorkspaceUtils.navigateToPreviousFolder(ref(props.path), router);
 }
@@ -147,7 +152,7 @@ const handleEvents = async (events) => {
   }
 }
 
-const calendarOptions = {
+const calendarOptions = computed(() => ({
   plugins: [
       dayGridPlugin,
       timeGridPlugin,
@@ -171,7 +176,12 @@ const calendarOptions = {
   select: handleDateSelect,
   eventClick: handleEventClick,
   eventsSet: handleEvents,
-};
+  editable: itemPermission.value && itemPermission.value !== "Read" ?true:false,
+  selectable: itemPermission.value && itemPermission.value !== "Read" ?true:false,
+  eventStartEditable: itemPermission.value && itemPermission.value !== "Read" ?true:false,
+  eventDurationEditable: itemPermission.value && itemPermission.value !== "Read" ?true:false,
+  droppable: itemPermission.value && itemPermission.value !== "Read" ?true:false,
+}));
 
 const handleStartEdit = (selectedEvent) => {
   editingEvent.value = {
@@ -220,7 +230,12 @@ const handleFinishEdit = () => {
     closeModal();
   }
 }
-onBeforeMount(() => {
+
+const verifyPermissions = async() => {
+  itemPermission.value = await WorkspaceUtils.verifyPerms(item.value, ref(props.workspace), ref(props.currentUser));
+}
+
+onBeforeMount(async () => {
   item.value.events.forEach(event => {
     events.push({
       id: event._id,
@@ -230,6 +245,7 @@ onBeforeMount(() => {
       allDay: true
     })
   })
+  await verifyPermissions();
 })
 
 watch(props.item, (newVal, _ ) => {
@@ -257,7 +273,7 @@ watch(props.item, (newVal, _ ) => {
       </div>
       <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        Calendario {{ item.name }} 
+        Calendario {{ item.name }} {{ "IPerm-> ",itemPermission }}
       </h1>
       <div style="width: 10vw;" >
         
@@ -276,7 +292,7 @@ watch(props.item, (newVal, _ ) => {
           <h2>{{ selectedEvent.title }}</h2>
           <p>Inicio: {{ parseSpanishStartDate(selectedEvent.start) }}</p>
           <p> {{ selectedEvent.end?"Fin: " + parseSpanishEndDate(selectedEvent.end):"" }}</p>
-          <button @click="handleStartEdit(selectedEvent)">Editar</button>
+          <button v-if="itemPermission !== 'Read'" @click="handleStartEdit(selectedEvent)">Editar</button>
         </div>
         <div class="modal-form" v-else style="display: flex; flex-direction: column; align-items: center;">
           <h2>Editar evento</h2>
