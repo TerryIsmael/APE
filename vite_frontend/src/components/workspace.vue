@@ -520,6 +520,7 @@ watch(
       <button class="change-workspace-button" @click="openWsModal()">Cambiar</button>
       <li class="main-sidebar-title">Inicio</li>
       <li class="li-clickable" @click="selectItem('userDetails', true)">Gestionar perfil</li>
+      <li @click="selectItem('chats', true)" class="li-clickable">Chats</li>
 
       <li class="main-sidebar-subtitle">Workspace actual
         <span v-if="['Owner', 'Admin'].includes(userWsPerms)" @click="selectItem('wsDetails', true)" style="position: absolute; right: 12%; text-align: right; cursor: pointer; vertical-align: middle;" class="material-symbols-outlined">tune</span>

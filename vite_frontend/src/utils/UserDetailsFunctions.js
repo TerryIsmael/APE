@@ -1,3 +1,5 @@
+import Utils from './UtilsFunctions.js';
+
 class UserDetails {
 
     static fetchFolders =  async (workspace, errorMessage, router) => {

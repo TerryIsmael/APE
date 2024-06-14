@@ -127,7 +127,7 @@ class WorkspaceUtils {
   };
 
   static selectItem = async (item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage) => {    
-    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites') || item == 'userDetails') {
+    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites') || item == 'userDetails' || item == 'chats') {
       selectedFolder.value = item;
       router.push('/' + item);
       return;

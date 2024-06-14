@@ -1,4 +1,5 @@
 import type mongoose from "mongoose";
+import type { IUser } from "./user";
 
 export enum ChatType {
     PRIVATE = "Private",
@@ -17,6 +18,7 @@ export interface IChat extends mongoose.Document {
     name: string;
     type: ChatType;
     workspace: mongoose.Types.ObjectId;
-    users: mongoose.Types.ObjectId[];
+    users: Array<mongoose.PopulatedDoc<IUser>> |  Array<mongoose.Types.ObjectId>;
+    updatedAt: Date;
     messages: IMessage[];
 }

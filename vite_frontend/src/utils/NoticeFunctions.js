@@ -97,7 +97,7 @@ class NoticeFunctions {
   };
 
   static selectItem = async (item, router, userWsPerms, workspace, currentUser, selectedItem, selectedItemPerms, userItemPerms) => {
-    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites' || item == 'userDetails')) {
+    if ((item == 'wsDetails' || item == 'notices' || item == 'favorites' || item == 'userDetails'|| item == 'chats')) {
       router.push('/' + item);
       return;
     }

@@ -15,6 +15,7 @@ import fs from 'fs';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
+import type { IWorkspace } from '../models/workspace.ts';
 
 export const getWorkspace = async (req: any, res: any) => {
   try {
@@ -454,11 +455,11 @@ export const useInvitation = async (req: any, res: any) => {
       return;
     }
     const profile = invitation.profile;
-    const workspace = invitation.get("workspace");
+    const workspace: mongoose.Document<IWorkspace> = invitation.get("workspace") as unknown as mongoose.Document<IWorkspace>;
     const user = req.user;
     const userProfile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Read, users: [user] });
     await userProfile.save();
-    workspace.profiles.push(userProfile._id);
+    workspace.set(workspace.get("profiles").push(userProfile._id));
     await workspace.save();
     if (profile instanceof mongoose.Document){
       profile.set("users",profile.get("users").push(user));

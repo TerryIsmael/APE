@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import passport from './config/passport.ts';
-import { registerUser, fetchUserData } from './controllers/userController.ts';
+import { registerUser, fetchUserData, getUserByUsernameOrEmail } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
@@ -219,6 +219,14 @@ router.get('/user', isLogged, async (req: Request, res: Response) => {
     }
 });
 
+router.post('/user/find', isLogged, async (req: Request, res: Response) => {
+    try{
+        getUserByUsernameOrEmail(req, res);
+    }catch(error){
+        res.status(500).json({ success: false, error: 'Error al obtener el usuario. ' + error });
+    }
+});
+
 router.post('/user/data', isLogged, async (req: Request, res: Response) => {
     try{
         fetchUserData(req, res);
@@ -283,16 +291,16 @@ router.get('/chats', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.get('/chat', isLogged, async (req: Request, res: Response) => {
-    try{
+router.post('/chat', isLogged, async (req: Request, res: Response) => {
+    try {
         getChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al obtener el chat. ' + error });
     }
 });
 
-router.post('/chat', isLogged, async (req: Request, res: Response) => {
-    try{
+router.post('/chat/messages', isLogged, async (req: Request, res: Response) => {
+    try {
         createChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al crear el chat. ' + error });
@@ -319,7 +327,7 @@ router.delete('/chat', isLogged, async (req: Request, res: Response) => {
     try{
         leaveChat(req, res);
     } catch(error) {
-        res.status(500).json({ success: false, error: 'Error al borrar el chat. ' + error });
+        res.status(500).json({ success: false, error: 'Error al salir del chat. ' + error });
     }
 });
 

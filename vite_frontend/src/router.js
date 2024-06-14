@@ -21,7 +21,8 @@ const router = createRouter({
         {path: '/userDetails', name: 'userDetails', component: userDetails},
         {path: '/workspace/:path*', name: 'workspace', component: workspace},
         {path: '/test', name: 'test', component:test}, //TODO: Quitar test용
-        {path: '/chats/:chatId', name: 'chats', component: chats},
+        {path: '/chats/:chatId', name: 'chats-id', component: chats},
+        {path: '/chats', name: 'chats', component: chats},
         {path: '/', redirect: '/workspace'}
     ] 
 })

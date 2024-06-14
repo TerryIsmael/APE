@@ -71,7 +71,7 @@ function sendMessageToWorkspace(workspaceId: string, message: any) {
 function sendMessageToUsers(users: string[], message: any) {
   const conns = users.map((userId: string) => connectionByUser.get(userId)) as WebSocket[];
   for (const ws of conns) {
-    ws.send(JSON.stringify(message));
+    ws?.send(JSON.stringify(message));
   }
 }
 

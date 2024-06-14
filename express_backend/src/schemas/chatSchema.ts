@@ -3,12 +3,6 @@ import { ChatType, type IChat, type IMessage } from '../models/chat.ts';
 import type { IProfile } from '../models/profile.ts';
 import type { IUser } from '../models/user.ts';
 
-// code: string;
-// workspace: mongoose.Types.ObjectId;
-// profile: string;
-// expirationDate: Date;
-// active: boolean;
-
 const messageSchema = new mongoose.Schema<IMessage>({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -67,10 +61,10 @@ const chatSchema = new mongoose.Schema<IChat>({
     },
     users: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: 'users',
+        ref: 'User',
         default: [],
         validate: {
-            validator: async function(value: mongoose.Types.ObjectId[]) {
+            validator: async function(value: mongoose.Types.ObjectId[] | mongoose.PopulatedDoc<IUser>[]) {
                 for (const user of value) {
                     const existingUser = await mongoose.model<IUser>('User').findById(user);
                     if (!existingUser) {
@@ -81,6 +75,10 @@ const chatSchema = new mongoose.Schema<IChat>({
             },
             message: "Al menos uno de los usuarios especificados no existe"
         }
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
     },
     messages: {
         type: [messageSchema],

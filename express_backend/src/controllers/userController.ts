@@ -45,3 +45,16 @@ export const fetchUserData = async (req: any, res: Response): Promise<Response> 
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
 };
+
+export const getUserByUsernameOrEmail = async (req: any, res: Response): Promise<Response> => {
+    try {
+        const findTerm = req.body.findTerm;
+        const user = await User.findOne({ $or: [{ username: findTerm }, { email: findTerm }] });
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        return res.status(200).json({"_id": user._id,"username": user.username, "email": user.email});
+    } catch (error) {
+        return res.status(500).json({ error: 'Error en el servidor:' + error });
+    }
+}
