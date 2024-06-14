@@ -458,6 +458,40 @@ export const deleteInvitation = async (req: any, res: any) => {
   }
 };
 
+export const getInvitation = async (req: any, res: any) => {
+  const code = req.params.code;
+  try {
+    const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace').populate('workspace.profiles');
+    if (!invitation) {
+      res.status(404).json({ error: 'No se ha encontrado la invitación' });
+      return;
+    }
+    if (!invitation.get("active")) {
+      res.status(403).json({ error: 'La invitación ha sido desactivada' });
+      return;
+    }
+    if (invitation.get("expirationDate") < new Date()) {
+      res.status(403).json({ error: 'La invitación ha expirado' });
+      return;
+    }
+
+    await invitation.populate('workspace.profiles');
+
+    const parsedInvitation = {
+      _id: invitation._id,
+      code: invitation.code,
+      active: invitation.active,
+      expirationDate: invitation.expirationDate,
+      profile: invitation.profile?{ _id: invitation.profile._id, name: (invitation.profile as unknown as IProfile).name, wsPerm: (invitation.profile as unknown as IProfile).wsPerm}:null,
+      workspace: { _id: invitation.workspace._id, name: (invitation.workspace as unknown as IWorkspace).name, numUsers: (invitation.workspace as unknown as IWorkspace).profiles.filter((profile) => (profile as IProfile)?.profileType === ProfileType.Individual).length},
+    }
+    res.status(200).json(parsedInvitation);
+  }
+  catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+}
+
 export const useInvitation = async (req: any, res: any) => {
   const code = req.params.code;
   try {
@@ -474,12 +508,24 @@ export const useInvitation = async (req: any, res: any) => {
       res.status(403).json({ error: 'La invitación ha expirado' });
       return;
     }
+
+    const workspace = await Workspace.findOne({ _id: invitation.workspace._id }).populate('profiles');
+    if (!workspace) {
+      res.status(404).json({ error: 'El workspace fue eliminado' });
+      return;
+    }
+
+    if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === req.user._id.toString()))) {
+      res.status(409).json({ error: 'Ya estás en el workspace' });
+      return;
+    }
+
+
     const profile = invitation.profile;
-    const workspace: mongoose.Document<IWorkspace> = invitation.get("workspace") as unknown as mongoose.Document<IWorkspace>;
     const user = req.user;
     const userProfile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Read, users: [user] });
     await userProfile.save();
-    workspace.set(workspace.get("profiles").push(userProfile._id));
+    workspace.profiles.push(userProfile._id);
     await workspace.save();
 
     const chat = await Chat.findOne({ workspace: workspace._id });
@@ -492,8 +538,9 @@ export const useInvitation = async (req: any, res: any) => {
       profile.set("users",profile.get("users").push(user));
       await profile.save();
     }
-  }
-  catch (error: any) {
+
+    res.status(200).json({ message: 'Invitación usada' });
+  }catch (error: any) {
     res.status(404).json({ error: error.message });
   }
 };

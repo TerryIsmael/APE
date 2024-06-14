@@ -8,6 +8,7 @@ import workspaceDetails from './components/workspaceDetails.vue'
 import userDetails from './components/userDetails.vue'
 import test from './components/test.vue'
 import chats from './components/chats.vue'
+import invitation from './components/invitation.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -23,7 +24,9 @@ const router = createRouter({
         {path: '/test', name: 'test', component:test}, //TODO: Quitar test용
         {path: '/chats/:chatId', name: 'chats-id', component: chats},
         {path: '/chats', name: 'chats', component: chats},
-        {path: '/', redirect: '/workspace'}
+        {path: '/invite/:invitationCode', name: 'invitation', component: invitation},
+        {path: '/', redirect: '/workspace'},
+        {path: '/:pathMatch(.*)*', redirect: '/workspace'}
     ] 
 })
 
