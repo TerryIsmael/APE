@@ -229,7 +229,7 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
-  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar) => {
+  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws) => {
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/', {
         body: JSON.stringify( { wsName: newWorkspace.value }),
@@ -245,7 +245,7 @@ class UtilsFunctions {
         errorMessage.value = [];
         isNewWsModalOpened.value = false;
         localStorage.setItem('workspace', data.wsId);
-        await this.redirectToWorkspace(data.wsId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+        await this.redirectToWorkspace(data.wsId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
       } else if (response.status === 401) {
         router.push({ name: 'login' });
       } else {
@@ -262,13 +262,14 @@ class UtilsFunctions {
     }
   };
 
-  static redirectToWorkspace = async (workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar) => {
+  static redirectToWorkspace = async (workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws) => {
     localStorage.setItem('workspace', workspaceId);
 
     if (path && path.value === '') {
       await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
       this.closeWsModal(isWsModalOpened, workspaces, errorMessage)
       showMainSidebar.value = false;
+      ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspaceId }));
     } else {
       router.push('/workspace');
     }

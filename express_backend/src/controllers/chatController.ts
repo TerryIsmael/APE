@@ -107,6 +107,7 @@ export const createChat = async (req: any, res: any) => {
 
     try {
         await chat.save();
+        sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "chatAction", chatId: chat._id })
         res.status(201).json({ chat: chat });
     } catch (error) {
         res.status(500).json({ error: error });
@@ -166,7 +167,7 @@ export const leaveChat = async (req: any, res: any) => {
             chat.users = chat.users.filter((user: any) => user.toString() !== req.user._id.toString());
             await chat.save();
         }
-
+        sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "messageAddedToChat", chatId: chatId })
         res.status(200).json({ message: "Chat abandonado" });
     } catch (error) {
         res.status(500).json({ error: error });

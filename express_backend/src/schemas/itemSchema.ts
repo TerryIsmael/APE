@@ -3,8 +3,8 @@ import { ItemType } from '../models/item.ts';
 import type { IProfile } from '../models/profile.ts';
 import type { IProfilePerms } from '../models/profilePerms.ts';
 import { Permission } from '../models/profilePerms.ts';
-import type { INote, INotice, ITimer, IFolder, ICalendar, IEvent, IFile, IStudySession } from '../models/typeItem.ts';
-import { noteSchema, noticeSchema, timerSchema, folderSchema, calendarSchema, eventSchema, fileSchema, studySessionSchema } from './typeItemSchema.ts';
+import type { INote, INotice, ITimer, IFolder, ICalendar, IEvent, IFile } from '../models/typeItem.ts';
+import { noteSchema, noticeSchema, timerSchema, folderSchema, calendarSchema, eventSchema, fileSchema } from './typeItemSchema.ts';
 
 const profilePermSchema = new mongoose.Schema<IProfilePerms>({
     profile: {
@@ -64,7 +64,6 @@ const FolderItem = Item.discriminator<IFolder>('FolderItem', folderSchema);
 const EventItem = Item.discriminator<IEvent>('EventItem', eventSchema);
 const CalendarItem = Item.discriminator<ICalendar>('CalendarItem', calendarSchema);
 const FileItem = Item.discriminator<IFile>('FileItem', fileSchema);
-const StudySessionItem = Item.discriminator<IStudySession>('StudySessionItem', studySessionSchema);
 
 export default Item;
-export { itemSchema, NoteItem, NoticeItem, TimerItem, FolderItem, EventItem, CalendarItem, FileItem, StudySessionItem};
+export { itemSchema, NoteItem, NoticeItem, TimerItem, FolderItem, EventItem, CalendarItem, FileItem};

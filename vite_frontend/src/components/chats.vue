@@ -81,7 +81,7 @@ const leaveWorkspace = async (workspaceId) => {
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
 };
 
 const handleEditChat = async () => {
@@ -191,6 +191,10 @@ const websocketEventAdd = () => {
     if (jsonEvent.type === 'messageAddedToChat') {
       const chatId = jsonEvent.chatId;
       await fetchChat(chatId);
+    } else if (jsonEvent.type === 'chatAction') {
+      await fetchChats();
+    } else if (jsonEvent.type === 'workspaceDeleted') {
+      await fetchWorkspace();
     }
   });
 };
