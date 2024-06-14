@@ -23,7 +23,6 @@ export const getChats = async (req: any, res: any) => {
 
         res.status(200).json({ chats: parsedChats });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ error: error });
     }
 };
@@ -86,7 +85,6 @@ export const addMessage = async (req: any, res: any) => {
         sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "messageAddedToChat", chatId: chatId })
         res.status(201).json({ message: "Mensaje añadido" });
     } catch (error) {
-        console.log(error);
         res.status(500).send({ error: error });
     }
 };
