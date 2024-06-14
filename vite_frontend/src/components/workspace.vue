@@ -310,7 +310,7 @@ const websocketEventAdd = () => {
   });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
-    if (jsonEvent.type === 'workspaceUpdated') {
+    if (jsonEvent.type === 'workspaceUpdated' || (jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString())) {
       await fetchWorkspace();
       initPath();
     }

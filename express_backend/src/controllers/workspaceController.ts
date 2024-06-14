@@ -12,7 +12,7 @@ import type { IProfilePerms } from '../models/profilePerms.ts';
 import mongoose from 'mongoose';
 import type { IUser } from '../models/user.ts';
 import fs from 'fs';
-import { sendMessageToWorkspace } from '../config/websocket.ts';
+import { sendMessageToUser, sendMessageToWorkspace } from '../config/websocket.ts';
 import Invitation from '../schemas/invitationSchema.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IWorkspace } from '../models/workspace.ts';
@@ -612,6 +612,7 @@ export const deleteProfile = async (req: any, res: any) => {
     }
     
     sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToUser((profile as IProfile).name, { type: 'profileDeleted', wsAffected: wsId });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

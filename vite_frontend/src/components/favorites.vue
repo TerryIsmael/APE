@@ -185,12 +185,16 @@ const websocketEventAdd = () => {
     ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
-        const jsonEvent = JSON.parse(event.data);
-        if (jsonEvent.type === 'workspaceUpdated') {
-          await fetchUser();
-          await fetchWorkspace();
-        }
-    });
+    const jsonEvent = JSON.parse(event.data);
+    if (jsonEvent.type === 'workspaceUpdated') {
+      await fetchUser();
+      await fetchWorkspace();
+    }
+    if (jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) {
+      localStorage.removeItem('workspace');
+      await router.push('/workspace');
+    }
+  });
 };
 
 onBeforeMount(async () => {

@@ -193,6 +193,10 @@ const websocketEventAdd = () => {
       await fetchUser();
       await fetchNotices();
     }
+    if (jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) {
+      localStorage.removeItem('workspace');
+      await router.push('/workspace');
+    }
   });
 };
 

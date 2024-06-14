@@ -75,4 +75,9 @@ function sendMessageToUsers(users: string[], message: any) {
   }
 }
 
-export { wsServer, sendMessageToWorkspace, sendMessageToUsers };
+function sendMessageToUser(userId: string, message: any) {
+  const ws = connectionByUser.get(userId);
+  ws?.send(JSON.stringify(message));
+}
+
+export { wsServer, sendMessageToWorkspace, sendMessageToUsers, sendMessageToUser };
