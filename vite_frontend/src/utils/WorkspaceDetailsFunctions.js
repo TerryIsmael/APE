@@ -46,10 +46,10 @@ class WorkspaceDetails {
     };
 
     static populateVariables = (workspace, author, profileWsPerms) => {
-        author.value = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner').users[0];
+        author.value = workspace.value?.profiles?.find(profile => profile.wsPerm === 'Owner').users[0];
 
         profileWsPerms.value = {};
-        workspace.value.profiles.forEach(profile => {
+        workspace.value?.profiles.forEach(profile => {
           profileWsPerms.value[profile._id] = profile.wsPerm;
         });
     };

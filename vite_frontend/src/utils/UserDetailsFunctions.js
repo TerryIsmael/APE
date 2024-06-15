@@ -2,7 +2,7 @@ import Utils from './UtilsFunctions.js';
 
 class UserDetails {
 
-    static fetchFolders =  async (workspace, errorMessage, router) => {
+    static fetchFolders = async (workspace, errorMessage, router) => {
         try {
             const wsId = localStorage.getItem('workspace');
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/folders', {
@@ -13,7 +13,7 @@ class UserDetails {
               },
               credentials: "include",
             });
-      
+                  
             if (response.ok) {
                 const data = await response.json();
                 workspace.value = data;

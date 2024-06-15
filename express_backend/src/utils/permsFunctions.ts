@@ -30,7 +30,7 @@ export async function getWSPermission(userId: any, workspaceId: any): Promise<WS
                     const permissionHierarchy: { [key in WSPermission]: number } = {[WSPermission.Read]: 1,[WSPermission.Write]: 2,[WSPermission.Admin]: 3,[WSPermission.Owner]: 4};
                     return profile.wsPerm ? permissionHierarchy[profile.    wsPerm] : 0;
                 },args: ['$populatedProfiles'], lang: 'js' 
-            } } } }, // Add numeric level of wsPerm
+            } } } },
             { $sort: { 'populatedProfiles.wsPermLevel': -1 } }, 
             { $limit: 1 },
             { $project: { _id: 0, wsPerm: '$populatedProfiles.wsPerm' } }

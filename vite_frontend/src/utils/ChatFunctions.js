@@ -11,6 +11,7 @@ class ChatUtils {
                 },
                 credentials: "include",
             });
+
             if (response.ok) {
                 const data = await response.json();
                 chats.value = data.chats.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -31,7 +32,7 @@ class ChatUtils {
         }
     };
 
-    static fetchChat = async (chatId, chats, selectedChat, errorMessage, router) => {
+    static fetchChat = async (chatId, chats, selectedChat, errorMessage, router) => {        
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/chat/messages', {
                 body: JSON.stringify({ chatId: chatId }),
@@ -45,7 +46,7 @@ class ChatUtils {
                 const data = await response.json();
                 chats.value = chats.value?.filter(chat => chat._id.toString() !== chatId)
                 chats.value.unshift(data.chat);
-                if (selectedChat.value._id === chatId) {
+                if (selectedChat.value && selectedChat.value._id === chatId) {
                     selectedChat.value = data.chat;
                 }
             } else {
@@ -104,7 +105,7 @@ class ChatUtils {
         }
     };
 
-    static openNewChat = async (newChat, chats, currentUser, errorMessage, router) => {
+    static openNewChat = async (newChat, chats, selectedChat, currentUser, errorMessage, router) => {
         if (!newChat.value.name || newChat.value.name.trim == "") {
             errorMessage.value = ['Debes introducir un nombre para el chat'];
             return;

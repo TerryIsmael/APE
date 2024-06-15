@@ -45,7 +45,7 @@ class UtilsFunctions {
 
   static async verifyWsPerms(workspace, userWsPerms, currentUser) {
     const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
-    const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x=>x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
+    const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x => x._id).includes(currentUser.value?._id)).map(x=>[x.wsPerm, permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
     userWsPerms.value = wsPerm?wsPerm[0]:null;
   };
 
@@ -229,7 +229,7 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
-  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws) => {
+  static createWorkspace = async (isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws) => {    
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/workspace/', {
         body: JSON.stringify( { wsName: newWorkspace.value }),

@@ -314,7 +314,7 @@ onUnmounted(() => {
         <li @click="selectItem('notices', true)" class="li-clickable">Anuncios</li>
         <li @click="selectItem('favorites', true)" class="li-clickable selected-folder">Favoritos</li>
         
-        <div class="scrollable" style="max-height: 35%; overflow-y: auto;">
+        <div class="scrollable">
           <div v-for="folder in folders" :key="folder._id" style="word-wrap: break-word;">
             <li @click="selectItem(folder, true)" class="li-clickable"> {{ folder.name }}</li>
           </div>
@@ -511,6 +511,7 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: bold;
   overflow: hidden;
+  word-wrap: break-word;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -744,5 +745,7 @@ onUnmounted(() => {
 .scrollable {
   scrollbar-color: #C8B1E4 transparent;
   scroll-behavior: smooth;
+  overflow-y: auto;
+  max-height: 35%;
 }
 </style>
