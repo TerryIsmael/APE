@@ -439,8 +439,33 @@ class WorkspaceUtils {
     }
   };
 
-  static modifyItem = async (item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+  static openEditNameModal = (editItem, selectedItem, isEditNameModalOpened, errorMessage) => {
+    editItem.value = { ...selectedItem.value };
+
+    if (editItem.value.itemType === 'File') {
+      const fullName = editItem.value.name.split('.')
+      fullName.pop();
+      editItem.value.name = fullName.join('.');
+    }
+
+    isEditNameModalOpened.value = true;
+    errorMessage.value = [];
+  };
+  
+  static closeEditNameModal = (isEditNameModalOpened, editItem, errorMessage) => {
+    isEditNameModalOpened.value = false;
+    editItem.value = {};
+    errorMessage.value = [];
+  };
+
+  static modifyItem = async (item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try {
+      if (item && item.itemType == 'File') {
+        const extension = selectedItem.value?.name.split('.').pop(); 
+        if (item.name.trim().length !== 0) {
+          item.name = item.name + '.' + extension;
+        }
+      }
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
         body: JSON.stringify({ workspace: workspace.value._id, item: item }),
         method: 'PUT',

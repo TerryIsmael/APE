@@ -47,9 +47,11 @@ const existFolder = ref(false);
 const workspaces = ref([]);
 const isWsModalOpened = ref(false);
 const isLeaving = ref(false);
-
 const isNewWsModalOpened = ref(false);
 const newWorkspace = ref('');
+
+const editItem = ref({});
+const isEditNameModalOpened = ref(false);
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -179,6 +181,22 @@ const createWorkspace = async () => {
   }
 };
 
+const openEditNameModal = () => {
+  WorkspaceUtils.openEditNameModal(editItem, selectedItem, isEditNameModalOpened, errorMessage);
+};
+
+const closeEditNameModal = () => {
+  WorkspaceUtils.closeEditNameModal(isEditNameModalOpened, editItem, errorMessage)
+};
+
+const modifyItem = async (item) => {
+  await FavoriteUtils.modifyItem(item, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
+  if (errorMessage.value.length === 0) {
+    closeEditNameModal();
+    showSidebar.value = false;
+  }
+};
+
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
@@ -231,10 +249,10 @@ onUnmounted(() => {
   </div>
   <div v-else>
     <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
-          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-          {{ workspace?.name }} 
-        </h1>
+      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px"> 
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ workspace?.name }} 
+      </h1>
     </div>
 
     <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
@@ -245,15 +263,17 @@ onUnmounted(() => {
           <h2 style="text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">Ruta actual: {{ path }}</h2>
         </div>
       </div>
+
       <div class="main-content container">
+
         <div v-if="items.length === 0">
           <p style="font-size: xx-large; font-weight: bolder;">Aún no hay favoritos...</p>
         </div>
 
-        <div v-else> 
+        <div v-else>           
           <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
             <div>
-              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                 {{ error }}
               </p>
             </div>
@@ -273,6 +293,7 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -325,28 +346,48 @@ onUnmounted(() => {
         <li style="text-align: right;"> <button style="margin-right: 5%;" @click="logout"><span class="material-symbols-outlined">logout</span></button> </li>
       </ul>
   </div>
+  
+  <!-- Modal de edit item --> 
+  <Modal class="modal" :isOpen="isEditNameModalOpened" @modal-close="closeEditNameModal" name="edit-item-modal">
+    <template #header><strong>Modificar nombre archivo</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top: 20px">              
+        <input type="text" v-model="editItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>      
+      </div>
+
+      <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
+        <div style="display: flex; justify-content: space-between;">
+          <button @click="modifyItem(editItem)" style="margin-top: 15px">Actualizar</button>
+          <button @click="closeEditNameModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
+        </div>
+      </div>
+    </template>
+  </Modal>
 
   <!-- Sidebar de detalles -->
-    <div class="sidebar" :class="{ 'show': showSidebar }">
-      <ul>
-        <li style="margin-bottom: 2px;"> Archivo: </li>
-        <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
-        <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-        <li style="margin-top: 2px;"> ({{ author?.email }})</li>
-        <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate)}}</li>
-        <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate)}}</li>
+  <div class="sidebar" :class="{ 'show': showSidebar }">
+    <ul style="display: flex; flex-direction: column; justify-content: center; align-items: center">
+      <li style="margin-bottom: 2px; display: flex; align-items: center;" @click="openEditNameModal()"> Archivo: <span v-if="selectedItemPerms !== 'Read'" style="display: flex; vertical-align: middle; margin: 0; margin-left: 10%; cursor: pointer;" class="material-symbols-outlined">edit</span> </li>
+      <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
+      <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
+      <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+      <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
+      <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
 
-        <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-          <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-          <button class="downloadButton" v-if="['Owner', 'Admin', 'Write','Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
-          <button @click="toggleLike(selectedItem)">
-            <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
-            <span v-else class="material-symbols-outlined filled-heart">favorite</span>
-          </button>
-          <button v-if="['Owner','Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
-        </li>
-      </ul>
-    </div>
+      <li style="display: inline-flex; justify-content: space-around; width: 90%;">
+        <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
+        <button class="downloadButton" v-if="['Owner', 'Admin', 'Write', 'Read'].includes(selectedItemPerms) && selectedItem?.itemType === 'File'" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
+        <button @click="toggleLike(selectedItem)">
+          <span v-if="!currentUser?.favorites?.includes(selectedItem?._id)" class="material-symbols-outlined">favorite</span>
+          <span v-else class="material-symbols-outlined filled-heart">favorite</span>
+        </button>
+        <button v-if="['Owner', 'Admin'].includes(selectedItemPerms)" @click="deleteItem(selectedItem)"><span class="material-symbols-outlined">delete</span></button>
+      </li>
+    </ul>
   </div>
 
   <!-- Modal de permisos -->
@@ -543,13 +584,14 @@ onUnmounted(() => {
 
 .sidebar ul li {
   padding: 0 10px;
-  margin: 15px 0;
+  margin: 10px 0;
   word-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 270px;
 }
 
 .main-sidebar {

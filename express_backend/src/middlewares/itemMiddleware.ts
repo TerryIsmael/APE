@@ -100,7 +100,7 @@ const checkItem = async (req: any) => {
         const folder = folders[folders.length - 1];
         const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
         const folderPath = folders.slice(0, -1).join('/');
-        if (path != "" && (!existingFolder || existingFolder.path != folderPath)) {
+        if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath)) {
             return 'La ruta no es válida';
         }
 

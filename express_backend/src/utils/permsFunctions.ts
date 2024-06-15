@@ -62,12 +62,12 @@ export async function getUserPermission(userId: any, workspace: any, item?: any)
     const profile = await getWSPermission(userId, workspace);
     if (profile === WSPermission.Owner) {
         return Permission.Owner;
-    }else if (profile === WSPermission.Admin) {
+    } else if (profile === WSPermission.Admin) {
         return Permission.Owner;
-    }else if (profile === WSPermission.Write) {
+    } else if (profile === WSPermission.Write) {
         if(item) return await getItemPermission(userId, item);
         else return Permission.Write;
-    }else if (profile === WSPermission.Read) {
+    } else if (profile === WSPermission.Read) {
         if(item) return await getItemPermission(userId, item);
         else return Permission.Read;
     }

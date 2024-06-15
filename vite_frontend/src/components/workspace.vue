@@ -59,6 +59,9 @@ const isLeaving = ref(false);
 const isNewWsModalOpened = ref(false);
 const newWorkspace = ref('');
 
+const editItem = ref({});
+const isEditNameModalOpened = ref(false); 
+
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
 };
@@ -190,8 +193,19 @@ const handleRightClick = (event, item) => {
   selectItem(item, false);
 };
 
+const openEditNameModal= () => {
+  WorkspaceUtils.openEditNameModal(editItem, selectedItem, isEditNameModalOpened, errorMessage);
+};
+
+const closeEditNameModal = () => {
+  WorkspaceUtils.closeEditNameModal(isEditNameModalOpened, editItem, errorMessage)
+};
+
 const modifyItem = async (item) => {
-  await WorkspaceUtils.modifyItem(item, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  await WorkspaceUtils.modifyItem(item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  if (errorMessage.value.length === 0) {
+    closeEditNameModal();
+  }
 };
 
 const startDrag = (evt, item) => {
@@ -578,10 +592,31 @@ watch(
     </template>
   </Modal>
 
+  <!-- Modal de edit item --> 
+  <Modal class="modal" :isOpen="isEditNameModalOpened" @modal-close="closeEditNameModal" name="edit-item-modal">
+    <template #header><strong>Modificar nombre archivo</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top: 20px">              
+        <input type="text" v-model="editItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>      
+      </div>
+
+      <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
+        <div style="display: flex; justify-content: space-between;">
+          <button @click="modifyItem(editItem)" style="margin-top: 15px">Actualizar</button>
+          <button @click="closeEditNameModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
+        </div>
+      </div>
+    </template>
+  </Modal>
+
   <!-- Sidebar de detalles -->
   <div class="sidebar" :class="{ 'show': showSidebar }">
-    <ul>
-      <li style="margin-bottom: 2px;"> Archivo: </li>
+    <ul style="display: flex; flex-direction: column; justify-content: center; align-items: center">
+      <li style="margin-bottom: 2px; display: flex; align-items: center;" @click="openEditNameModal()"> Archivo: <span v-if="selectedItemPerms !== 'Read'" style="display: flex; vertical-align: middle; margin: 0; margin-left: 10%; cursor: pointer;" class="material-symbols-outlined">edit</span> </li>
       <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
       <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
       <li style="margin-top: 2px;"> ({{ author?.email }})</li>
@@ -683,7 +718,7 @@ watch(
       <div style="margin-top: 20px">
         <input type="text" v-model="newWorkspace" placeholder="Nombre de workspace..." maxlength="55" class="text-input" style="margin-bottom: 5px;"/>
       </div>
-      <button @click="createWorkspace()" style="margin-top:15px">Crear</button>
+      <button @click="createWorkspace()" style="margin-top: 15px">Crear</button>
     </template>
   </Modal>
 </template>
@@ -811,13 +846,14 @@ watch(
 
 .sidebar ul li {
   padding: 0 10px;
-  margin: 15px 0;
+  margin: 10px 0;
   word-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 270px;
 }
 
 .main-sidebar {

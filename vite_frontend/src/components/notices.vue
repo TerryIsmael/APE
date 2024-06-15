@@ -256,7 +256,7 @@ onBeforeMount(async () => {
         <div v-else>
           <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
             <div>
-              <p v-for="error in errorMessage" :key="index" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                 {{ error }}
               </p>
             </div>
