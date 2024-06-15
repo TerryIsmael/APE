@@ -48,7 +48,7 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
     try {
         const newUserData = req.body.user;
         if (req.user && (newUserData._id.toString() !== (req.user as IUser)._id.toString())) {
-            return res.status(401).json({ error: 'No tienes permisos para modificar este usuario' });
+            return res.status(403).json({ error: 'No tienes permisos para modificar este usuario' });
         }
         const user = await User.findOne({_id: newUserData._id});
         if (!user) {

@@ -53,7 +53,7 @@ export const getWorkspace = async (req: any, res: any) => {
         await workspace.populate('profiles.users');
         return res.status(200).json(workspace);
       } else {
-        return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+        return res.status(403).json({ error: 'No estás autorizado para ver ese workspace' });
       }
     }
   } catch (error: any) {
@@ -111,7 +111,7 @@ export const getWorkspaceFavs = async (req: any, res: any) => {
       await workspace.populate('profiles.users');
       return res.status(200).json({ workspace: workspace, folders: folders });
     } else {
-      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+      return res.status(403).json({ error: 'No estás autorizado para ver ese workspace' });
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -133,7 +133,7 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
       return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
     if (!(await getWSPermission(req.user._id, wsId))) {
-      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+      return res.status(403).json({ error: 'No estás autorizado para ver ese workspace' });
     } 
 
     await workspace.populate('items');
@@ -188,7 +188,7 @@ export const getWorkspaceFolders = async (req: any, res: any) => {
     }
     const wsPerm = await getWSPermission(req.user._id, workspace._id.toString());
     if (!wsPerm) {
-      return res.status(401).json({ error: 'No estás autorizado para ver ese workspace' });
+      return res.status(403).json({ error: 'No estás autorizado para ver ese workspace' });
     } 
     await workspace.populate('items');
     const foldersToShow = [];
@@ -245,7 +245,7 @@ export const editWorkspace = async (req: any, res: any) => {
     }
     const reqPerm = await getWSPermission(req.user._id, newWs._id);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado a editar el workspace' });
+      res.status(403).json({ error: 'No estás autorizado a editar el workspace' });
       return;
     }
     workspace.name = newWs.name;
@@ -279,7 +279,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   } 
   const reqPerms = await getWSPermission(req.user._id, wsId);
   if (!([WSPermission.Owner, WSPermission.Admin].find(x => x == reqPerms))) {
-    res.status(401).json({ error: 'No estás autorizado para añadir usuarios a este workspace' });
+    res.status(403).json({ error: 'No estás autorizado para añadir usuarios a este workspace' });
     return;
   }
   const user = await User.findOne({ username: username });
@@ -303,6 +303,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   }
 
   sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+  sendMessageToUser(user._id.toString(), { type: 'chatAction'});
   res.status(201).json(workspace);
   
   } catch (error: any) {
@@ -320,11 +321,11 @@ export const changeWSPerms = async (req: any, res: any) => {
       }
       const reqPerm = await getWSPermission(req.user._id, wsId);
       if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-        res.status(401).json({ error: 'No estás autorizado a cambiar los permisos de este workspace' });
+        res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de este workspace' });
         return;
       }
       if (reqPerm === WSPermission.Admin && (perm === WSPermission.Owner || perm === WSPermission.Admin)) {
-        res.status(401).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
+        res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
         return;
       }
       const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id.toString() === profileId.toString());
@@ -355,7 +356,7 @@ export const createInvitation = async (req: any, res: any) => {
     }
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado para crear invitaciones en este workspace' });
+      res.status(403).json({ error: 'No estás autorizado para crear invitaciones en este workspace' });
       return;
     }
     const code = Math.random().toString(36).substring(2, 18);
@@ -399,7 +400,7 @@ export const getInvitations = async (req: any, res: any) => {
     }
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado para ver las invitaciones de este workspace' });
+      res.status(403).json({ error: 'No estás autorizado para ver las invitaciones de este workspace' });
       return;
     }
     const invitations = await Invitation.find({ workspace: wsId }).populate('profile');
@@ -426,7 +427,7 @@ export const toggleActiveInvitation = async (req: any, res: any) => {
     }
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado para desactivar invitaciones en este workspace' });
+      res.status(403).json({ error: 'No estás autorizado para desactivar invitaciones en este workspace' });
       return;
     }
     invitation.set("active",!invitation.get("active"));
@@ -453,7 +454,7 @@ export const deleteInvitation = async (req: any, res: any) => {
     }
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
+      res.status(403).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
       return;
     }
     await invitation.deleteOne();
@@ -564,7 +565,7 @@ export const saveProfile = async (req: any, res: any) => {
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado a crear o editar perfiles' });
+      res.status(403).json({ error: 'No estás autorizado a crear o editar perfiles' });
       return;
     }
 
@@ -574,7 +575,7 @@ export const saveProfile = async (req: any, res: any) => {
     }
 
     if (reqPerm === WSPermission.Admin && (newProfileData.wsPerm === WSPermission.Owner || newProfileData.wsPerm === WSPermission.Admin)) {
-      res.status(401).json({ error: 'No estás autorizado a poner el permiso de administrador o propietario' });
+      res.status(403).json({ error: 'No estás autorizado a poner el permiso de administrador o propietario' });
       return;
     }
 
@@ -641,7 +642,7 @@ export const deleteProfile = async (req: any, res: any) => {
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(401).json({ error: 'No estás autorizado a eliminar perfiles' });
+      res.status(403).json({ error: 'No estás autorizado a eliminar perfiles' });
       return;
     }
 
@@ -652,7 +653,7 @@ export const deleteProfile = async (req: any, res: any) => {
     }
 
     if (reqPerm === WSPermission.Admin && ((profile as IProfile).wsPerm === WSPermission.Owner || (profile as IProfile).wsPerm === WSPermission.Admin) && req.user._id.toString() !== (profile as IProfile)?.name.toString()) {
-      res.status(401).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
+      res.status(403).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
       return;
     }
 
@@ -662,9 +663,9 @@ export const deleteProfile = async (req: any, res: any) => {
       workspace.profiles = (workspace.profiles as mongoose.Types.ObjectId[]).filter((profId) => profId._id.toString() !== profile._id.toString());
       await Profile.deleteOne({ _id: profileId });
       await workspace.save();
+      sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     }
     
-    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     sendMessageToUser((profile as IProfile).name, { type: 'profileDeleted', wsAffected: wsId });
     res.status(201).json(workspace);
   } catch (error: any) {
@@ -690,12 +691,11 @@ export const leaveWorkspace = async (req: any, res: any) => {
     }
     
     if (workspace.default && (await getWSPermission(req.user._id, wsId) === WSPermission.Owner)){
-      res.status(401).json({ error: 'No puedes abandonar el workspace por defecto' });
+      res.status(403).json({ error: 'No puedes abandonar el workspace por defecto' });
       return;
     }
 
     await deleteUserFromWs(req.user._id, workspace);
-    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -714,7 +714,7 @@ export const deleteWorkspace = async (req: any, res: any) => {
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner) {
-      res.status(401).json({ error: 'No estás autorizado a borrar el workspace' });
+      res.status(403).json({ error: 'No estás autorizado a borrar el workspace' });
       return;
     }
 

@@ -72,7 +72,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
                 const perm = await getUserPermission(req.user._id, wsId);
                 if (perm === Permission.Read || !perm) {
-                    res.status(401).json({ error: 'No estás autorizado para añadir items a este workspace' });
+                    res.status(403).json({ error: 'No estás autorizado para añadir items a este workspace' });
                 } else {
                     try {
                         await item.save();
@@ -107,7 +107,7 @@ export const editItem = async (req: any, res: any) => {
         }
         const perm = await getUserPermission(req.user._id, wsId, itemData._id);
         if (!perm || perm !== Permission.Owner) {
-            res.status(401).json({ error: 'No estás autorizado para editar este item' });
+            res.status(403).json({ error: 'No estás autorizado para editar este item' });
             return;
         }
         item.name = itemData.name;
@@ -162,7 +162,7 @@ export const changeItemPerms = async (req: any, res: any) => {
         }
         const reqPerm = await getUserPermission(req.user._id, wsId, itemId);
         if (reqPerm !== Permission.Owner) {
-            res.status(401).json({ error: 'No estás autorizado para cambiar los permisos de este item' });
+            res.status(403).json({ error: 'No estás autorizado para cambiar los permisos de este item' });
             return;
         }
         const profile  = workspace.profiles.find(profile => profile && profile._id.toString() === profileId) as IProfile;
@@ -172,7 +172,7 @@ export const changeItemPerms = async (req: any, res: any) => {
         }
         const itemPerm = await getUserPermission(req.user._id, wsId, itemId);
         if (!itemPerm || (itemPerm !== Permission.Owner)) {
-            res.status(401).json({ error: 'No tienes permiso para cambiar permisos' });
+            res.status(403).json({ error: 'No tienes permiso para cambiar permisos' });
             return;
         }
         const profilePerms = item.profilePerms.filter((profilePerm: IProfilePerms) =>{
@@ -225,7 +225,7 @@ export const downloadFile = async (req: any, res: any) => {
         }
         const perm = await getUserPermission(req.user._id, wsId, fileId);
         if (!perm) {
-            res.status(401).json({ error: 'No estás autorizado para ver este archivo' });
+            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
             return;
         }
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
@@ -265,7 +265,7 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
         const perm = await getUserPermission(req.user._id, wsId, itemId);
 
         if (![Permission.Owner, Permission.Write].find(x => x == perm)) {
-            res.status(401).json({ error: 'No estás autorizado para borrar este item' });
+            res.status(403).json({ error: 'No estás autorizado para borrar este item' });
             return;
         }
         (workspace.items as unknown as IItem[]) = (workspace.items as unknown as IItem[]).filter((item: IItem) => item._id.toString() !== itemId);
@@ -293,7 +293,7 @@ export const toggleFavorite = async (req: any, res: any) => {
         }
         const perm = await getUserPermission(loggedUser._id, wsId, itemId);
         if (!perm) {
-            res.status(401).json({ error: 'No estás autorizado para ver este archivo' });
+            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
             return;
         }
         const user = await User.findOne({ _id: loggedUser._id }).exec();

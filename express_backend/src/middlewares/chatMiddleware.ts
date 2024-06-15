@@ -7,7 +7,7 @@ export const validateChat = [
     .isLength({ min: 1, max: 60 }).withMessage('El nombre de chat debe tener entre 1 y 60 caracteres'),
 
     body('users').isArray().withMessage('Los usuarios deben ser un array')
-    .custom((value) => value.length > 2).withMessage('Debe haber al menos 2 usuarios')
+    .custom((value) => value.length >= 2).withMessage('Debe haber al menos 2 usuarios')
     .custom(async (value) => {
         for (const user of value) {
             const existingUser = await User.findById(user._id);
