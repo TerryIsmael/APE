@@ -5,6 +5,7 @@ import Timer from './Timer.vue';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 import Utils from '../utils/UtilsFunctions.js';
 import Calendar from './calendar.vue';
+import File from './file.vue';
 
 const props = defineProps({
   ws: {
@@ -383,9 +384,34 @@ watch(
   <div v-if="loading">
     <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
   </div>
-  <div v-else>
+  <div v-else style="height: 100%;">
     <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspaceId" :path="path"></Timer>
     <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Calendar>
+    <File v-if="routedItem && routedItem.itemType == 'File'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></File>
+    <!-- <div v-if="routedItem && routedItem.itemType == 'File'" style="display:flex; flex-direction:column; align-items: center;justify-content: center; height: 100%;">
+      
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }}
+        </h1>
+      </div>
+      <div class="item-container">
+        <div>
+          <div>
+            <img class="item-img" :src="selectImage(routedItem)" alt="item.name" width="100" height="100">
+          </div>
+          <div style="display:flex; align-items: center;">
+            <p class="item-name">{{ routedItem.name }} </p>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; align-items: center;">
+        <button @click="downloadFile" style="margin-top: 20px;">Descargar</button>
+      </div>
+
+
+    </div> -->
     <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
       <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
         <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
@@ -462,7 +488,6 @@ watch(
                 <span class="material-symbols-outlined">add</span>
               </button>
               <div style="z-index: 1002;" class="dropdown-content">
-                <div @click="openNewItemModal('Notice')">Anuncio</div>
                 <div @click="openNewItemModal('Calendar')">Calendario</div>
                 <div @click="openNewItemModal('Note')">Nota</div>
                 <div @click="openNewItemModal('Timer')">Temporizador</div>
