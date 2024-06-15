@@ -303,6 +303,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   }
 
   sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+  sendMessageToWorkspace(wsId, { type: 'chatAction' });
   sendMessageToUser(user._id.toString(), { type: 'chatAction'});
   res.status(201).json(workspace);
   
@@ -696,6 +697,7 @@ export const leaveWorkspace = async (req: any, res: any) => {
     }
 
     await deleteUserFromWs(req.user._id, workspace);
+    sendMessageToWorkspace(wsId, { type: 'chatAction' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

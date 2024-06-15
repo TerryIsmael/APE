@@ -383,7 +383,7 @@ onUnmounted(() => {
 
             <h3 style="margin: 0; margin-top: 5px; margin-bottom: 5px;">Mediante nombre de usuario</h3>
             <div style="display: flex; justify-content: space-between; align-items: baseline">
-              <input type="text" class="text-input" style=" " v-model="userToInvite" placeholder="Username del nuevo miembro..."></input>
+              <input type="text" class="text-input" maxlength="16" v-model="userToInvite" placeholder="Username del nuevo miembro..."></input>
               <select v-model="permToInvite" class="text-input" style="width: 32%; margin-left:3px">
                   <option :value="'Read'">Lectura</option>
                   <option :value="'Write'">Escritura</option>

@@ -804,6 +804,7 @@ watch(
   font-size: 16px;
   font-weight: bold;
   overflow: hidden;
+  word-wrap: break-word;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;

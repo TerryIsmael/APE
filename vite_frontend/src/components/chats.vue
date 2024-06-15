@@ -17,7 +17,7 @@ const currentUser = ref(null);
 const ws = ref(null);
 const router = useRouter();
 const route = useRoute();
-const path = ref('');
+const path = ref('/chats');
 const showMainSidebar = ref(false);
 const folders = ref([]);
 const selectedFolder = ref('chats');
@@ -49,6 +49,7 @@ const fetchUser = async () => {
 const selectChat = async (chat) => {
   editing.value = false;
   inDetails.value = false;
+  message.value = '';
   selectedChat.value = chat;
 };
 
@@ -77,11 +78,11 @@ const closeWsModal = () => {
 };
 
 const leaveWorkspace = async (workspaceId) => {
-  await Utils.leaveWorkspace(workspaceId, isWsModalOpened, workspaces,workspace, path, ref(''), currentUser, ref([]), folders, selectedFolder, ref('false'), userWsPerms, router, errorMessage);
+  await Utils.leaveWorkspace(workspaceId, isWsModalOpened, workspaces,workspace, path, ref(''), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, router, errorMessage);
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
 };
 
 const handleEditChat = async () => {
@@ -118,8 +119,8 @@ const getUserByUsernameOrEmail = async () => {
 
 const fetchWorkspace = async () => {
   await UserDetailsUtils.fetchFolders(workspace, errorMessage, router);
-  folders.value = workspace.value.folders;
-  userWsPerms.value = workspace.value.permission;
+  folders.value = workspace.value?.folders;
+  userWsPerms.value = workspace.value?.permission;
 };
   
 const fetchChats = async () => {
@@ -131,16 +132,8 @@ const fetchChat = async (chatId) => {
   await ChatUtils.fetchChat(chatId, chats, selectedChat, errorMessage, router);
 };
 
-const initSelectedChat = () => {
-  const chatId = route.params.chatId;
-  const chat = chats.value.find(chat => chat._id === chatId);
-  if (chat) {
-  selectedChat.value = chat;
-  }
-};
-
 const openNewChat = async () => {    
-  await ChatUtils.openNewChat(newChat, chats, currentUser, errorMessage, router);
+  await ChatUtils.openNewChat(newChat, chats, selectedChat, currentUser, errorMessage, router);
   if (errorMessage.value.length === 0) {
     await fetchChats();
     isModalOpened.value = false;
@@ -193,8 +186,9 @@ const websocketEventAdd = () => {
       await fetchChat(chatId);
     } else if (jsonEvent.type === 'chatAction') {
       await fetchChats();
-    } else if (jsonEvent.type === 'workspaceDeleted') {
+    } else if (jsonEvent.type === 'workspaceDeleted' || jsonEvent.type === 'profileDeleted') {
       await fetchWorkspace();
+      await fetchChats();
     }
   });
 };
@@ -455,10 +449,10 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
       <div style="margin-top: 20px">
         
         <p style="margin-bottom:5px;">Nombre</p>
-        <input v-model="newChat.name" placeholder="Escoge un nombre para el chat..." class="text-input" style="width: 88%;"/>
+        <input v-model="newChat.name" maxlength="60" placeholder="Escoge un nombre para el chat..." class="text-input" style="width: 88%;"/>
         <p style="margin-bottom:5px;">Usuarios</p>
         <div style="display: inline-flex; width: 90%; align-items: center; justify-content: space-between; margin-bottom: 10px">
-            <input v-model="userToAdd" placeholder="Buscar por nombre de usuario..." class="text-input" style="width: 75%;"/>
+            <input v-model="userToAdd" maxlength="16" placeholder="Buscar por nombre de usuario..." class="text-input" style="width: 75%;"/>
             <button @click="getUserByUsernameOrEmail()" style="width: 20%; height: 30px; margin-left: 5px; display: flex; justify-content: center; align-items: center;">Añadir</button>
         </div>
         <div style="max-height: 35vh; overflow-y: auto;">
