@@ -273,13 +273,13 @@ watch(props.item, (newVal, _ ) => {
       </div>
       <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        Calendario {{ item.name }} {{ "IPerm-> ",itemPermission }}
+        Calendario {{ item.name }}
       </h1>
       <div style="width: 10vw;" >
         
       </div>
     </div>
-  <div style="padding: 40px;background-color: #1E2B37;border-radius: 35px; width: 90%;">
+  <div style="padding: 40px; padding-bottom:0; background-color: #1E2B37;border-radius: 35px; width: 90%;">
     <FullCalendar ref="calendar" style="color: white;" :options='calendarOptions'>
       <template v-slot:eventContent='arg'>
         <b>{{ arg.timeText }}</b>

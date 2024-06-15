@@ -276,7 +276,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
             </div>
             <div class="messages-container" ref="messagesContainer">
               <div style="width: 100%" v-for="message in selectedChat?.messages" :key="message._id"> 
-                <div class="my-message-container" v-if="message.user == currentUser._id">
+                <div class="my-message-container" v-if="message.user._id == currentUser._id">
                   <div class="my-message">
                     <div style="width: 96%; padding-left:10px; padding-right:10px; display:flex; flex-direction: column;">
                       <div class="message-header">
