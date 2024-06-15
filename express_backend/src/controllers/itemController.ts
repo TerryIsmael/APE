@@ -106,7 +106,7 @@ export const editItem = async (req: any, res: any) => {
             return;
         }
         const perm = await getUserPermission(req.user._id, wsId, itemData._id);
-        if (!perm || (perm !== Permission.Owner && perm !== Permission.Write)) {
+        if (!perm || perm === Permission.Read) {
             res.status(403).json({ error: 'No estás autorizado para editar este item' });
             return;
         }

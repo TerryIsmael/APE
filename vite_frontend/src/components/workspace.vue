@@ -420,14 +420,14 @@ watch(
           style="z-index: 1002">chevron_left</span>
       </div>
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; justify-content: space-between; width: 82%;">
-        <div style="display:flex; justify-content: start;  width: 10vw;">
-          <button style=" " @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+        <div style="display: flex; justify-content: start; width: 10vw;">
+          <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
         </div>
         <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
           <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
           {{ workspace?.name }} 
         </h1>
-        <div style="display:flex; justify-content: end;  width: 10vw;" >
+        <div style="display: flex; justify-content: end; width: 10vw;" >
           <button @click="openFormEditNote" v-if="!editing && routedItemPerm && routedItemPerm !== 'Read'">Editar</button>
         </div>
       </div>
@@ -489,8 +489,8 @@ watch(
               </button>
               <div style="z-index: 1002;" class="dropdown-content">
                 <div @click="openNewItemModal('Calendar')">Calendario</div>
-                <div @click="openNewItemModal('Note')">Nota</div>
                 <div @click="openNewItemModal('Timer')">Temporizador</div>
+                <div @click="openNewItemModal('Note')">Nota</div>
                 <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
                 <div @click="selectUploadFile" value="File">Archivo</div>
               </div>
@@ -504,7 +504,7 @@ watch(
           </div>
 
           <div v-else>
-            <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
               <div>
                 <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                   {{ error }}

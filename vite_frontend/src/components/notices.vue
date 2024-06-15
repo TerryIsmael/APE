@@ -3,12 +3,13 @@ import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed }
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
 import NoticeUtils from '../utils/NoticeFunctions.js';
+import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
 const props = defineProps({
-    ws: {
-        ws: Object,
-        required: true
-    },
+  ws: {
+    ws: Object,
+    required: true
+  },
 });
 
 const router = useRouter();
@@ -43,6 +44,10 @@ const isWsModalOpened = ref(false);
 const isLeaving = ref(false);
 const isNewWsModalOpened = ref(false);
 const newWorkspace = ref('');
+const ws = ref(null);
+
+const editItem = ref({});
+const isEditNameModalOpened = ref(false); 
 
 const fetchUser = async () => {
   await Utils.fetchUser(currentUser, router);
@@ -182,13 +187,29 @@ const createWorkspace = async () => {
   }
 };
 
+const openEditNameModal = (item) => {
+  selectedItem.value = item;
+  WorkspaceUtils.openEditNameModal(editItem, selectedItem, isEditNameModalOpened, errorMessage);
+};
+
+const closeEditNameModal = () => {
+  WorkspaceUtils.closeEditNameModal(isEditNameModalOpened, editItem, errorMessage)
+};
+
+const modifyItem = async (item) => {
+  await NoticeUtils.modifyItem(item, wsId, workspace, currentUser, userWsPerms, router, errorMessage);
+  if (errorMessage.value.length === 0) {
+    closeEditNameModal();
+  }
+};
+
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
     ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
-    const jsonEvent = JSON.parse(event.data);
+    const jsonEvent = await JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {
       await fetchUser();
       await fetchNotices();
@@ -226,8 +247,7 @@ onBeforeMount(async () => {
   </div>
   <div v-else>
     <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
-      <h1 @click="$router.push('/workspace/')"
-        style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; word-wrap: break-word;">
         <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
         {{ workspace?.name }}
       </h1>
@@ -254,7 +274,7 @@ onBeforeMount(async () => {
         </div>
 
         <div v-else>
-          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+          <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
             <div>
               <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
                 {{ error }}
@@ -269,13 +289,14 @@ onBeforeMount(async () => {
             <div class="item-container" v-for="item in workspace?.notices" :key="item.id">
               <div style="display: flex; align-items: center;">
                 <h2 class="item-name"> {{ item?.notice?.name }}</h2>
-                <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': verifyNoticePerms(item?.notice)}">campaign</span>
+                <span v-if="item?.notice?.important" style="vertical-align: middle;" :class="{'material-symbols-outlined': true, 'important-icon': true, 'important-icon-left': ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))}">campaign</span>
                 <span v-if="item && ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="delete-icon material-symbols-outlined" @click="deleteItem(item?.notice?._id)">delete</span>
                 <span v-if="item && ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="group-icon material-symbols-outlined" @click="() => handleSelectItem(item?.notice)"><span class="material-symbols-outlined">groups</span></span>
+                <span v-if="item && ['Owner', 'Admin'].includes(verifyNoticePerms(item?.notice))" class="material-symbols-outlined group-icon edit-icon-left" @click="openEditNameModal(item?.notice)"><span class="material-symbols-outlined">edit</span></span>
               </div>
 
               <h4 class="item-name" style="color: #525252">
-                Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.uploadDate) }}
+                Subido por {{ item.owner?.username }} ({{ item.owner?.email }}) el {{ formatDate(item?.notice?.modifiedDate) }}
               </h4>
               <hr>          
               <p class="text-container">{{ item?.notice?.text }}</p>
@@ -340,6 +361,31 @@ onBeforeMount(async () => {
       </li>
     </ul>
   </div>
+
+  <!-- Modal de edit item --> 
+  <Modal class="modal" :isOpen="isEditNameModalOpened" @modal-close="closeEditNameModal" name="edit-item-modal">
+    <template #header><strong>Modificar anuncio</strong></template>
+    <template #content>
+      <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+          <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+      </div>
+
+      <div style="margin-top: 20px">              
+        <input type="text" v-model="editItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+        <textarea v-model="editItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
+          <div style="display:flex; justify-content: center; align-items: center">
+            Prioritario: <input type="checkbox" v-model="editItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
+          </div>      
+      </div>
+
+      <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
+        <div style="display: flex; justify-content: space-between;">
+          <button @click="modifyItem(editItem)" style="margin-top: 15px">Actualizar</button>
+          <button @click="closeEditNameModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
+        </div>
+      </div>
+    </template>
+  </Modal>
 
   <!-- Modal de nuevo item --> 
   <Modal class="modal" :isOpen="isNewItemModalOpened" @modal-close="closeNewItemModal" name="item-modal">
@@ -708,12 +754,18 @@ onBeforeMount(async () => {
 
 .group-icon {
   position: absolute;
-  top: 37px;
+  top: 40px;
   right: 10px;
   color: rgb(151, 47, 47);
   font-size: 24px;
   cursor: pointer;
 } 
+
+.edit-icon-left {
+  right: 35px;
+  top: 38px;
+  font-size: 12px;
+}
 
 .ws-modal-button {
   width: 45px; 
