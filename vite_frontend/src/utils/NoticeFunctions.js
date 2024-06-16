@@ -38,7 +38,7 @@ class NoticeFunctions {
   static arrangeNotices = (workspace) => {
     const noticeItems = workspace.value.notices;
     noticeItems.sort((a, b) => {
-      const dateComparison = new Date(b.notice.uploadDate).getTime() - new Date(a.notice.uploadDate).getTime();
+      const dateComparison = new Date(b.notice.modifiedDate).getTime() - new Date(a.notice.modifiedDate).getTime();
       if (dateComparison === 0) {
         return b.notice.important - a.notice.important;
       } else {
@@ -140,7 +140,7 @@ class NoticeFunctions {
       } 
       
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, path: '', item: newItem.value }),
+        body: JSON.stringify({ workspace: workspace.value._id, path: '/notices', item: newItem.value }),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,6 +161,36 @@ class NoticeFunctions {
           Utils.parseErrorMessage(data, errorMessage);
         } else {
           throw new Error("Error al crear item");
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  static modifyItem = async (item, wsId, workspace, currentUser, userWsPerms, router, errorMessage) => {
+    try {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+        body: JSON.stringify({ workspace: workspace.value._id, item: item }),
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        await this.fetchNotices(wsId, workspace, router, userWsPerms, currentUser, errorMessage);
+        errorMessage.value = [];
+      } else if (response.status === 401) {
+        router.push({ name: 'login' });
+      } else {
+        errorMessage.value = [];
+        const data = await response.json();
+        if (data.error || data.errors) {
+          Utils.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al modificar item");
         }
       }
     } catch (error) {

@@ -44,7 +44,7 @@ export const addItemToWorkspace = async (req: any, res: any) => {
             const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
             const folderPath = folders.slice(0, -1).join('/');
 
-            if (path != "" && (!existingFolder || existingFolder.path != folderPath) && !isRoot) {
+            if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath) && !isRoot) {
                 res.status(404).json({ error: 'No se ha encontrado la carpeta' });
                 return;
             } else {
@@ -118,7 +118,7 @@ export const editItem = async (req: any, res: any) => {
             return;
         }
         const perm = await getUserPermission(req.user._id, wsId, itemData._id);
-        if (!perm || perm !== Permission.Owner) {
+        if (!perm || perm === Permission.Read) {
             res.status(403).json({ error: 'No estás autorizado para editar este item' });
             return;
         }
@@ -144,14 +144,14 @@ export const editItem = async (req: any, res: any) => {
             default:
                 break;
         }
-        try{
+        try {
             item.validateSync();
+            await item.save();
         } catch (error) {
-            res.status(400).json({ error: parseValidationError(error) });
+            res.status(400).json({ errors: parseValidationError(error) });
             return;
         }
         sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
-        await item.save();
         res.status(200).json(item);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

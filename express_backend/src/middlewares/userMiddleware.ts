@@ -11,17 +11,14 @@ export function isLogged(req: Request & { isAuthenticated: () => boolean }, res:
 }
 
 export const validateUser = [
-    body('user.username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio')
-    .isLength({ min: 4, max: 16 }).withMessage('El nombre de usuario debe tener entre 4 y 16 caracteres')
+    body('user.username').trim().isLength({ min: 4, max: 16 }).withMessage('El nombre de usuario debe tener entre 4 y 16 caracteres')
     .matches(/^[a-zA-Z0-9_]+$/).withMessage('El nombre de usuario sólo puede contener letras, números y guiones bajos'),
 
-    body('user.firstName').trim().notEmpty().withMessage('El nombre es obligatorio')
-    .isLength({ min: 1, max: 100 }).withMessage('El nombre debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('El nombre sólo puede contener letras y espacios'),
+    body('user.firstName').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('El nombre sólo puede contener letras y espacios'),
+    body('user.firstName').trim().isLength({ min: 1, max: 100 }).withMessage('El nombre debe tener entre 1 y 100 caracteres'),
 
-    body('user.surnames').trim().notEmpty().withMessage('Los apellidos son obligatorios')
-    .isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
+    body('user.surnames').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
+    body('user.surnames').trim().isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres'),
 
     body('user.email').trim().notEmpty().withMessage('El correo electrónico es obligatorio')
     .isEmail().withMessage('El correo electrónico no es válido'),
@@ -37,8 +34,7 @@ export const validateUser = [
 ];
 
 export const validateNewUser = [
-    body('username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio')
-    .isLength({ min: 4, max: 16 }).withMessage('El nombre de usuario debe tener entre 4 y 16 caracteres')
+    body('username').trim().isLength({ min: 4, max: 16 }).withMessage('El nombre de usuario debe tener entre 4 y 16 caracteres')
     .matches(/^[a-zA-Z0-9_]+$/).withMessage('El nombre de usuario sólo puede contener letras, números y guiones bajos')
     .custom(async (value) => {
         const existingUser = await User.findOne({ username: value });
@@ -48,13 +44,11 @@ export const validateNewUser = [
         return true;
     }),
 
-    body('firstName').trim().notEmpty().withMessage('El nombre es obligatorio')
-    .isLength({ min: 1, max: 100 }).withMessage('El nombre debe tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('El nombre sólo puede contener letras y espacios'),
+    body('firstName').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('El nombre sólo puede contener letras y espacios'),
+    body('firstName').trim().isLength({ min: 1, max: 100 }).withMessage('El nombre debe tener entre 1 y 100 caracteres'),
 
-    body('surnames').trim().notEmpty().withMessage('Los apellidos son obligatorios')
-    .isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres')
-    .matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
+    body('surnames').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
+    body('surnames').trim().isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres'),
 
     body('email').trim().notEmpty().withMessage('El correo electrónico es obligatorio')
     .isEmail().withMessage('El correo electrónico no es válido')
@@ -66,8 +60,7 @@ export const validateNewUser = [
         return true;
     }),
 
-    body('password').trim().notEmpty().withMessage('La contraseña es obligatoria')
-    .isLength({ min: 12 }).withMessage('La contraseña debe tener al menos 12 caracteres no vacíos')
+    body('password').trim().isLength({ min: 12 }).withMessage('La contraseña debe tener al menos 12 caracteres no vacíos')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/).withMessage('La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un caracter especial')
     .custom((value) => !/\s/.test(value)).withMessage('La contraseña no puede contener espacios'),
 

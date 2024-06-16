@@ -34,8 +34,7 @@ export const validateProfilePerm = [
 ];
 
 export const validateEditWsName = [
-    body('workspace.name').trim().notEmpty().withMessage('El nombre del workspace es obligatorio')
-    .isLength({ min: 1, max: 55 }).withMessage('El nombre del workspace debe tener entre 1 y 55 caracteres'),
+    body('workspace.name').trim().isLength({ min: 1, max: 55 }).withMessage('El nombre del workspace debe tener entre 1 y 55 caracteres'),
 
     (req : Request, res : Response, next : NextFunction) => {
         const errors = validationResult(req);
@@ -48,8 +47,7 @@ export const validateEditWsName = [
 ];
 
 export const validateNewWsName = [
-    body('wsName').trim().notEmpty().withMessage('El nombre del workspace es obligatorio')
-    .isLength({ min: 1, max: 55 }).withMessage('El nombre del workspace debe tener entre 1 y 55 caracteres'),
+    body('wsName').trim().isLength({ min: 1, max: 55 }).withMessage('El nombre del workspace debe tener entre 1 y 55 caracteres'),
 
     (req : Request, res : Response, next : NextFunction) => {
         const errors = validationResult(req);

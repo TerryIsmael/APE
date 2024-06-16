@@ -32,7 +32,7 @@ export const timerSchema = new mongoose.Schema<ITimer>({
     duration: { 
         type: Number, 
         required: [true, "La duración del temporizador es obligatoria"],
-        min: [0, "La duración del temporizador no puede ser negativa"],
+        min: [1, "La duración del temporizador no puede ser 0 o inferior"],
         default: 0
     },
     remainingTime: { 

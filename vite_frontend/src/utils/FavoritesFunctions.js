@@ -181,6 +181,42 @@ class FavoriteUtils {
       console.log(error);
     }
   };
+
+  static modifyItem = async (item, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage) => {
+    try {
+      if (item && item.itemType == 'File') {
+        const extension = selectedItem.value?.name.split('.').pop(); 
+        if (item.name.trim().length !== 0) {
+          item.name = item.name + '.' + extension;
+        }
+      }
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+        body: JSON.stringify({ workspace: workspace.value._id, item: item }),
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
+        errorMessage.value = [];
+      } else if (response.status === 401) {
+        router.push({ name: 'login' });
+      } else {
+        errorMessage.value = [];
+        const data = await response.json();
+        if (data.error || data.errors) {
+          Utils.parseErrorMessage(data, errorMessage);
+        } else {
+          throw new Error("Error al modificar item");
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 }
 
 export default FavoriteUtils;
