@@ -216,16 +216,14 @@ class UtilsFunctions {
     errorMessage.value = [];
   };
 
-  static openNewWsModal = (isWsModalOpened, newWorkspace, isNewWsModalOpened, errorMessage) => {
+  static openNewWsModal = (isWsModalOpened, isNewWsModalOpened, errorMessage) => {
     errorMessage.value = [];
-    newWorkspace.value = '';
     isWsModalOpened.value = false;
     isNewWsModalOpened.value = true;
   };
 
-  static closeNewWsModal = (isNewWsModalOpened, newWorkspace, errorMessage) => {
+  static closeNewWsModal = (isNewWsModalOpened, errorMessage) => {
     isNewWsModalOpened.value = false;
-    newWorkspace.value = '';
     errorMessage.value = [];
   };
 
