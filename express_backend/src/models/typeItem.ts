@@ -17,7 +17,7 @@ export interface ITimer extends IItem {
 }
 
 export interface IFile extends IItem {
-    length: number;
+    ready: boolean;
 }
 
 export interface IFolder extends IItem {

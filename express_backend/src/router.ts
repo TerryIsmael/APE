@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import passport from './config/passport.ts';
 import { registerUser, fetchUserData, updateUser, deleteUser, getUserByUsernameOrEmail } from './controllers/userController.ts';
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace, getInvitation } from './controllers/workspaceController.ts';
-import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem } from './controllers/itemController.ts';
+import { addItemToWorkspace, downloadFile, transformAndDownloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem, editFile, saveFile } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged, validateNewUser, validateUser } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
@@ -12,8 +12,6 @@ import { validateProfilePerm, validateWsPerms, validateNewWsName, validateEditWs
 import { validateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
-import Item from './schemas/itemSchema.ts';
-import Workspace from './schemas/workspaceSchema.ts';
 import { addMessage, createChat, editChatName, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
 
 dotenv.config();  
@@ -130,23 +128,17 @@ router.post('/file/download', isLogged, async (req: Request, res: Response) => {
    }
 });
 
-router.post('/file', isLogged, createFile, uploader.single('file'), validateFile, async (req: Request, res: Response) => {
-    try {
-        const item = await Item.findOne({ _id: req.params.itemId }).exec();
-        if (!item) {
-            return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
-        }
-        item.name = req.file?req.file.originalname:item.name;
-        item.path = req.file?req.body.path:"";
-        await item.save();
-        const workspace = await (await Workspace.findOne({ _id: req.body.workspace }).exec())?.populate('items');
-        workspace?.items.push(item._id);
-        await workspace?.save();
-        res.status(200).json({ success: true, message: 'Archivo subido exitosamente' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Error al subir el archivo. ' + error });
-    }
+router.post('/file/transform', isLogged, async (req: Request, res: Response) => {
+    try{
+        transformAndDownloadFile(req, res);
+    } catch(error) {
+        res.status(500).json({ success: false, error: 'Error al descargar el archivo. ' + error });
+   }
 });
+
+router.post('/file', isLogged, createFile, uploader.single('file'), validateFile, saveFile);
+
+router.put('/file', isLogged, editFile);
 
 router.post('/item', isLogged, validateItem, (req: Request, res: Response) => {
     try {
@@ -155,6 +147,7 @@ router.post('/item', isLogged, validateItem, (req: Request, res: Response) => {
         res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
     }
 });
+
 
 router.put('/item', isLogged, (req: Request, res: Response) => {
     try {
