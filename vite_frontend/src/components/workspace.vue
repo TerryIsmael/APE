@@ -466,12 +466,12 @@ watch(
       <div class="main-content" style="display:flex; flex-direction: column; align-items: center;">
 
         <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
-          <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; width: 85%">
+          <div style="display: flex; justify-content: flex-start; align-items: center; width: 85%">
             <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
-            <div style="display:flex; width: 100%; justify-content: start; text-align: left; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 1%;">
+            <div style="display:flex; width: 85%; justify-content: start; text-align: left; white-space: nowrap; margin-left: 1%;">
               <h2 style="margin-right: 1%">Ruta actual:</h2>
               <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-              <h2 v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+              <h2 :class="{ 'ellipsis': true, 'first-folder-ellipsis': index === 0 && currentPath.split('/').length > 2 }" v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
             </div>
           </div>
 
@@ -888,4 +888,17 @@ watch(
 .red-button {
   background-color: #c55e5e; 
 }
+
+.ellipsis {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%; 
+}
+
+.first-folder-ellipsis {
+  width: 15%;
+}
+
 </style>

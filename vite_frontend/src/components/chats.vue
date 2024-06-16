@@ -170,6 +170,10 @@ const createWorkspace = async (newWorkspace) => {
   }
 };
 
+const toggleLeave = () => {
+  isLeaving.value = !isLeaving.value;
+};
+
 const leaveChat = async () => {
   await ChatUtils.leaveChat(selectedChat, errorMessage, chats, inDetails);
 };
