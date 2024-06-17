@@ -471,7 +471,7 @@ watch(
             <div style="display:flex; width: 85%; justify-content: start; text-align: left; white-space: nowrap; margin-left: 1%;">
               <h2 style="margin-right: 1%">Ruta actual:</h2>
               <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-              <h2 :class="{ 'ellipsis': true, 'first-folder-ellipsis': index === 0 && currentPath.split('/').length > 2 }" v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+              <h2 class="ellipsis" v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
             </div>
           </div>
 
@@ -894,11 +894,6 @@ watch(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%; 
-}
-
-.first-folder-ellipsis {
-  width: 15%;
 }
 
 </style>

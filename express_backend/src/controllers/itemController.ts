@@ -15,6 +15,7 @@ import Profile from '../schemas/profileSchema.ts';
 import type { ICalendar, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
+import { updateFilesPath } from '../utils/updateFiles.ts';
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -94,6 +95,8 @@ export const addItemToWorkspace = async (req: any, res: any) => {
 export const editItem = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const itemData = req.body.item;
+    const oldName = req.body.oldName;
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -113,6 +116,7 @@ export const editItem = async (req: any, res: any) => {
         item.name = itemData.name;
         item.modifiedDate = new Date();
         item.path = itemData.path;
+
         switch (item.itemType) {
             case ItemType.Timer:
                 (item as ITimer).duration = itemData.duration;
@@ -135,6 +139,11 @@ export const editItem = async (req: any, res: any) => {
         try {
             item.validateSync();
             await item.save();
+
+            if (item.itemType === ItemType.Folder && item.name !== oldName) {
+                await updateFilesPath(item, oldName, wsId);
+            }
+
         } catch (error) {
             res.status(400).json({ errors: parseValidationError(error) });
             return;
