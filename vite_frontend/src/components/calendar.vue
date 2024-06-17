@@ -231,8 +231,8 @@ const handleFinishEdit = () => {
   }
 }
 
-const verifyPermissions = async() => {
-  itemPermission.value = await WorkspaceUtils.verifyPerms(item.value, ref(props.workspace), ref(props.currentUser));
+const verifyPermissions = () => {
+  itemPermission.value = WorkspaceUtils.verifyPerms(item.value, ref(props.workspace), ref(props.currentUser));
 }
 
 onBeforeMount(async () => {
@@ -245,7 +245,7 @@ onBeforeMount(async () => {
       allDay: true
     })
   })
-  await verifyPermissions();
+  verifyPermissions();
 })
 
 watch(props.item, (newVal, _ ) => {

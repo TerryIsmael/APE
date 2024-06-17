@@ -70,7 +70,7 @@ const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
   if(routedItem.value) {
     routedItem.value = items.value.find(item => item._id == routedItem.value._id);
-    routedItemPerm.value = await verifyPerms(routedItem.value);
+    routedItemPerm.value = verifyPerms(routedItem.value);
   }
   loading.value = false;
 };
@@ -315,7 +315,22 @@ const refreshWindow = async () => {
   await fetchWorkspace();
   initPath();
   await selectItem(selectedItem.value, true);
+  getFolderPermission();
+
 };
+
+const getFolderPermission = () => {
+  const folderArray = path.value.split('/');
+  const f = folderArray.pop();
+  const p = folderArray.join('/');
+  if (f){
+    selectedFolderPerms.value = WorkspaceUtils.verifyPerms(workspace.value.items.find(folder => folder.name === f && folder.path === p), workspace, currentUser)
+  } else{
+    selectedFolderPerms.value = null;
+  }
+
+};
+
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
@@ -353,9 +368,10 @@ onBeforeMount(async () => {
   initPath();
   ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value._id }));
   websocketEventAdd();
+  getFolderPermission();
 });
 
-onMounted(() => {
+onMounted( async () => {
   selectedFolder.value = path.value;
   workspaceId.value = localStorage.getItem('workspace');
   document.addEventListener('click', closeSidebar);
@@ -374,6 +390,7 @@ watch(
     fetchWorkspace();
     const pathArray = path.value.split('/');
     initPath();
+    getFolderPermission();
   }
 );
 
@@ -445,7 +462,7 @@ watch(
         </div>
       </div>
     </div>
-    <div v-if="routedItem == 'Not found'">
+    <div v-if="routedItem == 'Not found'"> }}
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
         <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
           <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
@@ -475,7 +492,7 @@ watch(
             </div>
           </div>
 
-          <div v-if="['Owner', 'Admin', 'Write'].includes(userWsPerms)" style="display: flex; justify-content: flex-end; width: 15%;">
+          <div v-if="['Owner', 'Admin'].includes(userWsPerms) || (path === '' && userWsPerms === 'Write') || (selectedItemPerms && selectedItemPerms == 'Write')" style="display: flex; justify-content: flex-end; width: 15%;">
             <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
               <span class="material-symbols-outlined">info</span>
             </button>

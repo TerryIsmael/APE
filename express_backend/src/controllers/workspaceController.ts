@@ -528,7 +528,6 @@ export const useInvitation = async (req: any, res: any) => {
       return;
     }
 
-
     const profile = invitation.profile;
     const user = req.user;
     const userProfile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Read, users: [user] });
