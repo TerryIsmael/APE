@@ -3,7 +3,7 @@ import  Item  from '../schemas/itemSchema.ts';
 import type { Request, Response, NextFunction } from 'express';
 import { Permission } from '../models/profilePerms.ts';
 import Workspace from '../schemas/workspaceSchema.ts';
-import { getWSPermission } from '../utils/permsFunctions.ts';
+import { getWSPermission, getUserPermission } from '../utils/permsFunctions.ts';
 import { WSPermission } from '../models/profile.ts';
 import { ItemType, type IItem } from '../models/item.ts';
 import fs from 'fs';
@@ -91,11 +91,6 @@ const checkItem = async (req: any) => {
             return 'No se ha encontrado el workspace';
         }
 
-        const perm = await getWSPermission(userId, wsId)
-        if (perm === WSPermission.Read || !perm) {
-            return 'No tienes permiso para subir archivos a este workspace.';
-        } 
-
         const folders = path.split('/');
         const folder = folders[folders.length - 1];
         const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
@@ -103,6 +98,11 @@ const checkItem = async (req: any) => {
         if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath)) {
             return 'La ruta no es válida';
         }
+
+        const perm = await getUserPermission(userId, wsId, existingFolder?._id.toString())
+        if (perm === Permission.Read || !perm) {
+            return 'No tienes permiso para subir archivos a este directorio';
+        } 
 
         const existingItem = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === itemData.name && item.path === path);
         if (existingItem) {

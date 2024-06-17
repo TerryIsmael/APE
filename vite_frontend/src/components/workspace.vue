@@ -323,14 +323,16 @@ const getFolderPermission = () => {
   const folderArray = path.value.split('/');
   const f = folderArray.pop();
   const p = folderArray.join('/');
-  if (f){
+  if (f) {
     selectedFolderPerms.value = WorkspaceUtils.verifyPerms(workspace.value.items.find(folder => folder.name === f && folder.path === p), workspace, currentUser)
-  } else{
+  } else {
     selectedFolderPerms.value = null;
   }
-
 };
 
+const canSeeWriteButtons = () => {
+  return ['Owner', 'Admin'].includes(userWsPerms.value) || (path.value === '' && userWsPerms.value === 'Write') || (selectedFolderPerms.value && (selectedFolderPerms.value === 'Write' || selectedFolderPerms.value === 'Owner'));
+};
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
@@ -462,7 +464,7 @@ watch(
         </div>
       </div>
     </div>
-    <div v-if="routedItem == 'Not found'"> }}
+    <div v-if="routedItem == 'Not found'">
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
         <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
           <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
@@ -492,14 +494,14 @@ watch(
             </div>
           </div>
 
-          <div v-if="['Owner', 'Admin'].includes(userWsPerms) || (path === '' && userWsPerms === 'Write') || (selectedItemPerms && selectedItemPerms == 'Write')" style="display: flex; justify-content: flex-end; width: 15%;">
+          <div style="display: flex; justify-content: flex-end; width: 15%;">
             <button v-if="currentPath !== '/'" style="margin-right: 10px; max-height: 50px;" @click="showFolderDetails()">
               <span class="material-symbols-outlined">info</span>
             </button>
-            <button v-if="userWsPerms && userWsPerms != 'Read'" style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
+            <button v-if="canSeeWriteButtons()" style="margin-right: 10px; max-height: 50px;" @click="openNewItemModal('Folder')">
               <span class="material-symbols-outlined">create_new_folder</span>
             </button>
-            <div v-if="userWsPerms && userWsPerms != 'Read'" class="dropdown">
+            <div v-if="canSeeWriteButtons()" class="dropdown">
               <button style="max-height: 50px;" @click="openDropdown">
                 <span class="material-symbols-outlined">add</span>
               </button>

@@ -15,7 +15,7 @@ import Profile from '../schemas/profileSchema.ts';
 import type { ICalendar, IFile, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
-import { updateFilesPath } from '../utils/updateFiles.ts';
+import { deleteFolderItems, updateFilesPath } from '../utils/updateFiles.ts';
 import mammoth from 'mammoth';
 import { promisify } from 'util';
 import { asBlob } from 'html-docx-js-typescript';
@@ -459,6 +459,7 @@ export const transformAndDownloadFile = async (req: any, res: any) => {
 export const deleteItemFromWorkspace = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const itemId = req.body.itemId;
+    const check = req.body.check;
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -477,13 +478,21 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
             return;
         }
         (workspace.items as unknown as IItem[]) = (workspace.items as unknown as IItem[]).filter((item: IItem) => item._id.toString() !== itemId);
-        await Item.deleteOne({ _id: itemId });
-        await workspace.save();
         if (item.itemType === ItemType.File) {
             fs.unlink(`uploads/${wsId}/${itemId}`, () => { });
+        } else if (item.itemType === ItemType.Folder) {
+            const isThereItemsOfAnother = await deleteFolderItems(req.user._id, item, wsId, check);
+            if (check){
+                isThereItemsOfAnother? res.status(409).json({ error: 'Hay items de otros usuarios en este directorio' }): res.status(200).json({ success: true });
+                return;
+            }
         }
-        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
-        res.status(200).json({ success: true });
+        if (!check) {
+            await Item.deleteOne({ _id: itemId });
+            await workspace.save();
+            sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+            res.status(200).json({ success: true });
+        }
     } catch (error: any) {
         res.status(404).json({ error: error.message });
     }

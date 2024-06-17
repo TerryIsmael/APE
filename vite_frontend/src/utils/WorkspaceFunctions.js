@@ -213,10 +213,43 @@ class WorkspaceUtils {
     }
   };
 
+  static checkNotMyItemsInFolder = async (item, workspace) => {
+    try{
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
+        body: JSON.stringify({ workspace: workspace.value._id, itemId: item._id, check: true }),
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   static deleteItem = async (item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar, errorMessage) => {
     try {
-      const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
-      if (!confirmDelete) return;
+        if (item.itemType !== 'Folder') {
+          const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este item?");
+          if (!confirmDelete) return;
+        } else {
+          let confirmDelete;
+          if(await this.checkNotMyItemsInFolder(item, workspace)) {
+            confirmDelete = confirm("¿Estás seguro de que deseas eliminar esta carpeta y todo su contenido?");
+          }else{
+            confirmDelete = confirm("AVISO: Esta carpeta contiene items de otros usuarios que no ves. ¿Estás seguro de que deseas eliminar esta carpeta y todo su contenido?");
+          }
+          
+          if (!confirmDelete) return;
+        }
+
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
         body: JSON.stringify({ workspace: workspace.value._id, itemId: item._id }),
         method: 'DELETE',
@@ -471,7 +504,7 @@ class WorkspaceUtils {
         }
       }
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, item: item, oldName: selectedItem.value.name }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: item, oldName: item.itemType== "Folder"?selectedItem.value.name:null }),
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
