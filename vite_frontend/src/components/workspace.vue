@@ -471,7 +471,7 @@ watch(
             <div style="display:flex; width: 85%; justify-content: start; text-align: left; white-space: nowrap; margin-left: 1%;">
               <h2 style="margin-right: 1%">Ruta actual:</h2>
               <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
-              <h2 :class="{ 'ellipsis': true, 'first-folder-ellipsis': index === 0 && currentPath.split('/').length > 2 }" v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
+              <h2 class="ellipsis" v-for="(folder, index) in currentPath.split('/').slice(1)" :key="index" v-bind="getItemBindings({}, index)">/{{ folder }}</h2>
             </div>
           </div>
 
@@ -598,7 +598,7 @@ watch(
       <li style="margin-bottom: 2px; display: flex; align-items: center;" @click="openEditNameModal()"> Archivo: <span v-if="selectedItemPerms !== 'Read'" style="display: flex; vertical-align: middle; margin: 0; margin-left: 10%; cursor: pointer;" class="material-symbols-outlined">edit</span> </li>
       <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
       <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-      <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+      <li style="margin-top: 2px;" class="email"> ({{ author?.email }})  </li>
       <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
       <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
 
@@ -773,16 +773,20 @@ watch(
   padding: 0;
 }
 
-.sidebar ul li {
+.sidebar ul li , .email {
   padding: 0 10px;
   margin: 10px 0;
   word-wrap: break-word;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 270px;
+}
+
+.email {
+  -webkit-line-clamp: 5;
 }
 
 .error {
@@ -894,11 +898,6 @@ watch(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%; 
-}
-
-.first-folder-ellipsis {
-  width: 15%;
 }
 
 </style>

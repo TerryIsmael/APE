@@ -322,7 +322,7 @@ onBeforeMount(async () => {
       </div>
 
       <div style="margin-top: 20px">              
-        <input type="text" v-model="editItem.name" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
+        <input type="text" v-model="editItem.name" maxlength="330" placeholder="Nombre de item..." class="text-input" style="margin-bottom: 5px;"/>
         <textarea v-model="editItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
           <div style="display:flex; justify-content: center; align-items: center">
             Prioritario: <input type="checkbox" v-model="editItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
@@ -347,7 +347,7 @@ onBeforeMount(async () => {
       </div>
 
       <div style="margin-top: 20px">
-          <input type="text" v-model="newItem.name" placeholder="Nombre de item..." class="text-input"/>
+          <input type="text" v-model="newItem.name" maxlength="330" placeholder="Nombre de item..." class="text-input"/>
           <textarea v-model="newItem.text" placeholder="Contenido..." maxlength="1000" class="text-input textarea-input"></textarea>
           <div style="display:flex; justify-content: center; align-items: center">
             Prioritario: <input type="checkbox" v-model="newItem.important" style="border-radius: 5px; margin: 12px; margin-top: 15px ; transform: scale(1.5);"></input>
@@ -541,6 +541,10 @@ onBeforeMount(async () => {
   right: 35px;
   top: 38px;
   font-size: 12px;
+}
+
+.red-button {
+  background-color: #c55e5e; 
 }
 
 </style>

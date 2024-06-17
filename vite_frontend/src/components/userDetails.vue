@@ -239,7 +239,7 @@ onBeforeMount(async () => {
 
             <div class="item-container">
               <h2 class="field-name">Correo electrónico</h2>
-              <input v-if="editing" type="text" v-model="newUser.email" :placeholder=currentUser.email class="field-input"/>
+              <input v-if="editing" type="text" v-model="newUser.email" maxlength="163" :placeholder=currentUser.email class="field-input"/>
               <div v-else>
                 <hr class="custom-hr">
                 <h4 class="field-content"> {{ currentUser.email }} </h4>

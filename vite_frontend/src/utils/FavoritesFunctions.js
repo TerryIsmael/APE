@@ -188,6 +188,10 @@ class FavoriteUtils {
         const extension = selectedItem.value?.name.split('.').pop(); 
         if (item.name.trim().length !== 0) {
           item.name = item.name + '.' + extension;
+          if (item.name.length > 330) {
+            errorMessage.value = ['El nombre del item no puede superar los 330 caracteres'];
+            return;
+          }
         }
       }
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {

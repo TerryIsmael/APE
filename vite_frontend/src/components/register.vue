@@ -102,7 +102,7 @@ watch([() => user.value.password, passwordMatch], checkPassword);
             <div class="form-column" style="margin-left: 2%">
               <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" v-model="user.email" required />
+                <input type="email" maxlength="163" id="email" v-model="user.email" required />
               </div>
               <div class="form-group">
                 <label for="surnames">Apellidos:</label>
