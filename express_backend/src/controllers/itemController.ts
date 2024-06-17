@@ -17,6 +17,7 @@ import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 import mammoth from 'mammoth';
 import { promisify } from 'util';
+import { asBlob } from 'html-docx-js-typescript';
 
 interface WriteOperation {
     newContent: string;
@@ -381,18 +382,32 @@ export const downloadFile = async (req: any, res: any) => {
         }catch{
 
         }
+
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
-            const encodedFileName = encodeURIComponent(file.name);
-            res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
-            res.setHeader('Content-Type', 'application/octet-stream');
-      
-            const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
-      
-            fileStream.on('error', (_) => {
-              res.status(500).json({ success: false, error: 'Error al leer el archivo' });
-            });
-            fileStream.pipe(res).on('finish', () => {
-            });
+            const encodedFileName = encodeURIComponent(fileId);
+            console.log(file.name.split('.').pop());
+            if(file.name.split('.').pop() === 'docx'){
+                console.log("Entro")
+                const htmlString = await fs.promises.readFile(`uploads/${wsId}/${fileId}`, 'utf8')
+                const docxBlob = await asBlob(htmlString, {});
+                
+
+                res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+                res.send(docxBlob);
+            }else{
+                res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
+                res.setHeader('Content-Type', 'application/octet-stream');
+        
+                const fileStream = fs.createReadStream(`uploads/${wsId}/${fileId}`);
+        
+                fileStream.on('error', (_) => {
+                res.status(500).json({ success: false, error: 'Error al leer el archivo' });
+                });
+                fileStream.pipe(res).on('finish', () => {
+                });
+            }
         } else {
             res.status(404).json({ success: false, error: 'El archivo no existe' });
         }
