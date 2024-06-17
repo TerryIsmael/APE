@@ -332,7 +332,7 @@ onUnmounted(() => {
       <li style="margin-bottom: 2px; display: flex; align-items: center;" @click="openEditNameModal()"> Archivo: <span v-if="selectedItemPerms !== 'Read'" style="display: flex; vertical-align: middle; margin: 0; margin-left: 10%; cursor: pointer;" class="material-symbols-outlined">edit</span> </li>
       <li style="margin-top: 2px;"> {{ selectedItem?.name }}</li>
       <li style="margin-bottom: 2px;">Autor: {{ author?.username }}</li>
-      <li style="margin-top: 2px;"> ({{ author?.email }})</li>
+      <li style="margin-top: 2px;" class="email"> ({{ author?.email }})  </li>
       <li>Fecha de subida: {{ formatDate(selectedItem?.uploadDate) }}</li>
       <li>Última modificación: {{ formatDate(selectedItem?.modifiedDate) }}</li>
 
@@ -490,16 +490,20 @@ onUnmounted(() => {
   padding: 0;
 }
 
-.sidebar ul li {
+.sidebar ul li , .email {
   padding: 0 10px;
   margin: 10px 0;
   word-wrap: break-word;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 270px;
+}
+
+.email {
+  -webkit-line-clamp: 5;
 }
 
 .error {

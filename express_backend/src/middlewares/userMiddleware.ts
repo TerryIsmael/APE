@@ -20,6 +20,7 @@ export const validateUser = [
     body('user.surnames').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
     body('user.surnames').trim().isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres'),
 
+    body('user.email').isLength({ max: 163 }).withMessage('El email no puede tener más de 163 caracteres'),
     body('user.email').trim().notEmpty().withMessage('El correo electrónico es obligatorio')
     .isEmail().withMessage('El correo electrónico no es válido'),
 
@@ -50,6 +51,7 @@ export const validateNewUser = [
     body('surnames').matches(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/).withMessage('Los apellidos sólo pueden contener letras y espacios'),
     body('surnames').trim().isLength({ min: 1, max: 100 }).withMessage('Los apellidos deben tener entre 1 y 100 caracteres'),
 
+    body('email').isLength({ max: 163 }).withMessage('El email no puede tener más de 163 caracteres'),
     body('email').trim().notEmpty().withMessage('El correo electrónico es obligatorio')
     .isEmail().withMessage('El correo electrónico no es válido')
     .custom(async (value) => {

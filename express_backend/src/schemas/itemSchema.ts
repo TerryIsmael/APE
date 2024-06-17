@@ -37,7 +37,8 @@ const itemSchema = new mongoose.Schema({
         validate: {  
             validator: (value: string) => value.trim().length > 0,
             message: `El nombre del item no puede estar vacío`
-        }
+        },
+        maxlength: [330, "El nombre del item no pueden tener más de 330 caracteres"]
     },
     path: {
         type: String

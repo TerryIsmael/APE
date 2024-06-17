@@ -66,6 +66,7 @@ const userSchema = new mongoose.Schema<IUser>({
         type: String,
         unique: true,
         required: [true, "El email es obligatorio"],
+        maxlength: [163, "El email no pueden tener más de 163 caracteres"],
         validate: [
             {
                 validator: (value: string) => /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value),
