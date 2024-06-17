@@ -11,7 +11,7 @@ import { Essentials } from '@ckeditor/ckeditor5-essentials';
 import { Bold, Italic } from '@ckeditor/ckeditor5-basic-styles';
 import { Link } from '@ckeditor/ckeditor5-link';
 import { Paragraph } from '@ckeditor/ckeditor5-paragraph';
-import { Alignment } from '@ckeditor/ckeditor5-alignment';  // Importing the package.
+import { Alignment } from '@ckeditor/ckeditor5-alignment';
 import { Autoformat } from '@ckeditor/ckeditor5-autoformat';
 import { BlockQuote } from '@ckeditor/ckeditor5-block-quote';
 import { Heading } from '@ckeditor/ckeditor5-heading';
@@ -136,6 +136,10 @@ const editorConfig = {
 const handleFileInputChange = (event) => {
   const file = event.target.files[0];
   if (file) {
+    if (!file.type.startsWith('image/')) {
+        errorMessage.value.push('El archivo seleccionado no es una imagen');
+        return;
+    }
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
@@ -236,6 +240,11 @@ const loadTransformedFile = async () => {
         console.log(error);
     }
 };
+const fileInput = ref(null);
+const selectUploadFile = () => {
+  errorMessage.value = [];
+  fileInput.value.click();
+};
 
 onBeforeMount(async () => {
     if(props.item.ready){
@@ -258,7 +267,16 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-    {{ errorMessage }}
+      <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div>
+              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                {{ error }}
+              </p>
+            </div>
+            <button @click="errorMessage = []" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+            </button>
+          </div>
     <div v-if="!props.item.ready">
         <h2>El archivo se está procesando. Inténtelo de nuevo en unos minutos...</h2>
         <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
@@ -268,9 +286,40 @@ onBeforeMount(async () => {
             <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
         </div>
         <div v-if="appToUse === 'CKEditor'" style="color:black">
-            <input type="file" ref="fileInput" @change="handleFileInputChange">
+            <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
+            <button @click="selectUploadFile" style="margin:5px">Subir imagen</button>
             <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
 
         </div>
     </div>
 </template>
+
+<style scoped>
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.error {
+  grid-column: 1 / -1;
+  text-align: center;
+  justify-content: center;
+  width: fit-content; 
+  max-width: 80%; 
+  height: auto;
+  background-color: rgb(151, 47, 47);
+  border-radius: 10px;
+  padding-left: 1%; 
+  padding-right: 1%;
+  padding: 1px 10px;
+  margin-bottom: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-wrap: break-word;
+}
+
+</style>
