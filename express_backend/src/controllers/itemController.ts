@@ -12,10 +12,22 @@ import { CalendarItem, FileItem, FolderItem, NoteItem, NoticeItem, TimerItem } f
 import { getUserPermission } from '../utils/permsFunctions.ts';
 import type { NextFunction } from 'express';
 import Profile from '../schemas/profileSchema.ts';
-import type { ICalendar, INote, INotice, ITimer } from '../models/typeItem.ts';
+import type { ICalendar, IFile, INote, INotice, ITimer } from '../models/typeItem.ts';
 import { parseValidationError } from '../utils/errorParser.ts';
 import { sendMessageToWorkspace } from '../config/websocket.ts';
 import { updateFilesPath } from '../utils/updateFiles.ts';
+import mammoth from 'mammoth';
+import { promisify } from 'util';
+
+interface WriteOperation {
+    newContent: string;
+    resolve: (value?: void | PromiseLike<void>) => void;
+    reject: (reason?: any) => void;
+}
+
+const fileQueues: { [filePath: string]: WriteOperation[] } = {};
+
+const openAsync = promisify(fs.open);
 
 export const addItemToWorkspace = async (req: any, res: any) => {
 
@@ -155,6 +167,86 @@ export const editItem = async (req: any, res: any) => {
     }
 };
 
+export const editFile = async (req: any, res: any) => {
+    const wsId = req.body.workspace;
+    const fileId = req.body.fileId;
+    try {
+        const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
+        if (!workspace) {
+            res.status(404).json({ error: 'No se ha encontrado el workspace' });
+            return;
+        }
+        const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === fileId);
+        if (!item) {
+            res.status(404).json({ error: 'No se ha encontrado el item' });
+            return;
+        }
+        const perm = await getUserPermission(req.user._id, wsId, item._id);
+        if (!perm || perm !== Permission.Owner) {
+            res.status(403).json({ error: 'No estás autorizado para editar este item' });
+            return;
+        }
+
+        replaceFileContent(`uploads/${wsId}/${fileId}`, req.body.content);
+
+        sendMessageToWorkspace(req.body.workspace, { type: 'workspaceUpdated' });
+        res.status(200).json({ success: true, message: 'Archivo subido exitosamente' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al subir el archivo. ' + error });
+    }
+}
+
+async function replaceFileContent(filePath: string, newContent: string): Promise<void> {
+    if (!fileQueues[filePath]) {
+        fileQueues[filePath] = [];
+    }
+
+    return new Promise((resolve, reject) => {
+        fileQueues[filePath].push({ newContent, resolve, reject });
+        if (fileQueues[filePath].length === 1) {
+            processQueue(filePath);
+        }
+    });
+}
+
+async function processQueue(filePath: string): Promise<void> {
+    const queue = fileQueues[filePath];
+    if (queue.length === 0) {
+        return;
+    }
+
+    const { newContent, resolve, reject } = queue[0];
+    const lockFilePath = `${filePath}.lock`;
+
+    try {
+        const lockFd = await openAsync(lockFilePath, 'wx'); 
+
+        try {
+            await fs.promises.writeFile(filePath, newContent, 'utf8');
+            console.log(`El contenido del archivo ${filePath} ha sido reemplazado con éxito.`);
+            resolve();
+        } finally {
+            fs.close(lockFd);
+            await fs.promises.unlink(lockFilePath);
+        }
+    } catch (error: any) {
+        if (error.code === 'EEXIST') {
+            setTimeout(() => processQueue(filePath), 100);
+        } else {
+            console.error(`Error al reemplazar el contenido del archivo ${filePath}:`, error);
+            reject(error);
+        }
+    } finally {
+        queue.shift();
+        if (queue.length > 0) {
+            processQueue(filePath);
+        } else {
+            delete fileQueues[filePath];
+        }
+    }
+}
+
+
 export const changeItemPerms = async (req: any, res: any) => {
     const { itemId, profileId, perm } = req.body;
 
@@ -210,12 +302,66 @@ export const changeItemPerms = async (req: any, res: any) => {
 export const createFile = async (req: any, _: any, next: NextFunction) => {
     try{
         const profile = await Profile.findOne({ name: req.user._id });
-        const item = new FileItem({ name: new mongoose.Types.ObjectId, path: "temp_path", itemType: ItemType.File, length: 0, uploadDate: new Date(), modifiedDate: new Date(), profilePerms: [{ profile: profile?._id, permission: Permission.Owner }] });
+        const item = new FileItem({ name: new mongoose.Types.ObjectId, path: "temp_path", itemType: ItemType.File, uploadDate: new Date(), modifiedDate: new Date(), profilePerms: [{ profile: profile?._id, permission: Permission.Owner }] });
         await item.save();
         req.params.itemId = item.id;
         next();
     } catch (error) {
         next(error);
+    }
+};
+
+export const saveFile = async (req: any, res: any) => {
+    const wsId = req.body.workspace;
+    try {
+        const item = await FileItem.findOne({ _id: req.params.itemId }).exec();
+        if (!item) {
+            return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
+        }
+        item.name = req.file?req.file.originalname:item.name;
+        item.path = req.file?req.body.path:"";
+        const workspace = await (await Workspace.findOne({ _id: req.body.workspace }).exec())?.populate('items');
+        workspace?.items.push(item._id);
+        await workspace?.save();
+        console.log('Archivo subido exitosamente');
+        if (!['docx'].includes(req.file.originalname.split('.').pop())) {
+            item.ready = true;
+            await item.save();
+        }else{
+            await item.save();
+            processFile(wsId, item).then(() => { console.log('Archivo procesado exitosamente') }, (error) => {
+                console.log(error);
+                item.deleteOne();
+                if (error !== 'El archivo no existe') {
+                    fs.unlink(`uploads/temp/${wsId}/${item._id}`, () => { });
+                }
+                
+            }).finally(() => {
+                sendMessageToWorkspace(req.body.workspace, { type: 'workspaceUpdated' });
+                
+            });
+        }
+        sendMessageToWorkspace(req.body.workspace, { type: 'workspaceUpdated' });
+        res.status(200).json({ success: true, message: 'Archivo subido exitosamente' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error al subir el archivo. ' + error });
+    }
+};
+
+const processFile = async (wsId: string,item:  mongoose.Document<unknown, {}, IFile> & IFile & Required<{_id: Types.ObjectId;}>) => {
+    try{
+        if (!fs.existsSync(`uploads/${wsId}/temp/${item._id}`)) {
+            return Promise.reject('El archivo no existe');
+        }
+        const result = await mammoth.convertToHtml({ path: `uploads/${wsId}/temp/${item._id}` });
+        const html = result.value;
+        console.log(html);
+        fs.writeFileSync(`uploads/${wsId}/${item._id}`, html);
+        item.ready = true;
+        item.save();
+        return Promise.resolve();
+    }catch (error){
+        return Promise.reject('Error al procesar el archivo'+error);
     }
 };
 
@@ -238,6 +384,12 @@ export const downloadFile = async (req: any, res: any) => {
             res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
             return;
         }
+        try{
+            await fs.promises.access(`uploads/${wsId}/${fileId}.lock`);
+            res.status(409).json({ error: 'El archivo está siendo editado o precesado en estos momentos' });
+        }catch{
+
+        }
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
             const encodedFileName = encodeURIComponent(file.name);
             res.setHeader('Content-Disposition', `attachment; filename="${encodedFileName}"`);
@@ -254,6 +406,38 @@ export const downloadFile = async (req: any, res: any) => {
             res.status(404).json({ success: false, error: 'El archivo no existe' });
         }
     } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const transformAndDownloadFile = async (req: any, res: any) => {
+    const wsId = req.body.workspace;
+    const fileId = req.body.fileId;
+    try {
+        const workspace = await Workspace.findOne({ _id: wsId });
+        if (!workspace) {
+            res.status(404).json({ error: 'No se ha encontrado el workspace' });
+            return;
+        }
+        const file = await FileItem.findOne({ _id: fileId });
+        if (!file) {
+            res.status(404).json({ error: 'No se ha encontrado el archivo' });
+            return;
+        }
+        const perm = await getUserPermission(req.user._id, wsId, fileId);
+        if (!perm) {
+            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
+            return;
+        }
+        if (!fs.existsSync(`uploads/${wsId}/${fileId}`)) {
+            res.status(404).json({ success: false, error: 'El archivo no existe' });
+            return;
+        }
+        const result = await mammoth.convertToHtml({ path: `uploads/${wsId}/${fileId}` });
+        const html = result.value;
+        res.status(200).setHeader('Content-Type', 'text/html').send(html);
+    } catch (error: any) {
+        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };

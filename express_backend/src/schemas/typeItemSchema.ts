@@ -50,11 +50,9 @@ export const timerSchema = new mongoose.Schema<ITimer>({
 });
 
 export const fileSchema = new mongoose.Schema<IFile>({
-    length: { 
-        type: Number, 
-        required: [true, "La longitud del archivo es obligatoria"],
-        min: [0, "La longitud del archivo no puede ser negativa"],
-        default: 0
+    ready: { 
+        type: Boolean, 
+        deafault: false
     }
 });
 

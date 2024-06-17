@@ -1,9 +1,13 @@
 import multer from 'multer';
 
 const storage = multer.diskStorage({
-    
-    destination: (req, _, cb) => {
-      cb(null, `uploads/${req.body.workspace}`);
+    destination: (req, file, cb) => {
+      const fileExtension = file.originalname.split('.').pop();
+      if(['docx'].includes(fileExtension?fileExtension.toLowerCase():'')) {
+        cb(null, `uploads/${req.body.workspace}/temp`);
+      }else{
+        cb(null, `uploads/${req.body.workspace}`);
+      }
     },
 
     filename: (req, _, cb) => {
