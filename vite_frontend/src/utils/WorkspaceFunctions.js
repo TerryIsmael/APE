@@ -144,7 +144,7 @@ class WorkspaceUtils {
       }
     } else {
       selectedItem.value = item;
-      selectedItemPerms.value = await this.verifyPerms(item, workspace, currentUser);
+      selectedItemPerms.value = this.verifyPerms(item, workspace, currentUser);
       showSidebar.value = true;
       await this.findAuthor(selectedItem, author, router, errorMessage);
       userItemPerms.value = {};
@@ -155,7 +155,7 @@ class WorkspaceUtils {
     }
   };
 
-  static verifyPerms = async (item, workspace, currentUser) => {
+  static verifyPerms = (item, workspace, currentUser) => {
     const permLevel = { 'Owner': 4, 'Admin': 3, 'Write': 2, 'Read': 1};
     const wsPerm = workspace.value.profiles.filter(profile => profile.users?.map(x => x._id).includes(currentUser.value._id)).map(x=>[x.wsPerm,permLevel[x.wsPerm]]).sort((a, b) => b[1] - a[1])[0];
     if ([2,1].includes(wsPerm[1])) {
@@ -179,7 +179,7 @@ class WorkspaceUtils {
 
   static showFolderDetails = async (selectedItem, folders, selectedFolder, selectedItemPerms, showSidebar, author, router, workspace, currentUser, errorMessage) => {
     selectedItem.value = folders.value.find(item => item.name === selectedFolder.value);
-    selectedItemPerms.value = await this.verifyPerms(selectedItem.value, workspace, currentUser);
+    selectedItemPerms.value =  this.verifyPerms(selectedItem.value, workspace, currentUser);
     await this.findAuthor(selectedItem, author, router, errorMessage);
     showSidebar.value = true;
   };

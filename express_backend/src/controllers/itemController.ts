@@ -42,11 +42,10 @@ export const addItemToWorkspace = async (req: any, res: any) => {
         } else {
             const folders = path.split('/');
             const folder = folders[folders.length - 1];
-            const isRoot = folder == wsId;
             const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
             const folderPath = folders.slice(0, -1).join('/');
 
-            if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath) && !isRoot) {
+            if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath)) {
                 res.status(404).json({ error: 'No se ha encontrado la carpeta' });
                 return;
             } else {
@@ -84,9 +83,9 @@ export const addItemToWorkspace = async (req: any, res: any) => {
                 item.modifiedDate = new Date();
                 const profile = await Profile.findOne({ name: req.user._id, _id : { $in: workspace.profiles }});
                 item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
-                const perm = await getUserPermission(req.user._id, wsId);
+                const perm = await getUserPermission(req.user._id, wsId, existingFolder?._id.toString());
                 if (perm === Permission.Read || !perm) {
-                    res.status(403).json({ error: 'No estás autorizado para añadir items a este workspace' });
+                    res.status(403).json({ error: 'No estás autorizado para añadir items en este directorio' });
                 } else {
                     try {
                         await item.save();
