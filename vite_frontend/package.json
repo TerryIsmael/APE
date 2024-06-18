@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "bun vite",
+    "build": "bun vite build",
+    "preview": "bun vite preview"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-alignment": "^41.4.2",
@@ -34,11 +34,16 @@
     "vue": "^3.3.4",
     "vue-pdf-embed": "^2.0.4",
     "vue-router": "^4.3.2",
-    "ws": "^8.17.0"
+    "ws": "^8.17.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",
     "@vitejs/plugin-vue": "^4.2.3",
-    "vite": "^4.4.5"
+    "vite": "^4.4.5",
+    "@types/bun": "latest"
+  },
+  "module": "index.ts",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
   }
 }
