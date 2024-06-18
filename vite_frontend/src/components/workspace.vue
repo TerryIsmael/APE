@@ -229,20 +229,31 @@ const onDrop = async (evt, folder, back) => {
 };
 
 const getItemBindings = (item, index) => {
-  if (item.itemType === 'Folder') {
-    return {
-      onDrop: (event) => onDrop(event, item),
-      onDragover: (event) => event.preventDefault(),
-      onDragenter: (event) => event.preventDefault()
-    };
-  } else if (index === 0) {
-    return {
+  let bindings = {};
+  if (index === 0){
+    bindings = {
       onDrop: (event) => onDrop(event, item, true),
       onDragover: (event) => event.preventDefault(),
       onDragenter: (event) => event.preventDefault()
     };
-  }
-  return {};
+  } else {
+    const perm = WorkspaceUtils.verifyPerms(item, workspace, currentUser);
+    if(perm && perm !== 'Read') {
+      bindings = {
+        draggable: true,
+        dragstart: (event) => startDrag(event, item)
+      }
+      if (item.itemType === 'Folder') {
+        bindings = {
+          ...bindings,
+          onDrop: (event) => onDrop(event, item),
+          onDragover: (event) => event.preventDefault(),
+          onDragenter: (event) => event.preventDefault()
+        };
+      }
+    }
+  } 
+  return bindings;
 };
 
 const initPath = () => {
@@ -535,8 +546,7 @@ watch(
 
             <div class="items-container">
               <div class="item-container" v-for="item in items" :key="item.id" @click="selectItem(item, true)"
-                draggable="true" @dragstart="startDrag($event, item)" @contextmenu.prevent="handleRightClick(event, item)"
-                v-bind="getItemBindings(item)">
+                 @contextmenu.prevent="handleRightClick(event, item)" v-bind="getItemBindings(item)" @dragstart="startDrag($event, item)">
                 <div>
                   <div v-if="currentUser?.favorites?.includes(item._id)">
                     <img class="item-img" style="" :src="selectImage(item)" alt="item.name" width="100" height="100">
