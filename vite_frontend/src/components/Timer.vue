@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeMount, onBeforeUnmount, computed, defineComponent, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
 const props = defineProps({
     item: {
@@ -8,7 +9,7 @@ const props = defineProps({
         required: true
     },
     workspace: {
-        type: String,
+        type: Object,
         required: true
     },
     ws: {
@@ -18,15 +19,23 @@ const props = defineProps({
     path: {
         type: String,
         required: true
+    },
+    currentUser: {
+        type: Object,
+        required: true
     }
 });
 
 const router = useRouter();
+const errorMessage = ref([]);
 const workspace = ref(props.workspace);
 const ws = ref(props.ws);
 const item = ref(props.item);
+const currentUser = ref(props.currentUser);
 const interval = ref(null);
-
+const routedItemPerm = ref(null);
+const isEditModalOpened = ref(false);
+const newTime = ref({});
 const timer = computed(() => {
     const hours = Math.floor( item.value?.remainingTime / 3600);
     const minutes = Math.floor(( item.value?.remainingTime % 3600) / 60);
@@ -34,7 +43,35 @@ const timer = computed(() => {
     return `${String(hours).padStart(2, '0')} : ${String(minutes).padStart(2, '0')} : ${String(seconds).padStart(2, '0')}`;
 });
 
+const closeEditModal = () => {
+    isEditModalOpened.value = false;
+    newTime.value = {};
+    errorMessage.value = [];
+};
+
+const openEditModal = () => {
+    isEditModalOpened.value = true;
+    newTime.value = {
+        hours: Math.floor(item.value.duration / 3600),
+        minutes: Math.floor((item.value.duration % 3600) / 60),
+        seconds: (item.value.duration % 3600) % 60
+    };
+    errorMessage.value = [];
+};
+
+const navigateToPreviousFolder = () => {
+  WorkspaceUtils.navigateToPreviousFolder(ref(props.path), router);
+};
+
 const modifyTimer = async (action) => {
+    if (action === 'init' && item.value.active || action == 'stop' && !item.value.active) {
+       return;
+    }
+    let duration = 0;
+    if (action === 'edit') {
+        duration = newTime.value.hours * 3600 + newTime.value.minutes * 60 + newTime.value.seconds;
+    }
+
     try{
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/timer', {
             method: 'POST',
@@ -44,48 +81,59 @@ const modifyTimer = async (action) => {
             },
             body: JSON.stringify({
                 timerId: item.value._id,
-                workspace: workspace.value,
-                action:action
+                workspace: workspace.value._id,
+                action:action,
+                duration: action === 'edit' ? duration : null
             })
         });
-        const data = await response.json();
-        if (data.error) {
-            console.error('Error-> ', data.error)
+        if (response.ok){
+            closeEditModal();
+        } else {
+            const data = await response.json();
+            if (data.error.includes('No estás autenticado')) {
+                router.push('/login');
+            }else{
+                if (data.timer){
+                    item.value = data.timer;
+                }
+                errorMessage.value.push(data.error);
+            }
         }
+        
     }catch(error){
         console.error(error);
     }
 }; 
 
 const startTimer = () => {
-    item.value.isActive = true;
+    item.value.active = true;
     if (!interval.value){
         interval.value = setInterval(() => {
         item.value.remainingTime--;
         if ( item.value.remainingTime <= 0) {
             clearInterval(interval.value);
-            item.value.isActive = false;
+            item.value.active = false;
         }
     }, 1000);
     }
     
 };
-
-const stopTimer = (notify) => {
-    if (interval.value){
-        clearInterval(interval.value);
-        interval.value = null;
+const setTimer = (timer) => {
+    item.value.remainingTime = timer.remainingTime;
+    item.value.active = timer.active;
+    item.value.duration = timer.duration;
+    if (timer.active){
+        startTimer();
+    } else{
+        stopTimer();
     }
-    item.value.isActive = false;
 };
-
-const resetTimer = (notify) => {
+const stopTimer = () => {
     if (interval.value){
         clearInterval(interval.value);
         interval.value = null;
     }
-    item.value.isActive = false;
-    item.value.remainingTime = item.value.duration;
+    item.value.active = false;
 };
 
 const navigateToPreviousItem = () => {
@@ -96,15 +144,16 @@ const navigateToPreviousItem = () => {
 
 
 onMounted( async () => {
-    if (item.value.active) {
-        startTimer();
-    }
     props.ws.addEventListener('message', async (event) => {
         const jsonEvent = JSON.parse(event.data);
         if (jsonEvent.type === 'timer' && jsonEvent.timer._id === item.value._id) {
-            item.value = jsonEvent.timer;
+            item.value.remainingTime = jsonEvent.timer.remainingTime;
+            item.value.active = jsonEvent.timer.active;
+            item.value.duration = jsonEvent.timer.duration;
         }
     });
+
+    routedItemPerm.value = WorkspaceUtils.verifyPerms(item.value, workspace, currentUser);
 });
 
 onBeforeUnmount(() => {
@@ -127,17 +176,68 @@ watch(() => props.ws, (newWs) => {
 <template>
     <div>
         <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousItem()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <h1>Timer {{ item.name }}</h1>
+        <div class="title">
+            <div style="display:flex; justify-content: start;  width: 10vw;">
+                <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+            </div>
+            <div @click="$router.push('/workspace/')" style="display:flex; align-items: center; cursor:pointer">
+                <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+                <h1 style="min-width: 60%; max-width: 100%;">Timer {{ item.name }} </h1>
+            </div>
+            <button style="width: 5%; height: 5vh; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
+            
+        </div>
         <p class="timer-text"> {{ timer }}</p>
-        <div class="button-bar">
+        <div class="button-bar" v-if="routedItemPerm && routedItemPerm !== 'Read'">
             <button @click="modifyTimer('init')"><span class="material-symbols-outlined" style="z-index: 1002">play_arrow</span></button>
             <button @click="modifyTimer('stop')"><span class="material-symbols-outlined" style="z-index: 1002">pause</span></button>
             <button @click="modifyTimer('reset')"><span class="material-symbols-outlined" style="z-index: 1002">sync</span></button>
         </div>
+        
     </div>
+    <div class="error" v-if="errorMessage.length !== 0" style="display: flex; justify-content: space-between; padding-left: 2%;">
+        <div>
+        <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+            {{ error }}
+        </p>
+        </div>
+        <button @click="errorMessage=[]" style="display: flex; align-items: top; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+        <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+
+    <!-- Modal de edit timer -->
+    <Modal class="modal" :isOpen="isEditModalOpened" @modal-close="closeEditModal" name="edit-item-modal">
+    <template #header><strong>Modificar duración</strong></template>
+    <template #content>
+        <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
+            <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
+        </div>
+
+        <div style="margin-top: 20px">
+            <div style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
+                <input v-model="newTime.hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;" />
+                :<input v-model="newTime.minutes" type="number" min="0" placeholder="Min" class="timer-input" />
+                :<input v-model="newTime.seconds" type="number" min="0" placeholder="Seg" class="timer-input"style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;" />
+            </div>
+        </div>
+        <button @click="modifyTimer('edit')" style="margin-top: 15px">Actualizar</button>
+        <button @click="closeEditModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
+.title{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 2vh;
+    margin-bottom: 2vh;
+    
+
+}
+
 .timer-text {
     font-size: 8vw;
 }
@@ -148,7 +248,7 @@ watch(() => props.ws, (newWs) => {
     align-items: center;
     margin-top: 1vh;
 }
-button {
+.button-bar button {
     height: 10vh;
     width: 15vh;
     border: none;
@@ -157,6 +257,26 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
+}
 
+
+.error {
+  grid-column: 1 / -1;
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  width: fit-content; 
+  max-width: 80%; 
+  height: auto;
+  background-color: rgb(151, 47, 47);
+  border-radius: 10px;
+  padding-left: 1%; 
+  padding-right: 1%;
+  padding: 1px 10px;
+  margin-bottom: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-wrap: break-word;
 }
 </style>

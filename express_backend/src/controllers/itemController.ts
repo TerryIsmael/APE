@@ -223,7 +223,6 @@ async function processQueue(filePath: string): Promise<void> {
 
         try {
             await fs.promises.writeFile(filePath, newContent, 'utf8');
-            console.log(`El contenido del archivo ${filePath} ha sido reemplazado con éxito.`);
             resolve();
         } finally {
             fs.close(lockFd);
@@ -323,17 +322,16 @@ export const saveFile = async (req: any, res: any) => {
         const workspace = await (await Workspace.findOne({ _id: req.body.workspace }).exec())?.populate('items');
         workspace?.items.push(item._id);
         await workspace?.save();
-        console.log('Archivo subido exitosamente');
         if (!['docx'].includes(req.file.originalname.split('.').pop())) {
             item.ready = true;
             await item.save();
         }else{
             await item.save();
-            processFile(wsId, item).then(() => { console.log('Archivo procesado exitosamente') }, (error) => {
+            processFile(wsId, item).then(() => { }, (error) => {
                 console.log(error);
                 item.deleteOne();
                 if (error !== 'El archivo no existe') {
-                    fs.unlink(`uploads/temp/${wsId}/${item._id}`, () => { });
+                    fs.unlink(`uploads/${wsId}/temp/${item._id}`, () => { });
                 }
                 
             }).finally(() => {
@@ -348,18 +346,18 @@ export const saveFile = async (req: any, res: any) => {
     }
 };
 
-const processFile = async (wsId: string,item:  mongoose.Document<unknown, {}, IFile> & IFile & Required<{_id: Types.ObjectId;}>) => {
+const processFile = async (wsId: string, item: mongoose.Document<unknown, {}, IFile> & IFile & Required<{_id: Types.ObjectId;}>) => {
     try{
         if (!fs.existsSync(`uploads/${wsId}/temp/${item._id}`)) {
             return Promise.reject('El archivo no existe');
         }
-        const result = await mammoth.convertToHtml({ path: `uploads/${wsId}/temp/${item._id}` });
-        const html = result.value;
-        console.log(html);
-        fs.writeFileSync(`uploads/${wsId}/${item._id}`, html);
-        item.ready = true;
-        item.save();
-        return Promise.resolve();
+    const result = await mammoth.convertToHtml({ path: `uploads/${wsId}/temp/${item._id}` });
+    const html = result.value;
+    fs.writeFileSync(`uploads/${wsId}/${item._id}`, html);
+    fs.unlinkSync(`uploads/${wsId}/temp/${item._id}`);
+    item.ready = true;
+    item.save();
+    return Promise.resolve();
     }catch (error){
         return Promise.reject('Error al procesar el archivo'+error);
     }
@@ -368,6 +366,7 @@ const processFile = async (wsId: string,item:  mongoose.Document<unknown, {}, IF
 export const downloadFile = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const fileId = req.body.fileId;
+    const editorMode = req.body.editorMode;
     try {
         const workspace = await Workspace.findOne({ _id: wsId });
         if (!workspace) {
@@ -394,9 +393,7 @@ export const downloadFile = async (req: any, res: any) => {
 
         if (fs.existsSync(`uploads/${wsId}/${fileId}`)) {
             const encodedFileName = encodeURIComponent(fileId);
-            console.log(file.name.split('.').pop());
-            if(file.name.split('.').pop() === 'docx'){
-                console.log("Entro")
+            if(file.name.split('.').pop() === 'docx' && !editorMode){
                 const htmlString = await fs.promises.readFile(`uploads/${wsId}/${fileId}`, 'utf8')
                 const docxBlob = await asBlob(htmlString, {});
                 
@@ -421,38 +418,6 @@ export const downloadFile = async (req: any, res: any) => {
             res.status(404).json({ success: false, error: 'El archivo no existe' });
         }
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-};
-
-export const transformAndDownloadFile = async (req: any, res: any) => {
-    const wsId = req.body.workspace;
-    const fileId = req.body.fileId;
-    try {
-        const workspace = await Workspace.findOne({ _id: wsId });
-        if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
-        }
-        const file = await FileItem.findOne({ _id: fileId });
-        if (!file) {
-            res.status(404).json({ error: 'No se ha encontrado el archivo' });
-            return;
-        }
-        const perm = await getUserPermission(req.user._id, wsId, fileId);
-        if (!perm) {
-            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
-            return;
-        }
-        if (!fs.existsSync(`uploads/${wsId}/${fileId}`)) {
-            res.status(404).json({ success: false, error: 'El archivo no existe' });
-            return;
-        }
-        const result = await mammoth.convertToHtml({ path: `uploads/${wsId}/${fileId}` });
-        const html = result.value;
-        res.status(200).setHeader('Content-Type', 'text/html').send(html);
-    } catch (error: any) {
-        console.log(error);
         res.status(500).json({ error: error.message });
     }
 };

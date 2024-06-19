@@ -227,7 +227,7 @@ export const createWorkspace = async (req: any, res: any) => {
     await chat.save();
 
     if (!fs.existsSync(`uploads/${workspace._id}`)) {
-      fs.mkdirSync(`uploads/${workspace._id}`, { recursive: true });
+    fs.mkdirSync(`uploads/${workspace._id}/temp`, { recursive: true });
     }
     res.status(201).json({ wsId: workspace._id });
   } catch (error: any) {

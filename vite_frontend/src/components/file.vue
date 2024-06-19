@@ -48,7 +48,7 @@ const url = ref(null);
 const errorMessage = ref([]);
 const appToUse = ref(null);
 const workspace = ref(props.workspace);
-
+const isLoading = ref(true);
 const editor = ref(ClassicEditor);
 const editorConfig = {
     plugins: [
@@ -163,7 +163,7 @@ const saveData = async () => {
             body: JSON.stringify({ workspace: props.workspace._id, fileId: props.item._id, content: editorData.value })
         });
         if (response.ok) {
-            console.log('Data saved');
+            
         } else {
             errorMessage.value = [];
             const data = await response.json();
@@ -214,7 +214,7 @@ const loadTransformedFile = async () => {
                 'Content-Type': 'application/json',
             },
             credentials: "include",
-            body: JSON.stringify({ workspace: props.workspace._id, fileId: props.item._id })
+            body: JSON.stringify({ workspace: props.workspace._id, fileId: props.item._id, editorMode: true })
         });
         if (response.ok) {
             const blob = await response.blob();
@@ -246,6 +246,10 @@ const selectUploadFile = () => {
   fileInput.value.click();
 };
 
+const selectImage = (item) => {
+  return Utils.selectImage(item);
+};
+
 onBeforeMount(async () => {
     if(props.item.ready){
         switch(props.item.name.split('.').pop()){
@@ -262,34 +266,62 @@ onBeforeMount(async () => {
             break;
         }
     }
+    isLoading.value = false;
 });
 
 </script>
 
 <template>
-      <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
-            <div>
-              <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
-                {{ error }}
-              </p>
-            </div>
-            <button @click="errorMessage = []" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
-              <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
-            </button>
-          </div>
-    <div v-if="!props.item.ready">
-        <h2>El archivo se está procesando. Inténtelo de nuevo en unos minutos...</h2>
+    <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
+        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        {{ item.name }}
+        </h1>
+    </div>
+    <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+        <div>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+            {{ error }}
+            </p>
+        </div>
+        <button @click="errorMessage = []" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+            <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+    <div v-if="isLoading">
+        <h2>Cargando...</h2>
         <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
     </div>
     <div v-else>
-        <div v-if="appToUse === 'pdf'" style="display:flex; justify-content: center;">
-            <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
+        <div v-if="!props.item.ready">
+            <h2>El archivo se está procesando. Inténtelo de nuevo en unos minutos...</h2>
+            <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
         </div>
-        <div v-if="appToUse === 'CKEditor'" style="color:black">
-            <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
-            <button @click="selectUploadFile" style="margin:5px">Subir imagen</button>
-            <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
-
+        <div v-else>
+            <div v-if="appToUse === 'pdf'" style="display:flex; justify-content: center;">
+                <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
+            </div>
+            <div v-if="appToUse === 'CKEditor'" style="color:black">
+                <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
+                <button @click="selectUploadFile" style="margin:5px">Subir imagen</button>
+                <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
+            </div>
+            <div v-if="!appToUse" style="display:flex; flex-direction:column; align-items: center;justify-content: center; height: 100%;">
+                
+                <div class="item-container">
+                    <div>
+                        <div>
+                            <img class="item-img" :src="selectImage(item)" alt="item.name" width="100" height="100">
+                        </div>
+                        <div style="display:flex; align-items: center;">
+                            <p class="item-name">{{ item.name }} </p>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <button @click="downloadFile" style="margin-top: 20px;">Descargar</button>
+                </div>
+            </div>
         </div>
     </div>
 </template>
