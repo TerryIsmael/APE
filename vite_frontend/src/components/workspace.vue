@@ -371,15 +371,6 @@ const websocketEventAdd = () => {
 onBeforeMount(async () => {
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   ws.value = props.ws;
-  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: "include",
-      body: JSON.stringify({
-      username: import.meta.env.VITE_USERNAME,
-      password: "12345678910aA@",
-      })
-  });
   await fetchUser();
   await fetchWorkspace();
   initPath();

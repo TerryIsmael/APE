@@ -301,15 +301,6 @@ const websocketEventAdd = () => {
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
-  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: "include",
-    body: JSON.stringify({
-      username: import.meta.env.VITE_USERNAME,
-      password: "12345678910aA@",
-    })
-  });
   await fetchUser();
   await fetchWorkspace();
   await fetchInvitations();

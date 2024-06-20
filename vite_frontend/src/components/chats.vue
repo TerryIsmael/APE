@@ -199,15 +199,6 @@ const websocketEventAdd = () => {
 
 onBeforeMount(async () => {
   ws.value = props.ws;
-  await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: "include",
-      body: JSON.stringify({
-      username: import.meta.env.VITE_USERNAME,
-      password: "12345678910aA@",
-      })
-  });
   await fetchUser();
   newChat.value.users.push(currentUser.value);
   await fetchWorkspace();

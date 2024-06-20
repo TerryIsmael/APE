@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, defineComponent, onMounted, onBeforeMount } from 'vue'
+import { ref, computed, watch, defineComponent, onBeforeMount } from 'vue'
 import { useRouter } from 'vue-router';
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
