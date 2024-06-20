@@ -25,6 +25,8 @@ import { Table, TableToolbar } from '@ckeditor/ckeditor5-table';
 import { TextTransformation } from '@ckeditor/ckeditor5-typing';
 import { CKBox, CKBoxImageEdit } from "@ckeditor/ckeditor5-ckbox";
 import { CloudServices } from '@ckeditor/ckeditor5-cloud-services';
+import { read, utils as xlsxUtils, writeFileXLSX  } from 'xlsx';
+import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
 const props = defineProps({
     item: {
@@ -206,7 +208,7 @@ const loadFile = async () => {
     }
 };
 
-const loadTransformedFile = async () => {
+const loadTransformedDOCXFile = async () => {
     try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
             method: 'POST',
@@ -250,6 +252,50 @@ const selectImage = (item) => {
   return Utils.selectImage(item);
 };
 
+
+
+
+
+
+
+
+const html = ref("");
+const table = ref();
+
+const loadTransformedXLSXFile = async () => {
+    try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: "include",
+            body: JSON.stringify({ workspace: props.workspace._id, fileId: props.item._id })
+        });
+        if (response.ok) {
+            const buffer = await response.arrayBuffer();
+            const readedBuffer = read(buffer);
+            //console.log(readedBuffer);
+            html.value = xlsxUtils.sheet_to_html(readedBuffer.Sheets[readedBuffer.SheetNames[0]]);
+            //console.log(html.value); 
+        } else {
+            errorMessage.value = [];
+            const data = await response.json();
+            if (data.error || data.errors) {
+                Utils.parseErrorMessage(data, errorMessage);
+            } else {
+                throw new Error("Error al editar chat");
+            }
+        }
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+const downloadFile = async () => {
+  await WorkspaceUtils.downloadFile(workspace, ref(props.item), errorMessage);
+};
+
 onBeforeMount(async () => {
     if(props.item.ready){
         switch(props.item.name.split('.').pop()){
@@ -258,8 +304,12 @@ onBeforeMount(async () => {
             appToUse.value = 'pdf';
             break;
         case 'docx':
-            await loadTransformedFile();
+            await loadTransformedDOCXFile();
             appToUse.value = 'CKEditor';
+            break;
+        case 'xlsx':
+            await loadTransformedXLSXFile();
+            appToUse.value = 'Sheets';
             break;
         default:
             appToUse.value = '';
@@ -298,13 +348,22 @@ onBeforeMount(async () => {
             <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
         </div>
         <div v-else>
-            <div v-if="appToUse === 'pdf'" style="display:flex; justify-content: center;">
-                <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
+            <div v-if="appToUse === 'pdf'" style="display:flex; flex-direction: column; align-items: center">
+                <div style="max-height: 82vh; overflow-y: auto;">
+                    <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
+                </div>
+                <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
             </div>
             <div v-if="appToUse === 'CKEditor'" style="color:black">
                 <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
                 <button @click="selectUploadFile" style="margin:5px">Subir imagen</button>
                 <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
+            </div>
+            <div v-if="appToUse === 'Sheets'" style="display: flex; flex-direction: column;">
+                <div class="xlsx-table" ref="table" v-html="html"></div>
+                <div style="display:flex; justify-content: center;">
+                <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
+                </div>
             </div>
             <div v-if="!appToUse" style="display:flex; flex-direction:column; align-items: center;justify-content: center; height: 100%;">
                 
@@ -320,13 +379,13 @@ onBeforeMount(async () => {
                 </div>
                 <div style="display: flex; justify-content: center; align-items: center;">
                     <button @click="downloadFile" style="margin-top: 20px;">Descargar</button>
-                </div>
+                </div>      
             </div>
         </div>
     </div>
 </template>
 
-<style scoped>
+<style>
 
 .material-symbols-outlined {
   font-variation-settings:
@@ -334,6 +393,29 @@ onBeforeMount(async () => {
     'wght' 400,
     'GRAD' 0,
     'opsz' 24;
+}
+
+.xlsx-table {
+    border: 2px solid black;
+    border-collapse: collapse;
+    max-width: 100%;
+    overflow-x: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.xlsx-table table {
+    width: 100%;
+    border-collapse: collapse;
+
+}
+
+.xlsx-table table tbody tr td, 
+.xlsx-table table thead tr th {
+    border: 1px solid black!important; 
+    padding: 25px;
+    color:black;
+    background-color: white;
 }
 
 .error {
@@ -352,6 +434,10 @@ onBeforeMount(async () => {
   margin-left: auto;
   margin-right: auto;
   overflow-wrap: break-word;
+}
+
+.ck-editor__main, .ck-content {
+    max-height: 70vh;
 }
 
 </style>
