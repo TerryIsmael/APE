@@ -13,6 +13,7 @@ wsServer.on('connection', (ws) => {
       const workspaceId = parsedMessage.workspaceId;
       const userId = parsedMessage.userId;
       if (!workspaceId || !userId) {
+        ws.close();
         return;
       }
       if (!usersByWorkspace.has(workspaceId)) {
