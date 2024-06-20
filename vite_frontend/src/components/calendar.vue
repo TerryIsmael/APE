@@ -271,10 +271,12 @@ watch(props.item, (newVal, _ ) => {
       <div style="display:flex; justify-content: start;  width: 10vw;">
         <button style=" " @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
       </div>
-      <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        Calendario {{ item.name }}
-      </h1>
+      <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          <span class="item-name-title" style="padding-bottom:10px">{{ item.name }}</span>
+        </h1>
+      </div>
       <div style="width: 10vw;" >
         
       </div>

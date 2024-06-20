@@ -324,8 +324,8 @@ onBeforeMount(async () => {
 <template>
     <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
         <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
-        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-        {{ item.name }}
+            <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+            <span class="item-name-title" style="padding-bottom:10px">{{ item.name }}</span>
         </h1>
     </div>
     <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
@@ -438,6 +438,14 @@ onBeforeMount(async () => {
 
 .ck-editor__main, .ck-content {
     max-height: 70vh;
+}
+
+.item-name-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-bottom:10px;
 }
 
 </style>

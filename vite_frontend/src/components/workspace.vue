@@ -68,10 +68,6 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  if(routedItem.value) {
-    routedItem.value = items.value.find(item => item._id == routedItem.value._id);
-    routedItemPerm.value = verifyPerms(routedItem.value);
-  }
   loading.value = false;
 };
 
@@ -263,6 +259,7 @@ const initPath = () => {
     workspace.value.items.forEach(item => {
       if (item._id == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
         routedItem.value = item;
+        routedItemPerm.value = verifyPerms(item);
         path.value = pathArray.slice(0, pathArray.length - 2).join('/');
         showMainSidebar.value = false;
       }
@@ -430,7 +427,7 @@ watch(
         </div>
         <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
           <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-          {{ workspace?.name }} 
+          <span class="item-name-title">{{ workspace?.name }}</span> 
         </h1>
         <div style="display: flex; justify-content: end; width: 10vw;" >
           <button @click="openFormEditNote" v-if="!editing && routedItemPerm && routedItemPerm !== 'Read'">Editar</button>
@@ -903,6 +900,14 @@ watch(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.item-name-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-bottom:10px;
 }
 
 </style>

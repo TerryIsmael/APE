@@ -180,9 +180,11 @@ watch(() => props.ws, (newWs) => {
             <div style="display:flex; justify-content: start;  width: 10vw;">
                 <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
             </div>
-            <div @click="$router.push('/workspace/')" style="display:flex; align-items: center; cursor:pointer">
-                <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-                <h1 style="min-width: 60%; max-width: 100%;">Timer {{ item.name }} </h1>
+            <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
+                <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
+                    <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+                    <span class="item-name-title" style="padding-bottom:10px">{{ item.name }} </span>
+                </h1>
             </div>
             <button style="width: 5%; height: 5vh; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
             
@@ -278,5 +280,13 @@ watch(() => props.ws, (newWs) => {
   margin-left: auto;
   margin-right: auto;
   overflow-wrap: break-word;
+}
+
+.item-name-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-bottom:10px;
 }
 </style>
