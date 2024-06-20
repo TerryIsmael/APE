@@ -2,12 +2,6 @@ import mongoose from '../config/mongoose.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IProfile } from '../models/profile.ts';
 
-// code: string;
-// workspace: mongoose.Types.ObjectId;
-// profile: string;
-// expirationDate: Date;
-// active: boolean;
-
 const invitationSchema = new mongoose.Schema<IInvitation>({
     code: {
         type: String,

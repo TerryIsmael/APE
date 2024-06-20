@@ -38,7 +38,7 @@ const props = defineProps({
 const router = useRouter();
 const item = ref(props.item);
 const eventGuid = ref(0);
-const todayStr = new Date().toString().replace(/T.*$/, ''); // YYYY-MM-DD de hoy
+const todayStr = new Date().toString().replace(/T.*$/, '');
 const showModal = ref(false);
 const selectedEvent = ref(null);
 const modalTop = ref(0);
@@ -84,10 +84,6 @@ const parseFormEndDate = (date, init) => {
 }
  
 let events = []
-
-const handleWeekendsToggle = () => {
-  this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
-}
 
 const handleDateSelect = (selectInfo) => {
   selectedEvent.value = selectInfo;

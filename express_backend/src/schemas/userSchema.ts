@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema<IUser>({
         validate: [
             {
                 validator: (value: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/.test(value),
-                message: "La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un caracter especial"
+                message: "La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un carácter especial"
             },
             {
                 validator: (value: string) => !/\s/.test(value),
