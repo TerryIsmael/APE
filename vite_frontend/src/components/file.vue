@@ -275,9 +275,7 @@ const loadTransformedXLSXFile = async () => {
         if (response.ok) {
             const buffer = await response.arrayBuffer();
             const readedBuffer = read(buffer);
-            //console.log(readedBuffer);
             html.value = xlsxUtils.sheet_to_html(readedBuffer.Sheets[readedBuffer.SheetNames[0]]);
-            //console.log(html.value); 
         } else {
             errorMessage.value = [];
             const data = await response.json();

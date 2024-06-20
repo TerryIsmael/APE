@@ -19,8 +19,8 @@ const connectWs = () => {
         credentials: "include",
       });
       if(response.ok){
-         const currentUser = await response.json();
-        ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
+        const data = await response.json();
+        ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: data.user?._id, workspaceId: workspace}));
       }
   };
 

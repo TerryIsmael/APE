@@ -5,7 +5,7 @@ class WorkspaceDetails {
 
     static isUserInModalProfile = (user, modalProfile) => {
         if (modalProfile.value.users) {
-            return modalProfile.value.users.find(u => u._id === user._id);
+            return modalProfile.value.users.find(u => u?._id === user?._id);
         } else {
             return false;
         }
@@ -207,7 +207,7 @@ class WorkspaceDetails {
         }
     };
 
-    static inviteUser = async (workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
+    static inviteUser = async (workspace, userToInvite, permToInvite, profileWsPerms, author, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router) => {
         try {
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/invite', {
                 method: 'PUT',
@@ -221,6 +221,8 @@ class WorkspaceDetails {
                 userToInvite.value = '';
                 permToInvite.value = 'Read';
                 await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+                this.populateVariables(workspace, author, profileWsPerms);
+                this.getFilteredProfiles();
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
             } else {
@@ -229,7 +231,7 @@ class WorkspaceDetails {
                 if (data.error || data.errors) {
                     Utils.parseErrorMessage(data, errorMessage);
                 } else {
-                    throw new Error("Error al obtener datos del workspace");
+                    errorMessage.value.push("Error al obtener datos del workspace");
                 }
             }
         } catch (error) {
@@ -237,9 +239,40 @@ class WorkspaceDetails {
         }
     };
 
+    static getFilteredProfiles = (workspace, userWsPerms, searchProfileTerm) => {
+        let orderedProfiles = [];
+        let profiles = [];
+      
+        if (userWsPerms.value === 'Owner') {
+          const ownerProfile = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner');
+          profiles = workspace.value.profiles.filter(profile => {
+            const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+            const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
+            const isNotOwner = profile !== ownerProfile;
+            return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+          });
+        
+        } else if (userWsPerms.value === 'Admin') {
+          const forbiddenProfiles = workspace.value.profiles.filter(profile => profile.wsPerm === 'Owner' || profile.wsPerm === 'Admin');
+      
+          profiles = workspace.value.profiles.filter(profile => {
+            const isForbidden = forbiddenProfiles.includes(profile);
+            const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
+            const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
+            return searchTypeProfile.value === 'All' ? (matchesSearchTerm && !isForbidden) : (matchesSearchTerm && !isForbidden && profile.profileType === searchTypeProfile.value);
+          });
+        }
+        const withoutPerms = profiles.filter(profile => profile.wsPerm === 'Read');
+        const withPerms = profiles.filter(profile => profile.wsPerm !== 'Read');
+        orderedProfiles.push(...withPerms);
+        orderedProfiles.push(...withoutPerms); 
+        filteredProfiles.value = orderedProfiles;
+      };
+
     static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, author, profileWsPerms) => {
         try { 
-            profile.value.users = profile.value.users.map(user => user._id);
+            const individualUsers = workspace.value.profiles.filter(profile => profile.profileType === 'Individual').map(profile => profile.name);
+            profile.value.users = profile.value.users.filter(user=>individualUsers.includes(user._id)).map(user => user._id);
             const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/profile', {
                 body: JSON.stringify({ profile: profile.value, wsId: workspace.value._id }),
                 method: 'POST',

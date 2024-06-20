@@ -25,7 +25,6 @@ const applyInvitation = async () => {
         } else {
             errorMessage.value = [];
             const data = await response.json()
-            console.log(data)
             if (data.error || data.errors) {
                 Utils.parseErrorMessage(data, errorMessage);
             } else {
@@ -52,7 +51,6 @@ const fetchInvitation = async () => {
         } else {
             errorMessage.value = [];
             const data = await response.json()
-            console.log(data)
             if (data.error || data.errors) {
                 Utils.parseErrorMessage(data, errorMessage);
             } else {

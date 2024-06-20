@@ -13,7 +13,6 @@ const props = defineProps({
   },
 });
 
-const ws = ref(null);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const router = useRouter();
@@ -110,13 +109,13 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
   WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
 const editWorkspace = async () => {
   await WorkspaceDetailsUtils.editWorkspace(newWorkspace, workspace, router, errorMessage, author, profileWsPerms, editing);
-  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
+  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
 };
 
 const selectItem = async (item, direct) => {
@@ -146,7 +145,7 @@ const deleteInvitation = async (invitation) => {
 };
 
 const inviteUser = async () => {
-  await WorkspaceDetailsUtils.inviteUser(workspace, userToInvite, permToInvite, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router);
+  await WorkspaceDetailsUtils.inviteUser(workspace, userToInvite, permToInvite, profileWsPerms, author, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, router);
 };
 
 const copyInvitation = async (invitation) => {
@@ -159,7 +158,6 @@ const copyInvitation = async (invitation) => {
 };
 
 const getFilteredProfiles = computed(() => {
-
   let orderedProfiles = [];
   let profiles = [];
 
@@ -279,16 +277,18 @@ const createWorkspace = async (newWorkspaceName) => {
 
 const refreshWindow = async () => {
   await fetchWorkspace();
+
   await fetchInvitations();
 };
 
 const websocketEventAdd = () => {
   props.ws.addEventListener('open', async (event) => {
     console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
+    props.ws.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
   });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
+    console.log(jsonEvent);
     if (jsonEvent.type === 'workspaceUpdated') {
       await refreshWindow();
     } 
@@ -301,7 +301,6 @@ const websocketEventAdd = () => {
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
-  ws.value = props.ws;
   await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -320,11 +319,10 @@ onBeforeMount(async () => {
 
 onMounted(() => {
   workspaceId.value = localStorage.getItem('workspace');
-  websocketEventAdd();
 });
 
 onUnmounted(() => {
-  ws.value.removeEventListener('open', websocketEventAdd);
+  props.ws.removeEventListener('open', websocketEventAdd);
 });
 
 </script>

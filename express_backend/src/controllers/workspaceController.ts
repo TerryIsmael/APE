@@ -697,6 +697,7 @@ export const leaveWorkspace = async (req: any, res: any) => {
 
     await deleteUserFromWs(req.user._id, workspace);
     sendMessageToWorkspace(wsId, { type: 'chatAction' });
+    sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

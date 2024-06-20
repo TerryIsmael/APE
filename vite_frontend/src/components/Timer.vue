@@ -171,6 +171,12 @@ watch(() => props.ws, (newWs) => {
     };
   }
 }, { immediate: true });
+
+watch(() => props.workspace, (newWorkspace) => {
+  workspace.value = newWorkspace;
+  item.value = workspace.value.items.find(it => it._id === item.value._id);
+  routedItemPerm.value = WorkspaceUtils.verifyPerms(item.value, workspace, currentUser);
+}, { immediate: true });
 </script>
 
 <template>

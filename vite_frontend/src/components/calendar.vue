@@ -263,6 +263,11 @@ watch(props.item, (newVal, _ ) => {
   calendar.value.getApi().refetchEvents();
 })
 
+watch(() => props.workspace, (newWorkspace) => {
+  item.value = newWorkspace.items.find(it => it._id === item.value._id);
+  verifyPermissions();
+}, { immediate: true });
+
 </script>
 
 <template>
@@ -281,7 +286,7 @@ watch(props.item, (newVal, _ ) => {
         
       </div>
     </div>
-  <div style="padding: 40px; padding-bottom:0; background-color: #1E2B37;border-radius: 35px; width: 90%;">
+  <div style="padding: 40px; background-color: #1E2B37;border-radius: 35px; width: 90%;">
     <FullCalendar ref="calendar" style="color: white;" :options='calendarOptions'>
       <template v-slot:eventContent='arg'>
         <b>{{ arg.timeText }}</b>
