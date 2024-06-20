@@ -292,6 +292,10 @@ const closeWsModal = () => {
   Utils.closeWsModal(isWsModalOpened, workspaces, errorMessage);
 };
 
+const fetchUserWorkspaces = async () => {
+  await Utils.fetchUserWorkspaces(workspaces, router, errorMessage);
+};
+
 const leaveWorkspace = async (workspaceId) => {
   await Utils.leaveWorkspace(workspaceId, isWsModalOpened, workspaces, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
 };
@@ -352,6 +356,9 @@ const websocketEventAdd = () => {
     if (jsonEvent.type === 'workspaceUpdated') {
       await fetchWorkspace();
       initPath();
+    }
+    if (jsonEvent.type === 'profileDeleted' || jsonEvent.type === 'addedToWorkspace' ){
+      await fetchUserWorkspaces();
     }
     if ((jsonEvent.type === 'profileDeleted' && jsonEvent.wsAffected === workspace.value._id.toString()) || jsonEvent.type === 'workspaceDeleted') {
       localStorage.removeItem('workspace');

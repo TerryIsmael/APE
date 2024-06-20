@@ -304,6 +304,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
 
   sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
   sendMessageToWorkspace(wsId, { type: 'chatAction' });
+  sendMessageToUser(user._id.toString(), { type: 'addedToWorkspace' });
   sendMessageToUser(user._id.toString(), { type: 'chatAction'});
   res.status(201).json(workspace);
   

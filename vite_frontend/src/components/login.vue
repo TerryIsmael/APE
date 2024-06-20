@@ -13,28 +13,30 @@ const user = ref({ username: '', password: '' });
 const router = useRouter();
 const error = ref('');
 
-const login = () => {
+const login = async () => {
   error.value = '';
-  fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: "include",
-    body: JSON.stringify({
-      username: user.value.username,
-      password: user.value.password,
-    })
-  }).then(response => {
-      if (response.status === 200) {
-        router.push('/workspace/');
-      } else if (response.status === 401){
-        logout();
-        login();
-      } else {
-        error.value = 'Error al iniciar sesión';
-      }
-  }).catch(error => {
-        error.value = 'Error al iniciar sesión';
-  })
+  try{
+    const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
+      body: JSON.stringify({
+        username: user.value.username,
+        password: user.value.password,
+      })
+    });
+    if (response.status === 200) {
+      router.push('/workspace/');
+    } else if (response.status === 401){
+      logout();
+      login();
+    } else {
+      const data = await response.json();
+      error.value = data.error;
+    }
+  } catch (error) {
+    error.value = 'Error al iniciar sesión';
+  }
 };
 
 const logout = async () => {
