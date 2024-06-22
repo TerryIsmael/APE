@@ -523,6 +523,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
   align-items: center;
   color: white;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .message-input-container {
