@@ -52,7 +52,7 @@ export const timerSchema = new mongoose.Schema<ITimer>({
 export const fileSchema = new mongoose.Schema<IFile>({
     ready: { 
         type: Boolean, 
-        deafault: false
+        default: false
     }
 });
 
