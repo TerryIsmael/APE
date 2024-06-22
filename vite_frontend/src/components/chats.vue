@@ -249,7 +249,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
               </div>
             </div>
           </div>
-            <button style="width: 90%; margin-left: auto; margin-right: auto;" @click="openModal()">Nuevo chat</button>
+            <button style="width: 90%; margin-left: auto; margin-right: auto; margin-bottom:5px" @click="openModal()">Nuevo chat</button>
         </div>
 
         <div v-if="!inDetails" class="message-chat-container">

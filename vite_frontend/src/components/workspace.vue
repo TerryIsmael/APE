@@ -440,7 +440,7 @@ watch(
           <p>{{ routedItem.text }}</p>
         </div>
         <div class="notebook" style="color:black; width: 80%; height: 90vh; margin-top: 10px; margin-bottom: 20px; padding: 20px; padding-bottom: 10px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
-          <textarea v-model="titleText" style="height: 10vh; color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"></textarea>
+          <textarea v-model="titleText" maxlength="330" style="height: 10vh; color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"></textarea>
           <textarea v-model="noteText" style="color:black; width: 100%; height: 70%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
           <div style="margin: 5px; height: 5%;">
             <button style="margin-right: 5px;" @click="saveNote">Guardar</button>

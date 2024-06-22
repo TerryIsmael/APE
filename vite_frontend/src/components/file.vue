@@ -359,7 +359,7 @@ onBeforeMount(async () => {
             </div>
             <div v-if="appToUse === 'Sheets'" style="display: flex; flex-direction: column;">
                 <div class="xlsx-table" ref="table" v-html="html"></div>
-                <div style="display:flex; justify-content: center;">
+                <div style="display: flex; justify-content: center; margin-bottom: 2%">
                 <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
                 </div>
             </div>

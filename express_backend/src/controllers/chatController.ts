@@ -16,7 +16,7 @@ export const getChats = async (req: any, res: any) => {
             type: chat.type,
             workspace: chat.workspace ? {_id: chat.workspace?._id, name: (chat.workspace as unknown as IWorkspace)?.name } : null,
             updatedAt: chat.updatedAt,
-            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),    
+            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user?._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),    
             users: (chat.users as IUser[]).map(user => ({ _id: user?._id, username: user?.username, email: user?.email }))
           })
         });
@@ -41,7 +41,7 @@ export const getChat = async (req: any, res: any) => {
             type: chat.type,
             workspace: chat.workspace ? {_id: chat.workspace?._id, name: (chat.workspace as unknown as IWorkspace)?.name } : null,
             updatedAt: chat.updatedAt,
-            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),
+            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user?._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),
             users: (chat.users as IUser[]).map(user => ({ _id: user?._id, username: user?.username, email: user?.email }))
         };
 

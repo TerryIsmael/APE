@@ -189,11 +189,26 @@ const handleStartEdit = (selectedEvent) => {
   editing.value = true;
 }
 
+const handleDeleteEvent = (selectedEvent) => {
+  if (selectedEvent.id){
+    const event = calendar.value.getApi().getEventById(selectedEvent.id);
+    item.value.events = item.value.events.filter(e => e._id !== selectedEvent.id);
+    event.remove();
+    handleEvents(item.value.events);
+    closeModal();
+  }
+}
+
 const handleFinishEdit = () => {
   if (!editingEvent.value.title || editingEvent.value.title.trim()=="" || !editingEvent.value.start || editingEvent.value.start.trim() == ""){
     alert('Por favor, rellene al menos los campos de título y fecha de inicio.')
     return;
   }
+  if (editingEvent.value.end && editingEvent.value.end.trim() !== "" && new Date(editingEvent.value.start) > new Date(editingEvent.value.end)){
+    alert('La fecha de inicio no puede ser mayor a la fecha de fin.')
+    return;
+  }
+
   if(editingEvent.value.id){
     const event = calendar.value.getApi().getEventById(editingEvent.value.id);
     item.value.events = item.value.events.map(e => {
@@ -295,10 +310,11 @@ watch(() => props.workspace, (newWorkspace) => {
           <h2>{{ selectedEvent.title }}</h2>
           <p>Inicio: {{ parseSpanishStartDate(selectedEvent.start) }}</p>
           <p> {{ selectedEvent.end?"Fin: " + parseSpanishEndDate(selectedEvent.end):"" }}</p>
-          <button v-if="itemPermission !== 'Read'" @click="handleStartEdit(selectedEvent)">Editar</button>
+          <button v-if="itemPermission !== 'Read'" @click="handleStartEdit(selectedEvent)" style="margin-right:5px">Editar</button>
+          <button class="red-button" @click="handleDeleteEvent(selectedEvent)" style="width: 100px; margin-left:5px">Eliminar</button>
         </div>
         <div class="modal-form" v-else style="display: flex; flex-direction: column; align-items: center;">
-          <h2>Editar evento</h2>
+          <h2>{{ editingEvent.id?"Editar evento":"Crear nuevo evento" }}</h2>
           <input class="modal-input" type="text" v-model="editingEvent.title" style="width: 100%; background-color: white; color: black; margin-bottom:10px">
           <input class="modal-input" type="date" v-model="editingEvent.start" style="width: 200px;background-color: white; color: black; margin-bottom:10px">
           <input type="date" v-model="editingEvent.end" style="width: 200px;background-color: white; color: black; margin-bottom:10px">
@@ -427,6 +443,10 @@ b {
 
 .fc-daygrid-more-link:hover {
   color: white;
+}
+
+.red-button {
+  background-color: #c55e5e; 
 }
 
 </style>

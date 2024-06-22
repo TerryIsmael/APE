@@ -253,7 +253,7 @@ const leaveWorkspace = async (workspaceId) => {
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ref(props.ws));
 };
 
 const toggleLeave = () => {
