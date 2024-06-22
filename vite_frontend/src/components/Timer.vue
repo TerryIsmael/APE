@@ -192,7 +192,7 @@ watch(() => props.workspace, (newWorkspace) => {
                     <span class="item-name-title" style="padding-bottom:10px">{{ item.name }} </span>
                 </h1>
             </div>
-            <button style="width: 5%; height: 5vh; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
+            <button style="width: 5%; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
             
         </div>
         <p class="timer-text"> {{ timer }}</p>

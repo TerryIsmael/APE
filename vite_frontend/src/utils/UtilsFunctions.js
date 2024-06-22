@@ -262,14 +262,15 @@ class UtilsFunctions {
 
   static redirectToWorkspace = async (workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws) => {
     localStorage.setItem('workspace', workspaceId);
-
-    if (path && path.value === '') {
+    if (["/workspace", "/workspace/"].includes(router.currentRoute.value.path)) {
       await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-      this.closeWsModal(isWsModalOpened, workspaces, errorMessage)
+      this.closeWsModal(isWsModalOpened, workspaces, errorMessage);
       showMainSidebar.value = false;
       ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspaceId }));
     } else {
       router.push('/workspace');
+      this.closeWsModal(isWsModalOpened, workspaces, errorMessage);
+      ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspaceId }));
     }
   };
 
