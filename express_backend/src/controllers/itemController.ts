@@ -328,7 +328,6 @@ export const saveFile = async (req: any, res: any) => {
         }else{
             await item.save();
             processFile(wsId, item).then(() => { }, (error) => {
-                console.log(error);
                 item.deleteOne();
                 if (error !== 'El archivo no existe') {
                     fs.unlink(`uploads/${wsId}/temp/${item._id}`, () => { });

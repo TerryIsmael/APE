@@ -35,7 +35,9 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
         const chat = new Chat({ name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: [user._id], messages: [] });
         await chat.save();
 
-        fs.mkdirSync(`./uploads/${workspace._id}`);
+        if (!fs.existsSync(`uploads/${workspace._id}`)) {
+            fs.mkdirSync(`uploads/${workspace._id}/temp`, { recursive: true });
+        }
 
         return res.status(201).json({ message: 'Usuario registrado exitosamente' });
 
