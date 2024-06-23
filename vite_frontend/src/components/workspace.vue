@@ -197,8 +197,8 @@ const closeEditNameModal = () => {
   WorkspaceUtils.closeEditNameModal(isEditNameModalOpened, editItem, errorMessage)
 };
 
-const modifyItem = async (item) => {
-  await WorkspaceUtils.modifyItem(item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+const modifyItem = async (item, changeName) => {
+  await WorkspaceUtils.modifyItem(item, changeName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
   if (errorMessage.value.length === 0 && isEditNameModalOpened.value) {
     closeEditNameModal();
   }
@@ -604,7 +604,7 @@ watch(
 
       <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
         <div style="display: flex; justify-content: space-between;">
-          <button @click="modifyItem(editItem)" style="margin-top: 15px">Actualizar</button>
+          <button @click="modifyItem(editItem, true)" style="margin-top: 15px">Actualizar</button>
           <button @click="closeEditNameModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
         </div>
       </div>
