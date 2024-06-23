@@ -428,7 +428,7 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <input v-if="editing" type="text" class="workspace-input" v-model="newWorkspace.name" :placeholder=workspace.name></input>
+            <input v-if="editing" type="text" class="workspace-input" maxlength="55" v-model="newWorkspace.name" :placeholder=workspace.name></input>
             <div v-else style="margin: 0;">
               <hr style="width: 92%; display: flex; margin-left: 0%; margin-top: 0.5%">
               <h4 style="margin-left: 0; margin-right: 0; margin-top: 0;"> {{ workspace.name }}</h4>

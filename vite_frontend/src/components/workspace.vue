@@ -199,8 +199,11 @@ const closeEditNameModal = () => {
 
 const modifyItem = async (item) => {
   await WorkspaceUtils.modifyItem(item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  if (errorMessage.value.length === 0) {
+  if (errorMessage.value.length === 0 && isEditNameModalOpened.value) {
     closeEditNameModal();
+  }
+  if (errorMessage.value.length === 0 && editing.value) {
+    editing.value = false;
   }
 };
 
@@ -273,12 +276,11 @@ const initPath = () => {
 
 const openFormEditNote = () => {
   editing.value = true;
-  titleText.value = routedItem.value.name;
-  noteText.value = routedItem.value.text;
+  titleText.value = {...routedItem.value}.name;
+  noteText.value = {...routedItem.value}.text;
 };
 
 const saveNote = async () => {
-  editing.value = false;
   routedItem.value.name = titleText.value;
   routedItem.value.text = noteText.value;
   await modifyItem(routedItem.value);
@@ -434,7 +436,20 @@ watch(
           <button @click="openFormEditNote" v-if="!editing && routedItemPerm && routedItemPerm !== 'Read'">Editar</button>
         </div>
       </div>
-      <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
+
+      <div class="main-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 80vw;">
+
+        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+          <div>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              {{ error }}
+            </p>
+          </div>
+          <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+            <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
         <div class="notebook" style="color: black; width: 80%; margin-top: 10px; margin-bottom: 20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
           <h1>{{ routedItem.name }}</h1>
           <p>{{ routedItem.text }}</p>
@@ -448,6 +463,7 @@ watch(
           </div>
         </div>
       </div>
+
     </div>
     <div v-if="routedItem == 'Not found'">
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
