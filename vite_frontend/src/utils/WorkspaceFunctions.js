@@ -491,9 +491,9 @@ class WorkspaceUtils {
     errorMessage.value = [];
   };
 
-  static modifyItem = async (item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+  static modifyItem = async (item, changeName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try {
-      if (item && item.itemType == 'File') {
+      if (changeName && item && item.itemType == 'File') {
         const extension = selectedItem.value?.name.split('.').pop(); 
         if (item.name.trim().length !== 0) {
           item.name = item.name + '.' + extension;
