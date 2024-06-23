@@ -281,7 +281,6 @@ const refreshWindow = async () => {
 const websocketEventAdd = () => {
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
-    console.log(jsonEvent);
     if (jsonEvent.type === 'workspaceUpdated') {
       await refreshWindow();
     } 
