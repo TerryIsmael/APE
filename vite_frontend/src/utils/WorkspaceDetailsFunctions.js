@@ -103,7 +103,7 @@ class WorkspaceDetails {
 
             if (response.ok) {
             const data = await response.json();
-            await navigator.clipboard.writeText(import.meta.env.VITE_BACKEND_URL + '/invite/' + data.invitation.code);
+            await navigator.clipboard.writeText(window.location.origin + '/invite/' + data.invitation.code);
             await this.fetchInvitations(workspace, invitations, errorMessage);
             } else if (response.status === 401) {
                 router.push({ name: 'login' });

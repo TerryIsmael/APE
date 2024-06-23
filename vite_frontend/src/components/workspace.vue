@@ -437,7 +437,7 @@ watch(
         </div>
       </div>
 
-      <div class="main-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 80vw;">
+      <div class="main-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 80vw; margin-bottom: 3%">
 
         <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
           <div>
@@ -902,6 +902,7 @@ watch(
 .notebook h1 {
   margin-top: 20px;
   text-align: center;
+  padding-bottom: 10px;
   margin-bottom: 30px;
   word-wrap: break-word; 
   display: -webkit-box; 
