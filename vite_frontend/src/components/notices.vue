@@ -8,7 +8,7 @@ import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
@@ -204,10 +204,6 @@ const modifyItem = async (item) => {
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = await JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {

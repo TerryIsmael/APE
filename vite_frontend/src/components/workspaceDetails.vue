@@ -8,7 +8,7 @@ import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
@@ -109,13 +109,11 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
   WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
 const editWorkspace = async () => {
   await WorkspaceDetailsUtils.editWorkspace(newWorkspace, workspace, router, errorMessage, author, profileWsPerms, editing);
-  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
 };
 
 const selectItem = async (item, direct) => {
@@ -277,15 +275,10 @@ const createWorkspace = async (newWorkspaceName) => {
 
 const refreshWindow = async () => {
   await fetchWorkspace();
-
   await fetchInvitations();
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    props.ws.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
     console.log(jsonEvent);
@@ -387,7 +380,7 @@ onUnmounted(() => {
             <div style="display: flex; justify-content: space-between; width: 100%;">
               <select v-model="inviteProfile" class="text-input" style="width: 60%;">
                   <option :value="'none'"> Ninguno - Lectura </option>
-                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile.name">{{ profile.name }} </option>
+                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile">{{ profile.name }} </option>
               </select>
               <select v-model="linkDuration" class="text-input" style="width: 20%; margin-left:3px">
                   <option :value="'day'"> 1 día </option>
@@ -405,8 +398,8 @@ onUnmounted(() => {
                 <th style="width:6%">Activo</th>
                 <th style="width:8%; margin-left:5%; text-align: end;">Eliminar</th>
               </tr>
-              <tr v-for="invitation in invitations" :key="invitation._id">  
-                <td >{{ invitation.profile?(invitation.profile.name, "-", invitation.profile.wsPerm):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
+              <tr v-for="invitation in invitations" :key="invitation._id"> 
+                <td >{{ invitation.profile?(invitation.profile.name+ "-"+ invitation.profile.wsPerm):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
                 <td>{{ invitation.expirationDate?Utils.formatDate(invitation.expirationDate):"Indefinida" }}</td>
                 <td class="td-center"><span @click="toggleActiveInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">{{ invitation.active ? 'check' : 'close' }}</span></td>
                 <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>

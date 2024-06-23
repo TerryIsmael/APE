@@ -524,7 +524,7 @@ export const useInvitation = async (req: any, res: any) => {
       return;
     }
 
-    if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === req.user._id.toString()))) {
+    if (workspace.profiles.some((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === req.user._id.toString()))) {
       res.status(409).json({ error: 'Ya estás en el workspace' });
       return;
     }
@@ -538,18 +538,19 @@ export const useInvitation = async (req: any, res: any) => {
 
     const chat = await Chat.findOne({ workspace: workspace._id });
     if(chat){
-      chat.users.push(user._id);
+      chat.users.push(user);
       await chat.save();
     }
 
     if (profile instanceof mongoose.Document){
-      profile.set("users",profile.get("users").push(user));
+      profile.get("users").push(mongoose.Types.ObjectId.createFromHexString(user._id.toString()));
       await profile.save();
     }
 
+    sendMessageToWorkspace(workspace._id.toString(), { type: 'workspaceUpdated' });
     res.status(200).json({ message: 'Invitación usada' });
   }catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -697,8 +698,8 @@ export const leaveWorkspace = async (req: any, res: any) => {
     }
 
     await deleteUserFromWs(req.user._id, workspace);
-    sendMessageToWorkspace(wsId, { type: 'chatAction' });
     sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+    sendMessageToWorkspace(wsId, { type: 'chatAction' });
     res.status(201).json(workspace);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

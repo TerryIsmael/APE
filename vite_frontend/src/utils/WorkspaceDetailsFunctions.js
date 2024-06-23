@@ -222,7 +222,6 @@ class WorkspaceDetails {
                 permToInvite.value = 'Read';
                 await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
                 this.populateVariables(workspace, author, profileWsPerms);
-                this.getFilteredProfiles();
             } else if (response.status === 401) {
                 router.push({ name: 'login' });
             } else {
@@ -238,36 +237,6 @@ class WorkspaceDetails {
             console.log(error);
         }
     };
-
-    static getFilteredProfiles = (workspace, userWsPerms, searchProfileTerm) => {
-        let orderedProfiles = [];
-        let profiles = [];
-      
-        if (userWsPerms.value === 'Owner') {
-          const ownerProfile = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner');
-          profiles = workspace.value.profiles.filter(profile => {
-            const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-            const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
-            const isNotOwner = profile !== ownerProfile;
-            return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
-          });
-        
-        } else if (userWsPerms.value === 'Admin') {
-          const forbiddenProfiles = workspace.value.profiles.filter(profile => profile.wsPerm === 'Owner' || profile.wsPerm === 'Admin');
-      
-          profiles = workspace.value.profiles.filter(profile => {
-            const isForbidden = forbiddenProfiles.includes(profile);
-            const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
-            const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
-            return searchTypeProfile.value === 'All' ? (matchesSearchTerm && !isForbidden) : (matchesSearchTerm && !isForbidden && profile.profileType === searchTypeProfile.value);
-          });
-        }
-        const withoutPerms = profiles.filter(profile => profile.wsPerm === 'Read');
-        const withPerms = profiles.filter(profile => profile.wsPerm !== 'Read');
-        orderedProfiles.push(...withPerms);
-        orderedProfiles.push(...withoutPerms); 
-        filteredProfiles.value = orderedProfiles;
-      };
 
     static saveProfile = async (profile, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, author, profileWsPerms) => {
         try { 

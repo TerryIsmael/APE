@@ -13,7 +13,7 @@ import { WSPermission } from '../../../express_backend/src/models/profile';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
   workspace: {

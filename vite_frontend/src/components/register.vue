@@ -5,7 +5,7 @@ import Utils from "../utils/UtilsFunctions.js";
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
