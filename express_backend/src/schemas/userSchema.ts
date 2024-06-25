@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema<IUser>({
                     const existingUser: IUser = await User.findOne({ username: value }).exec() as IUser;
                     return !existingUser || existingUser._id.toString() === this._id.toString();
                 },
-                message: "El nombre de usuario ya está en uso"
+                message: "Este nombre de usuario ya está en uso"
             }
         ]
     },
@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema<IUser>({
                     const existingUser: IUser = await User.findOne({ email: value }).exec() as IUser;
                     return !existingUser || existingUser._id.toString() === this._id.toString();
                 },
-                message: "El correo ya está en uso"
+                message: "Este email ya está en uso"
             }
         ]
     },

@@ -56,9 +56,10 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
         user.surnames = newUserData.surnames;
         user.email = newUserData.email;
 
-        if (newUserData.password) {
+        if (!!req.body.user.password.trim()) {
             newUserData.password = bcrypt.hashSync(newUserData.password, 10);
         }
+
         try {
             await user.validate();
         } catch (validationError) {

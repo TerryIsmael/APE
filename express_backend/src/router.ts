@@ -6,7 +6,7 @@ import { registerUser, fetchUserData, updateUser, deleteUser, getUserByUsernameO
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace, getInvitation } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem, editFile, saveFile } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
-import { isLogged, validatePassword } from './middlewares/userMiddleware.ts';
+import { isLogged, validatePassword,validateEditPassword } from './middlewares/userMiddleware.ts';
 import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
 import { validatePrivateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
@@ -38,7 +38,7 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
     })(req, res, next);
 });
 
-router.post('/user/edit', isLogged, validatePassword, (req: Request , res: Response) => {
+router.post('/user/edit', isLogged, validateEditPassword, (req: Request , res: Response) => {
     try {
         updateUser(req, res);
     } catch (error) {
