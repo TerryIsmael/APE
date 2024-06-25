@@ -93,18 +93,12 @@ export const createChat = async (req: any, res: any) => {
     const name = req.body.name;
     const users = req.body.users;
 
-    if (!users || users.length < 2) {
-        return res.status(400).json({ error: "Debe haber al menos dos usuarios" });
-    }
-
     const chat = new Chat({ name: name, type: ChatType.PRIVATE, users: users, messages: [] });
-
     try {
-        chat.validateSync();
+        await chat.validate();
     } catch (error) {
         return res.status(400).json({ errors: parseValidationError(error) });
     }
-
     try {
         await chat.save();
         sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "chatAction", chatId: chat._id })
@@ -117,14 +111,6 @@ export const createChat = async (req: any, res: any) => {
 export const editChatName = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const name = req.body.name;
-
-    if (!name || name.trim().length === 0) {
-        return res.status(400).json({ error: "El nombre no puede estar vacío" });
-    }
-
-    if (name.length > 60) {
-        return res.status(400).json({ error: "El nombre no puede tener más de 60 caracteres" });
-    }
 
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
@@ -140,6 +126,11 @@ export const editChatName = async (req: any, res: any) => {
         }
 
         chat.name = name;
+        try {
+            await chat.validate();
+        } catch (error) {
+            return res.status(400).json({ errors: parseValidationError(error) });
+        }
         await chat.save();
         sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "messageAddedToChat", chatId: chatId, name: name });
         res.status(200).json({ message: "Nombre cambiado" });

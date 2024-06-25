@@ -217,10 +217,11 @@ export const createWorkspace = async (req: any, res: any) => {
     profile.save();
     const workspace = new Workspace({ name: wsName, items: [], profiles: [profile] });
     try {
-      workspace.validateSync();
+      await workspace.validate();
     } catch (error) {
-      res.status(400).json({ error: parseValidationError(error) });
+      res.status(400).json({ errors: parseValidationError(error) });
     }
+
     await workspace.save();
 
     const chat = new Chat({ name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: [req.user], messages: [] });
@@ -249,6 +250,11 @@ export const editWorkspace = async (req: any, res: any) => {
       return;
     }
     workspace.name = newWs.name;
+    try {
+      await workspace.validate();
+    } catch (error) {
+      res.status(400).json({ errors: parseValidationError(error) });
+    }
     await workspace.save();
 
     const chat = await Chat.findOne({ workspace: newWs._id });
@@ -318,25 +324,33 @@ export const changeWSPerms = async (req: any, res: any) => {
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
       if (!workspace) {
-        res.status(404).json({ error: 'No se ha encontrado el workspace' });
-        return;
+        return res.status(404).json({ error: 'No se ha encontrado el workspace' });
       }
       const reqPerm = await getWSPermission(req.user._id, wsId);
       if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-        res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de este workspace' });
-        return;
+        return res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de este workspace' });
       }
-      if (reqPerm === WSPermission.Admin && (perm === WSPermission.Owner || perm === WSPermission.Admin)) {
-        res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
-        return;
+      
+      if (perm === WSPermission.Owner) {
+        return res.status(403).json({ error: 'No puedes añadir un propietario' });
       }
       const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id.toString() === profileId.toString());
       if (!profile) {
-        res.status(404).json({ error: 'El usuario no está en este workspace' });
-        return;
+        return res.status(404).json({ error: 'El usuario no está en este workspace' });
       }
       if (profile instanceof mongoose.Document) {
+        if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin)) {
+          return res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
+        }
+        if (profile.wsPerm === WSPermission.Owner) {
+          return res.status(403).json({ error: 'No se puede cambiar al propietario' });
+        }
         profile.wsPerm = perm;
+        try {
+          await profile.validate();
+        } catch (error) {
+          return res.status(400).json({ errors: parseValidationError(error) });
+        }
         profile.save();
       }
       sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
@@ -576,9 +590,13 @@ export const saveProfile = async (req: any, res: any) => {
       return;
     }
 
-    if (reqPerm === WSPermission.Admin && (newProfileData.wsPerm === WSPermission.Owner || newProfileData.wsPerm === WSPermission.Admin)) {
-      res.status(403).json({ error: 'No estás autorizado a poner el permiso de administrador o propietario' });
+    if (reqPerm === WSPermission.Admin && newProfileData.wsPerm === WSPermission.Admin) {
+      res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
       return;
+    }
+
+    if (newProfileData.wsPerm === WSPermission.Owner) {
+      return res.status(403).json({ error: 'No puedes añadir un propietario' });
     }
 
     const sameNameProfile = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile instanceof mongoose.Document && profile.name == newProfileData.name);

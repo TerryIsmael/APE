@@ -8,7 +8,7 @@ const profileSchema = new mongoose.Schema<IProfile>({
         type: String,
         enum: {
             values: Object.values(ProfileType),
-            message: '{VALUE} no es un tipo de perfil válido'
+            message: 'El tipo del perfil debe ser Group o Individual'
         },
         required: [true, 'El tipo de perfil es obligatorio']
     },
@@ -50,7 +50,7 @@ const profileSchema = new mongoose.Schema<IProfile>({
         required: [true, 'El permiso del perfil es obligatorio'],
         enum: {
             values: Object.values(WSPermission),
-            message: '{VALUE} no es un permiso válido'
+            message: 'El permiso debe ser Read, Write o Admin'
         },
         default: WSPermission.Read
     }

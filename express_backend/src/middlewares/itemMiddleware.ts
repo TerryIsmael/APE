@@ -61,7 +61,7 @@ const checkFile = async (req: any) => {
         }
         const perm = await getWSPermission(userId, wsId)
         if (perm === WSPermission.Read || !perm) {
-            return 'No tienes permiso para subir archivos a este workspace.';
+            return 'No tienes permiso para subir archivos a este workspace';
         } 
 
         const folders = path.split('/');
