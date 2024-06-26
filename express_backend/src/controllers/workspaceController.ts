@@ -694,7 +694,7 @@ export const saveProfile = async (req: any, res: any) => {
         return;
       } 
       newProfile.name = newProfileData.name;
-      newProfile.profileType = newProfileData.profileType;
+      newProfile.profileType = ProfileType.Group;
       newProfile.wsPerm = newProfileData.wsPerm;
       newProfile.users = areInWorkspace;
       await newProfile.save();
