@@ -212,6 +212,12 @@ export const getWorkspaceFolders = async (req: any, res: any) => {
 export const createWorkspace = async (req: any, res: any) => {
   const wsName = req.body.wsName;
   const user = req.user;
+
+  if (!wsName) {
+    res.status(400).json({ error: 'No se han especificado el campo wsName'});
+    return;
+  }
+
   try {
     const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: WSPermission.Owner, users: [user] });
     profile.save();
@@ -238,6 +244,12 @@ export const createWorkspace = async (req: any, res: any) => {
 
 export const editWorkspace = async (req: any, res: any) => {
   const newWs = req.body.workspace;
+
+  if (!newWs) {
+    res.status(400).json({ error: 'No se han especificado el campo workspace' });
+    return;
+  }
+
   try {
     const workspace = await Workspace.findOne({ _id: newWs._id });
     if (!workspace) {
@@ -277,6 +289,13 @@ export const addUserToWorkspace = async (req: any, res: any) => {
   const wsId = req.body.workspace;
   const username = req.body.username;
   const perm = req.body.perm;
+
+  if (!wsId || !username || !perm) {
+    const missingFileds = [!wsId?"workspace, ":null, !username?", username":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
+    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+    return;
+  }
+
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
   if (!workspace) {
@@ -321,6 +340,13 @@ export const addUserToWorkspace = async (req: any, res: any) => {
 
 export const changeWSPerms = async (req: any, res: any) => {
   const { wsId, profileId, perm } = req.body;
+
+  if (!wsId || !profileId || !perm) {
+    const missingFileds = [!wsId?"wsId, ":null, !profileId?", profileId":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
+    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+    return;
+  }
+
   try {
       const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
       if (!workspace) {
@@ -364,6 +390,13 @@ export const createInvitation = async (req: any, res: any) => {
   const wsId = req.body.workspace;
   const profile = req.body.profile;
   const linkDuration = req.body.linkDuration;
+
+  if (!wsId || !profile || !linkDuration) {
+    const missingFileds = [!wsId?"workspace, ":null, !profile?", profile":null, !linkDuration?"linkDuration":null].filter((field) => field !== null).join(', ');
+    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+    return;
+  }
+
   try {
     const workspace = await Workspace.findOne({ _id: wsId });
     if (!workspace) {
@@ -429,6 +462,12 @@ export const getInvitations = async (req: any, res: any) => {
 
 export const toggleActiveInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
+
+  if (!invId) {
+    res.status(400).json({ error: 'No se han especificado el campo invId' });
+    return;
+  }
+
   try {
     const invitation: mongoose.Document<IInvitation> | null = await Invitation.findOne({ _id: invId });
     if (!invitation) {
@@ -456,6 +495,12 @@ export const toggleActiveInvitation = async (req: any, res: any) => {
 
 export const deleteInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
+
+  if (!invId) {
+    res.status(400).json({ error: 'No se han especificado el campo invId' });
+    return;
+  }
+
   try {
     const invitation = await Invitation.findOne({ _id: invId });
     if (!invitation) {
@@ -483,6 +528,12 @@ export const deleteInvitation = async (req: any, res: any) => {
 
 export const getInvitation = async (req: any, res: any) => {
   const code = req.params.code;
+
+  if (!code) {
+    res.status(400).json({ error: 'No se han especificado el campo code' });
+    return;
+  }
+
   try {
     const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace').populate('workspace.profiles');
     if (!invitation) {
@@ -517,6 +568,12 @@ export const getInvitation = async (req: any, res: any) => {
 
 export const useInvitation = async (req: any, res: any) => {
   const code = req.params.code;
+
+  if (!code) {
+    res.status(400).json({ error: 'No se han especificado el campo code' });
+    return;
+  }
+
   try {
     const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace');
     if (!invitation) {
@@ -571,6 +628,12 @@ export const useInvitation = async (req: any, res: any) => {
 export const saveProfile = async (req: any, res: any) => {
   const wsId = req.body.wsId;
   const newProfileData : IProfile = req.body.profile;
+
+  if (!wsId || !newProfileData) {
+    const missingFileds = [!wsId?"wsId, ":null, !newProfileData?", profile":null].filter((field) => field !== null).join(', ');
+    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+    return;
+  }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
@@ -653,6 +716,12 @@ export const deleteProfile = async (req: any, res: any) => {
   const wsId = req.body.wsId;
   const profileId = req.body.profileId;
 
+  if (!wsId || !profileId) {
+    const missingFileds = [!wsId?"wsId, ":null, !profileId?", profileId":null].filter((field) => field !== null).join(', ');
+    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+    return;
+  }
+
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
@@ -697,6 +766,12 @@ export const leaveWorkspace = async (req: any, res: any) => {
   const wsId = req.body.wsId;
   const profileName = req.user._id;
 
+  if (!wsId) {
+    res.status(400).json({ error: 'No se han especificado el campo wsId' });
+    return;
+  }
+
+
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
@@ -726,6 +801,11 @@ export const leaveWorkspace = async (req: any, res: any) => {
 
 export const deleteWorkspace = async (req: any, res: any) => {
   const wsId = req.body.wsId;
+
+  if (!wsId) {
+    res.status(400).json({ error: 'No se han especificado el campo wsId' });
+    return;
+  }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles').populate('items');

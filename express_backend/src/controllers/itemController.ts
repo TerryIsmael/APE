@@ -35,6 +35,13 @@ export const addItemToWorkspace = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const path = req.body.path ? req.body.path : "";
     const itemData = req.body.item;
+
+    if (!wsId || !itemData) {
+        const missingFileds = [!wsId?"workspace, ":null, !itemData?"item":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -109,6 +116,12 @@ export const editItem = async (req: any, res: any) => {
     const itemData = req.body.item;
     const oldName = req.body.oldName;
 
+    if (!wsId || !itemData) {
+        const missingFileds = [!wsId?"workspace, ":null, !itemData?", item":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -170,6 +183,13 @@ export const editItem = async (req: any, res: any) => {
 export const editFile = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const fileId = req.body.fileId;
+
+    if (!wsId || !fileId) {
+        const missingFileds = [!wsId?"workspace, ":null, !fileId?", fileId":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -248,6 +268,12 @@ async function processQueue(filePath: string): Promise<void> {
 
 export const changeItemPerms = async (req: any, res: any) => {
     const { itemId, profileId, perm } = req.body;
+
+    if (!itemId || !profileId || !perm) {
+        const missingFileds = [!itemId?"itemId, ":null, !profileId?", profileId":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
 
     const wsId = req.body.workspace;
     try {
@@ -366,6 +392,13 @@ export const downloadFile = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const fileId = req.body.fileId;
     const editorMode = req.body.editorMode;
+
+    if (!wsId || !fileId) {
+        const missingFileds = [!wsId?"workspace, ":null, !fileId?", fileId":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId });
         if (!workspace) {
@@ -425,6 +458,13 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const itemId = req.body.itemId;
     const check = req.body.check;
+
+    if (!wsId || !itemId) {
+        const missingFileds = [!wsId?"workspace, ":null, !itemId?", itemId":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
@@ -467,6 +507,13 @@ export const toggleFavorite = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const { itemId } = req.body;
     const loggedUser = req.user as IUser;
+
+    if (!wsId || !itemId) {
+        const missingFileds = [!wsId?"workspace, ":null, !itemId?", itemId":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     try {
         const item = await Item.findOne({ _id: itemId });
         if (!item) {

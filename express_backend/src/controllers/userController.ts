@@ -75,6 +75,11 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
 export const fetchUserData = async (req: any, res: Response): Promise<Response> => {
     try {
         const userId = req.body.userId;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'No se han especificado el campo userId' });
+        }
+
         const user = await User.findOne({ _id: userId });
         if (!user) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -135,6 +140,11 @@ export const deleteUser = async (req: any, res: Response): Promise<Response> => 
 export const getUserByUsernameOrEmail = async (req: any, res: Response): Promise<Response> => {
     try {
         const findTerm = req.body.findTerm;
+
+        if (!findTerm) {
+            return res.status(400).json({ error: 'No se han especificado el campo findTerm' });
+        }
+
         const user = await User.findOne({ $or: [{ username: findTerm }, { email: findTerm }] });
         if (!user) {
             return res.status(404).json({ error: 'Usuario no encontrado' });

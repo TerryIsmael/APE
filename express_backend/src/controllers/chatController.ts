@@ -29,6 +29,11 @@ export const getChats = async (req: any, res: any) => {
 
 export const getChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
+
+    if (!chatId) {
+        return res.status(400).json({ error: 'No se han especificado el campo chatId' });
+    }
+
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id }).populate("users").populate("messages.user").populate("workspace");
         if (!chat) {
@@ -53,6 +58,11 @@ export const getChat = async (req: any, res: any) => {
 
 export const getChatMessages = async (req: any, res: any) => {
     const chatId = req.params.id;
+
+    if (!chatId) {
+        return res.status(400).json({ error: 'No se han especificado el campo id' });
+    }
+
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
         if (!chat) {
@@ -69,7 +79,13 @@ export const addMessage = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const message = req.body.message;
 
-    if (!message || message.trim().length === 0) {
+    if (!chatId || !message) {
+        const missingFileds = [!chatId?"chatId, ":null, !message?", message":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
+    if (message.trim().length === 0) {
         return res.status(400).json({ error: "El mensaje no puede estar vacío" });
     }
 
@@ -93,6 +109,12 @@ export const createChat = async (req: any, res: any) => {
     const name = req.body.name;
     const users = req.body.users;
 
+    if (!name || !users) {
+        const missingFileds = [!name?"name, ":null, !users?", users":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
+
     const chat = new Chat({ name: name, type: ChatType.PRIVATE, users: users, messages: [] });
     try {
         await chat.validate();
@@ -111,6 +133,12 @@ export const createChat = async (req: any, res: any) => {
 export const editChatName = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const name = req.body.name;
+
+    if (!name || !chatId) {
+        const missingFileds = [!name?"name, ":null, !chatId?", chatId":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        return;
+    }
 
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
@@ -141,6 +169,11 @@ export const editChatName = async (req: any, res: any) => {
 
 export const leaveChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
+    
+    if (!chatId) {
+        res.status(400).json({ error: 'No se han especificado el campo chatId' });
+        return;
+      }
 
     try {
         const chat = await Chat.findById(chatId);
