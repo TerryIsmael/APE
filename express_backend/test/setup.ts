@@ -23,21 +23,26 @@ function startServer(): Promise<void> {
 }
 
 beforeAll(async () => {
-    await startServer();
-    await User.deleteMany({ });
-    await Workspace.deleteMany({ });
-    await Profile.deleteMany({ });
-    await Chat.deleteMany({ });
-    await Invitation.deleteMany({ });
-    await Item.deleteMany({ });
-    const user = await User.create({ username: 'userTest', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTest@gmail.com'});
-    const profile = await Profile.create({profileType: 'Individual', name: user._id, users: [user._id], wsPerm: WSPermission.Owner});
-    const workspace = await Workspace.create({name: 'Workspace de '+user.username, creationDate: new Date(), items: [], profiles: [profile._id], default: true});
-    await Chat.create({name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: profile.users, messages: []});
-    //Falta la carpeta de items
-  });
+  await startServer();
+  await User.deleteMany({ });
+  await Workspace.deleteMany({ });
+  await Profile.deleteMany({ });
+  await Chat.deleteMany({ });
+  await Invitation.deleteMany({ });
+  await Item.deleteMany({ });
+  const user = await User.create({ username: 'userTest', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTest@gmail.com'});
+  const profile = await Profile.create({profileType: 'Individual', name: user._id, users: [user._id], wsPerm: WSPermission.Owner});
+  const workspace = await Workspace.create({name: 'Workspace de '+user.username, creationDate: new Date(), items: [], profiles: [profile._id], default: true});
+  await Chat.create({name: workspace.name, type: ChatType.WORKSPACE, workspace: workspace._id, users: profile.users, messages: []});
+  //Falta la carpeta de items
+});
 
 afterAll(async () => {
-    //await User.deleteOne({ username: 'userTest' });
-    server.close();
+  await User.deleteMany({ });
+  await Workspace.deleteMany({ });
+  await Profile.deleteMany({ });
+  await Chat.deleteMany({ });
+  await Invitation.deleteMany({ });
+  await Item.deleteMany({ });  
+  server.close();
 });

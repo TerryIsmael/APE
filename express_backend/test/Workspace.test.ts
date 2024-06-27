@@ -735,6 +735,103 @@ describe('/profile POST editing', () => {
     });
 });
 
+describe('/perms PUT', () => {
+    it('201 Owner', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Write' });
+        expect(res.status).toBe(201);
+
+        const editedProfile = await Profile.findOne({ _id: groupProfile?._id });
+        expect(editedProfile?.wsPerm).toBe(WSPermission.Write);
+    });
+
+    it('201 Admin', async () => {
+        const res = await adminAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Read' });        
+        expect(res.status).toBe(201);
+
+        const editedProfile = await Profile.findOne({ _id: groupProfile?._id });
+        expect(editedProfile?.wsPerm).toBe(WSPermission.Read);
+    });
+
+    it('403 WriteReadUser', async () => {
+        const res = await writeReadAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Write' });        
+        expect(res.status).toBe(403);
+        expect(JSON.parse(res.text).error).toBe('No estás autorizado a cambiar los permisos de este workspace');
+    });
+
+    it('403 NotMemberUser', async () => {
+        const res = await notMemberAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Write' });        
+        expect(res.status).toBe(403);
+        expect(JSON.parse(res.text).error).toBe('No estás autorizado a cambiar los permisos de este workspace');
+    });
+
+    it('403 Change owner', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: ownerProfile?._id.toString(), perm: 'Read' });
+        expect(res.status).toBe(403);
+        expect(JSON.parse(res.text).error).toBe('No puedes cambiar los permisos del propietario');
+    });
+
+    it('403 Change to owner', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Owner' });        
+        expect(res.status).toBe(403);
+        expect(JSON.parse(res.text).error).toBe('No puedes añadir un propietario');
+    });
+
+    it('403 Admin changes admin', async () => {
+        await Profile.findOne({ _id: groupProfile?._id }).then((profile) => {
+            if (profile) {
+                profile.wsPerm = WSPermission.Admin;
+                profile.save();
+            }
+        });
+
+        const res = await adminAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: groupProfile?._id.toString(), perm: 'Write' });        
+        expect(res.status).toBe(403);
+        expect(JSON.parse(res.text).error).toBe('No estás autorizado a cambiar los permisos de otros administradores');
+
+        await Profile.findOne({ _id: groupProfile?._id }).then((profile) => {
+            if (profile) {
+                profile.wsPerm = WSPermission.Read;
+                profile.save();
+            }
+        });
+    });
+
+    it('403 Null fields', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({});
+        expect(res.status).toBe(400);
+        expect(JSON.parse(res.text).error).toBe('No se han especificado el/los campo(s) wsId, profileId, perm');
+    });
+
+    it('404 NotExistsProfile', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: "aaaaaaaaaaaaaaaaaaaaaaaa", perm: 'Read' });
+        expect(res.status).toBe(404);
+        expect(JSON.parse(res.text).error).toBe('El perfil no existe o no pertenece a este workspace');
+    });
+
+    it('404 NotExistsWorkspace', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: "aaaaaaaaaaaaaaaaaaaaaaaa", profileId: groupProfile?._id, perm: 'Read' });
+        expect(res.status).toBe(404);
+        expect(JSON.parse(res.text).error).toBe('No se ha encontrado el workspace');
+    });
+
+    it('404 ProfileOfOtherWorkspace', async () => {
+        const res = await ownerAgent.put('/perms')
+        .send({ wsId: workspaceId, profileId: notMemberUserProfile?._id, perm: 'Read' });
+        expect(res.status).toBe(404);
+        expect(JSON.parse(res.text).error).toBe('El perfil no existe o no pertenece a este workspace');
+    });
+});
+
 describe('/profile DELETE', () => {
     it('201 Owner', async () => {
         const res = await ownerAgent.delete('/profile')

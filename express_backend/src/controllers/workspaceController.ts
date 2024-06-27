@@ -392,14 +392,14 @@ export const changeWSPerms = async (req: any, res: any) => {
       }
       const profile: mongoose.PopulatedDoc<IProfile> = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && profile._id.toString() === profileId.toString());
       if (!profile) {
-        return res.status(404).json({ error: 'El usuario no está en este workspace' });
+        return res.status(404).json({ error: 'El perfil no existe o no pertenece a este workspace' });
       }
       if (profile instanceof mongoose.Document) {
         if (reqPerm === WSPermission.Admin && (profile.wsPerm === WSPermission.Owner || profile.wsPerm === WSPermission.Admin)) {
           return res.status(403).json({ error: 'No estás autorizado a cambiar los permisos de otros administradores' });
         }
         if (profile.wsPerm === WSPermission.Owner) {
-          return res.status(403).json({ error: 'No se puede cambiar al propietario' });
+          return res.status(403).json({ error: 'No puedes cambiar los permisos del propietario' });
         }
         profile.wsPerm = perm;
         try {
