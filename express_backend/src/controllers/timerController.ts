@@ -14,8 +14,8 @@ export const modifyTimer = async (req: any, res: any) => {
     const action = req.body.action;
 
     if (!wsId || !timerId || !action) {
-        const missingFileds = [!wsId?"workspace, ":null, !timerId?", timerId":null, !action?"action":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFileds });
+        const missingFields = [!wsId?"workspace":null, !timerId?"timerId":null, !action?"action":null].filter((field) => field !== null).join(', ');
+        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
         return;
     }
 

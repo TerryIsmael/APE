@@ -189,8 +189,12 @@ const getFilteredProfiles = computed(() => {
 const getGroupProfiles = computed(() => {
   const profiles = workspace.value.profiles.filter(profile => {
     const profileType = profile.profileType === 'Group';
-    const matchesSearchTerm = searchGroupProfileTerm.value.trim() === '' || profile.name.toLowerCase().includes(searchGroupProfileTerm.value.toLowerCase().trim());
-    return (profileType && matchesSearchTerm);
+    const isNotAdmin = profile.wsPerm !== 'Admin';
+    if (userWsPerms.value === 'Owner') {
+      return (profileType);
+    } else if (userWsPerms.value === 'Admin') {
+      return (profileType && isNotAdmin);
+    }
   });
 
   return profiles.sort((a, b) => {
@@ -276,6 +280,9 @@ const createWorkspace = async (newWorkspaceName) => {
 const refreshWindow = async () => {
   await fetchWorkspace();
   await fetchInvitations();
+  inviteProfile.value = workspace.value?.profiles?.find(profile=> profile._id === inviteProfile._id);
+
+  if (!inviteProfile.value) inviteProfile.value = 'none';
 };
 
 const websocketEventAdd = () => {
@@ -368,7 +375,7 @@ onUnmounted(() => {
               <select v-model="permToInvite" class="text-input" style="width: 32%; margin-left:3px">
                   <option :value="'Read'">Lectura</option>
                   <option :value="'Write'">Escritura</option>
-                  <option :value="'Admin'">Admin</option>
+                  <option v-if="userWsPerms === 'Owner' ":value="'Admin'">Admin</option>
               </select> 
               <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
             </div>
@@ -379,7 +386,7 @@ onUnmounted(() => {
             <div style="display: flex; justify-content: space-between; width: 100%;">
               <select v-model="inviteProfile" class="text-input" style="width: 60%;">
                   <option :value="'none'"> Ninguno - Lectura </option>
-                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile">{{ profile.name }} </option>
+                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile">{{ profile.name }} - {{ translatePerm(profile.wsPerm) }} </option>
               </select>
               <select v-model="linkDuration" class="text-input" style="width: 20%; margin-left:3px">
                   <option :value="'day'"> 1 día </option>
@@ -398,7 +405,7 @@ onUnmounted(() => {
                 <th style="width:8%; margin-left:5%; text-align: end;">Eliminar</th>
               </tr>
               <tr v-for="invitation in invitations" :key="invitation._id"> 
-                <td >{{ invitation.profile?(invitation.profile.name+ "-"+ invitation.profile.wsPerm):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
+                <td >{{ invitation.profile?(invitation.profile.name+ " - "+ translatePerm(invitation.profile.wsPerm)):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
                 <td>{{ invitation.expirationDate?Utils.formatDate(invitation.expirationDate):"Indefinida" }}</td>
                 <td class="td-center"><span @click="toggleActiveInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">{{ invitation.active ? 'check' : 'close' }}</span></td>
                 <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>

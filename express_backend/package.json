@@ -21,7 +21,8 @@
   "scripts": {
     "start": "bun run server.ts",
     "dev": "bun run --watch server.ts",
-    "test": "bun --env-file=test.env test --preload ./test/setup.ts"
+    "test": "bun --env-file=test.env test --preload ./test/setup.ts",
+    "test only": "bun --env-file=test.env test --preload ./test/setup.ts --only"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

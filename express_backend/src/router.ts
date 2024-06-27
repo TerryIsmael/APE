@@ -197,7 +197,7 @@ router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Resp
 });
 
 router.put('/invite', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         await addUserToWorkspace(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al invitar al usuario. ' + error });

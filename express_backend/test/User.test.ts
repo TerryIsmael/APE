@@ -41,14 +41,14 @@ describe('/register POST', () => {
     const res = await agent.post('/register')
       .send({ username: 'UserTestNew', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'UserTestNew@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(2);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(2);
   });
 
   it('400 Username duplicated', async () => {
     const res = await agent.post('/register')
       .send({ username: 'UserTestNew', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'notExistEmail@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('Este nombre de usuario ya está en uso');
   });
 
@@ -56,7 +56,7 @@ describe('/register POST', () => {
     const res = await agent.post('/register')
       .send({ username: 'notExistUser', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'UserTestNew@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('Este email ya está en uso');
   });
 
@@ -64,42 +64,42 @@ describe('/register POST', () => {
     const res = await agent.post('/register')
     .send({ username: 'userTest@', firstName: 'Test1', surnames: 'Test1', email: 'notExistingEmail@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(2);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(2);
   });
 
   it('400 Null fields with valid password', async () => {
     const res = await agent.post('/register')
       .send({ password: '12345678910aA@' });
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
 
   it('400 Empty password', async () => { 
     const res = await agent.post('/register')
     .send({ username: 'userTest@', password: ' ', firstName: 'Test1', surnames: 'Test1', email: 'notExistingEmail@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(2);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(2);
   });
 
   it('400 Empty fields with valid password', async () => {
     const res = await agent.post('/register')
       .send({ username: ' ', password: '12345678910aA@', firstName: ' ', surnames: ' ', email: ' '});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
 
   it('400 Large fields', async () => {
     const res = await agent.post('/register')
       .send({ username: 'userTestOver16use', password: '12345678910aA@', firstName: 'LargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLa', surnames: 'LargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLarge', email: 'LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailL@LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar.LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar.LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar'});
       expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
   
   it('400 Invalid policy password', async () => {
     const res = await agent.post('/register')
       .send({ username: 'userTest@', password: '12345678910aAB', firstName: 'Test1', surnames: 'Test1', email: 'notExistingEmail@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un carácter especial');
   });
 
@@ -107,7 +107,7 @@ describe('/register POST', () => {
     const res = await agent.post('/register')
       .send({ username: 'userTest@', password: '12345678910aA@', firstName: 'Test1', surnames: 'Test1', email: 'notExistingEmail@gmail.com'});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(3);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(3);
   });
 });
 
@@ -172,14 +172,14 @@ describe('/user/edit POST', () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'UserTestNew', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'UserTestNew@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(2);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(2);
   });
 
   it('400 Username duplicated', async () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'UserTestNew', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('Este nombre de usuario ya está en uso');
   });
 
@@ -187,7 +187,7 @@ describe('/user/edit POST', () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'userTestEdit', password: '12345678910aA@', firstName: 'Test', surnames: 'Test', email: 'UserTestNew@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('Este email ya está en uso');
   });
 
@@ -201,35 +201,35 @@ describe('/user/edit POST', () => {
     const res = await agent.post('/user/edit')
       .send({user: { password: '12345678910aA@' }});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
 
   it('400 Empty password', async () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'userTestEdit', password: ' ', firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(2);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(2);
   });
 
   it('400 Empty fields', async () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: '  ', password: '12345678910aA@', firstName: '  ', surnames: '  ', email: '  '}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
 
   it('400 Large fields', async () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'userTestOver16use', password: '12345678910aA@', firstName: 'LargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLargeNameLa', surnames: 'LargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLargeSurnameLarge', email: 'LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailL@LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar.LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar.LargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLargeEmailLar'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(4);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(4);
   });
 
   it('400 Invalid policy password', async () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'userTestEdit', password: '12345678910aAB', firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(1);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
     expect(JSON.parse(res.text).errors[0]).toBe('La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un carácter especial');
   });
 
@@ -237,7 +237,7 @@ describe('/user/edit POST', () => {
     const res = await agent.post('/user/edit')
       .send({user:{ username: 'userTest@', password: '12345678910aA@', firstName: 'Test1', surnames: 'Test1', email: 'userTestEdit@gmail.com'}});
     expect(res.status).toBe(400);
-    expect(JSON.parse(res.text).errors.length).toBe(3);
+    expect(JSON.parse(res.text).errors).toBeArrayOfSize(3);
   });
 });
 

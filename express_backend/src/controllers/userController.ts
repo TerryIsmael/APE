@@ -77,7 +77,7 @@ export const fetchUserData = async (req: any, res: Response): Promise<Response> 
         const userId = req.body.userId;
 
         if (!userId) {
-            return res.status(400).json({ error: 'No se han especificado el campo userId' });
+            return res.status(400).json({ error: 'No se ha especificado el campo userId' });
         }
 
         const user = await User.findOne({ _id: userId });
@@ -142,7 +142,7 @@ export const getUserByUsernameOrEmail = async (req: any, res: Response): Promise
         const findTerm = req.body.findTerm;
 
         if (!findTerm) {
-            return res.status(400).json({ error: 'No se han especificado el campo findTerm' });
+            return res.status(400).json({ error: 'No se ha especificado el campo findTerm' });
         }
 
         const user = await User.findOne({ $or: [{ username: findTerm }, { email: findTerm }] });
