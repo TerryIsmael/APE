@@ -1,6 +1,5 @@
 <script setup>
 import { onBeforeMount, onMounted, ref } from 'vue';
-import Utils from './utils/UtilsFunctions.js';
 const ws = ref(null);
 const wsReconnect = ref(null);
 

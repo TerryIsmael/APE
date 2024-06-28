@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount, onMounted } from 'vue';
+import { ref, onBeforeMount, onMounted, watch } from 'vue';
 import Utils from '../utils/UtilsFunctions.js';
 import PdfEmbed, { useVuePdfEmbed } from 'vue-pdf-embed';
 import 'vue-pdf-embed/dist/style/index.css'
@@ -44,14 +44,26 @@ const props = defineProps({
     path: {
         type: String,
         required: true
+    },
+    currentUser: {
+        type: Object,
+        required: true
     }
 });
+
+const itemPermission = ref(null);
+const verifyPermissions = () => {
+  itemPermission.value = WorkspaceUtils.verifyPerms(props.item, ref(props.workspace), ref(props.currentUser));
+}
+
+
 const url = ref(null);
 const errorMessage = ref([]);
 const appToUse = ref(null);
 const workspace = ref(props.workspace);
 const isLoading = ref(true);
 const editor = ref(ClassicEditor);
+
 const editorConfig = {
     plugins: [
         Essentials,
@@ -295,6 +307,7 @@ const downloadFile = async () => {
 };
 
 onBeforeMount(async () => {
+    verifyPermissions();
     if(props.item.ready){
         switch(props.item.name.split('.').pop()){
         case 'pdf':
@@ -317,6 +330,11 @@ onBeforeMount(async () => {
     isLoading.value = false;
 });
 
+
+watch(() => props.workspace, (newWorkspace) => {
+  verifyPermissions();
+}, { immediate: true });
+
 </script>
 
 <template>
@@ -326,7 +344,7 @@ onBeforeMount(async () => {
             <span class="item-name-title" style="padding-bottom:10px">{{ item.name }}</span>
         </h1>
     </div>
-    <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+    <div class="error" v-if="errorMessage.length !== 0" style="display: flex; justify-content: space-between; padding-left: 2%;">
         <div>
             <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
             {{ error }}
