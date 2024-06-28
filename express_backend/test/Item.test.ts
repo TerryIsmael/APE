@@ -513,6 +513,12 @@ describe('/item/timer POST', () => {
         expect(res.status).toBe(400);
         expect(JSON.parse(res.text).error).toBe('No se han especificado el/los campo(s) workspace, timerId, action');
     });
+    
+    it('400 EditWithoutDuration', async () => {
+        const res = await ownerAgent.post('/item/timer').send({ workspace: workspaceId, timerId: timerItem?._id, action: 'edit' });
+        expect(res.status).toBe(400);
+        expect(JSON.parse(res.text).error).toBe('Duración no especificada');
+    });
 
     it('403 ReadUser', async () => {
         const res = await readAgent.post('/item/timer').send({ workspace: workspaceId, timerId: timerItem?._id, action: 'init' });

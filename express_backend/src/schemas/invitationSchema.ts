@@ -29,7 +29,7 @@ const invitationSchema = new mongoose.Schema<IInvitation>({
         ref: 'Profile',
         validate: [
             { 
-                validator: async function(value: mongoose.Types.ObjectId) {
+                async validator(value: mongoose.Types.ObjectId) {
                     const existingProfile = await mongoose.model<IProfile>('Profile').findById(value);
                     return existingProfile;
                 },

@@ -6,6 +6,8 @@ import Profile from "../src/schemas/profileSchema.ts";
 import Workspace from "../src/schemas/workspaceSchema.ts";
 import User from "../src/schemas/userSchema.ts";
 import bcrypt from 'bcrypt';
+import Chat from "../src/schemas/chatSchema.ts";
+import { WSPermission } from "../src/models/profile.ts";
 
 let agent = request.agent(app);
 
@@ -13,7 +15,12 @@ beforeAll( async () => {
   await User.deleteMany({ });
   await Workspace.deleteMany({ });
   await Profile.deleteMany({ });
-  await User.create({ username: 'userTestEdit', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'});
+  const user = await User.create({ username: 'userTestEdit', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'});
+  const user2 = await User.create({ username: 'chatUser', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'chatUser', surnames: 'chatUser', email: 'chatUser@gmail.com'});
+  await Chat.create({ name: 'userTestEditChat', type: "Private", users: [user._id], messages: [], updatedAt: new Date() });
+  await Chat.create({ name: 'userTestEditChat', type: "Private", users: [user._id, user2._id], messages: [], updatedAt: new Date() });
+  const profile = await Profile.create({profileType: 'Individual', name: user._id, users: [user._id], wsPerm: WSPermission.Owner});
+  await Workspace.create({name: 'Workspace de ' + user.username, creationDate: new Date(), items: [], profiles: [profile._id], default: true});
 });
 
 describe('/register POST', () => {
@@ -24,10 +31,7 @@ describe('/register POST', () => {
     const user = await User.findOne({ username: 'UserTestNew' });
     const profiles = await Profile.find({ name: user?._id, wsPerm: 'Owner' }).select('_id');
     const workspace = await Workspace.findOne({default: 1, profiles: { $in: profiles }});
-    if (!workspace) {
-      return new Error('No se ha encontrado el workspace por defecto');
-    }
-    fs.access(`uploads/${workspace._id}/temp`, fs.constants.F_OK, (err) => {
+    fs.access(`uploads/${workspace?._id}/temp`, fs.constants.F_OK, (err) => {
       if (err) {
         return new Error('No se ha encontrado la carpeta por defecto');
       } 
@@ -264,6 +268,11 @@ describe('/user/find POST', () => {
       .send({ findTerm: 'emailNotExists'});
     expect(res.status).toBe(404);
   });
+  it('404 NullField', async () => {
+    const res = await agent.post('/user/find')
+      .send({ });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('/user/data GET', () => {
@@ -272,6 +281,12 @@ describe('/user/data GET', () => {
     const res = await agent.post('/user/data')
       .send({ userId: user?._id});
     expect(res.status).toBe(200);
+  });
+  it('400 NullField', async () => {
+    const res = await agent.post('/user/data')
+      .send({ });
+    expect(res.status).toBe(400);
+    expect(JSON.parse(res.text).error).toBe('No se ha especificado el campo userId');
   });
 });
 

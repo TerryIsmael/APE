@@ -81,10 +81,8 @@ export const fetchUserData = async (req: any, res: Response): Promise<Response> 
         }
 
         const user = await User.findOne({ _id: userId });
-        if (!user) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        return res.status(200).json({"username": user.username, "email": user.email});
+
+        return res.status(200).json({"username": user?.username, "email": user?.email});
     } catch (error) {
         return res.status(500).json({ error: 'Error en el servidor:' + error });
     }
@@ -94,10 +92,6 @@ export const deleteUser = async (req: any, res: Response): Promise<Response> => 
     try {
         const userId = req.user._id;
         const user = await User.findOne({ _id: userId });
-
-        if (!user) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
 
         const chats = await Chat.find({ users: userId });
         for (const chat of chats) {
