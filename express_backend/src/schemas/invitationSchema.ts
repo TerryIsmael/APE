@@ -1,6 +1,7 @@
 import mongoose from '../config/mongoose.ts';
 import type { IInvitation } from '../models/invitation.ts';
 import type { IProfile } from '../models/profile.ts';
+import type { IWorkspace } from '../models/workspace.ts';
 
 const invitationSchema = new mongoose.Schema<IInvitation>({
     code: {
@@ -17,7 +18,7 @@ const invitationSchema = new mongoose.Schema<IInvitation>({
         required: [true, "El workspace es obligatorio"],
         validate: {
             validator: async function(value: mongoose.Types.ObjectId) {
-                const existingWorkspace = await mongoose.model<IProfile>('Workspace').findById(value);
+                const existingWorkspace = await mongoose.model<IWorkspace>('Workspace').findById(value);
                 return existingWorkspace;
             },
             message: "Este workspace no existe"
@@ -26,13 +27,22 @@ const invitationSchema = new mongoose.Schema<IInvitation>({
     profile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Profile',
-        validate: {
-            validator: async function(value: mongoose.Types.ObjectId) {
-                const existingProfile = await mongoose.model<IProfile>('Profile').findById(value);
-                return existingProfile;
+        validate: [
+            { 
+                async validator(value: mongoose.Types.ObjectId) {
+                    const existingProfile = await mongoose.model<IProfile>('Profile').findById(value);
+                    return existingProfile;
+                },
+                message: "Este perfil no existe"
             },
-            message: "Este perfil no existe"
-        }
+            {
+                async validator(this: IInvitation, value: mongoose.Types.ObjectId) {
+                    const existsProfileInWs = (await mongoose.model<IWorkspace>('Workspace').findById(this.workspace))?.profiles.some(profile => profile?._id.toString() === value.toString());
+                    return existsProfileInWs;
+                },
+                message: "Este perfil no existe en el workspace seleccionado"
+            }
+        ]
     },
     expirationDate: {
         type: Date,

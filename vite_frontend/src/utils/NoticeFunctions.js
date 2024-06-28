@@ -138,9 +138,9 @@ class NoticeFunctions {
         newItem.value.text = newItem.value.text;
         newItem.value.important = newItem.value.important;
       } 
-      
+      newItem.value.path = '/notices';
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, path: '/notices', item: newItem.value }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: newItem.value }),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

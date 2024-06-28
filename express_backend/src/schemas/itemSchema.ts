@@ -24,7 +24,7 @@ const profilePermSchema = new mongoose.Schema<IProfilePerms>({
         required: [true, 'El permiso es obligatorio'],
         enum: {
             values: Object.values(Permission),
-            message: 'El perfil seleccionado no es un permiso válido'
+            message: 'El permiso seleccionado no es un permiso válido'
         },
         default: Permission.Read,
     }
@@ -48,7 +48,7 @@ const itemSchema = new mongoose.Schema({
         required: [true, 'El tipo de item es obligatorio'],
         enum: {
             values: Object.values(ItemType),
-            message: '{VALUE} no es un tipo de item válido'
+            message: 'El item debe ser de tipo Calendar, File, Folder, Note, Notice o Timer'
         },
     },
     uploadDate: { type: Date, default: Date.now },

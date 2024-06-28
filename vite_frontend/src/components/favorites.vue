@@ -8,12 +8,11 @@ import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
   ws: {
-      ws: Object,
+      type: Object,
       required: true
   },
 });
 
-const ws = ref(null);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const userItemPerms = ref(null);
@@ -59,7 +58,6 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await FavoriteUtils.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
-  ws.value.send(JSON.stringify({ type: 'workspaceIdentification', user: currentUser.value._id, workspaceId: workspace.value._id }));
 };
 
 const formatDate = (date) => {
@@ -198,10 +196,6 @@ const modifyItem = async (item) => {
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {
@@ -217,7 +211,6 @@ const websocketEventAdd = () => {
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
-  ws.value = props.ws;
   await fetchUser();
   await fetchWorkspace();
   websocketEventAdd();

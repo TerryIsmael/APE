@@ -54,7 +54,7 @@ const chatSchema = new mongoose.Schema<IChat>({
         validate: {
             validator: async function(value: mongoose.Types.ObjectId) {
                 const existingWorkspace = await mongoose.model<IProfile>('Workspace').findById(value);
-                return existingWorkspace;
+                return !value || existingWorkspace;
             },
             message: "Este workspace no existe"
         }

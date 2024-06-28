@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });

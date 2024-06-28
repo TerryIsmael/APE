@@ -9,7 +9,7 @@ import File from './file.vue';
 import MainSidebar from './mainSidebar.vue';
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
@@ -197,10 +197,13 @@ const closeEditNameModal = () => {
   WorkspaceUtils.closeEditNameModal(isEditNameModalOpened, editItem, errorMessage)
 };
 
-const modifyItem = async (item) => {
-  await WorkspaceUtils.modifyItem(item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  if (errorMessage.value.length === 0) {
+const modifyItem = async (item, changeName) => {
+  await WorkspaceUtils.modifyItem(item, changeName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+  if (errorMessage.value.length === 0 && isEditNameModalOpened.value) {
     closeEditNameModal();
+  }
+  if (errorMessage.value.length === 0 && editing.value) {
+    editing.value = false;
   }
 };
 
@@ -253,6 +256,7 @@ const getItemBindings = (item, index) => {
 };
 
 const initPath = () => {
+  routedItem.value = null;
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   const pathArray = path.value.split('/');
   if (pathArray[pathArray.length - 2] == "i") {
@@ -265,20 +269,18 @@ const initPath = () => {
       }
     });
     if (!routedItem.value) routedItem.value = 'Not found';
-  } else {
-    routedItem.value = null;
-  }
+    
+  } 
   showSidebar.value = false;
 };
 
 const openFormEditNote = () => {
   editing.value = true;
-  titleText.value = routedItem.value.name;
-  noteText.value = routedItem.value.text;
+  titleText.value = {...routedItem.value}.name;
+  noteText.value = {...routedItem.value}.text;
 };
 
 const saveNote = async () => {
-  editing.value = false;
   routedItem.value.name = titleText.value;
   routedItem.value.text = noteText.value;
   await modifyItem(routedItem.value);
@@ -302,6 +304,7 @@ const leaveWorkspace = async (workspaceId) => {
 
 const redirectToWorkspace = async(workspaceId) => {
   await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
+  initPath();
 };
 
 const toggleLeave = () => {
@@ -347,10 +350,6 @@ const canSeeWriteButtons = () => {
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
     if (jsonEvent.type === 'workspaceUpdated') {
@@ -423,28 +422,44 @@ watch(
         <div style="display: flex; justify-content: start; width: 10vw;">
           <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
         </div>
-        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center;">
-          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+        
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px; justify-content: center; width: 80%;">
+          <span style="color: #C8B1E4; font-size: 60px; width: 5%; padding-right: 1%;" class="material-symbols-outlined">home</span>
           <span class="item-name-title">{{ workspace?.name }}</span> 
         </h1>
+
         <div style="display: flex; justify-content: end; width: 10vw;" >
           <button @click="openFormEditNote" v-if="!editing && routedItemPerm && routedItemPerm !== 'Read'">Editar</button>
         </div>
       </div>
-      <div class="main-content" style="display: flex; justify-content: center; align-items: center; width: 80vw;">
-        <div class="notebook" style="color:black; width: 80%; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
-          <h1 style="text-align: center; margin-top: 20px; margin-bottom:30px;">{{ routedItem.name }}</h1>
-          <p style="white-space: pre-line; font-size: 2vh">{{ routedItem.text }}</p>
+
+      <div class="main-content" style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 80vw; margin-bottom: 3%">
+
+        <div class="error" v-if="errorMessage.length !== 0 && !isModalOpened && !isNewWsModalOpened && !isNewItemModalOpened && !isEditNameModalOpened" style="display: flex; justify-content: space-between; padding-left: 2%;">
+          <div>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+              {{ error }}
+            </p>
+          </div>
+          <button @click="clearErrorMessage()" style="display: flex; align-items: top; padding: 0; padding-left: 5px; padding-top: 10px; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+            <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+          </button>
         </div>
-        <div class="notebook" style="color:black; width: 80%; height: 70vh; margin-top: 10px; margin-bottom:20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
-          <textarea v-model="titleText" style="height: 10vh;color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"/>
+
+        <div class="notebook" style="color: black; width: 80%; margin-top: 10px; margin-bottom: 20px; padding: 20px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-if="!editing">
+          <h1>{{ routedItem.name }}</h1>
+          <p>{{ routedItem.text }}</p>
+        </div>
+        <div class="notebook" style="color:black; width: 80%; height: 90vh; margin-top: 10px; margin-bottom: 20px; padding: 20px; padding-bottom: 10px; border: 1px solid #C8B1E4; border-radius: 0 0 10px 10px;" v-else>
+          <textarea v-model="titleText" maxlength="330" style="height: 10vh; color:black; text-align: center; margin-top: 20px; margin-bottom:30px; width: 100%; font-size: 2vh; font-weight: bolder; resize: none; border: none; background-color: transparent; font-size: 3.2em; line-height: 1.1;"></textarea>
           <textarea v-model="noteText" style="color:black; width: 100%; height: 70%; font-size: 2vh; resize: none; border: none; background-color: transparent;"></textarea>
-          <div style="margin:5px">
-            <button style="margin-right:5px" @click="saveNote">Guardar</button>
-            <button style="margin-left:5px; background-color: #c55e5e" @click="editing=!editing">Cancelar</button>
+          <div style="margin: 5px; height: 5%;">
+            <button style="margin-right: 5px;" @click="saveNote">Guardar</button>
+            <button style="margin-left: 5px; background-color: #c55e5e" @click="editing=!editing">Cancelar</button>
           </div>
         </div>
       </div>
+
     </div>
     <div v-if="routedItem == 'Not found'">
       <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
@@ -468,7 +483,7 @@ watch(
 
         <div style="display: flex; justify-content: space-around; width: 87%; align-items: center;">
           <div style="display: flex; justify-content: flex-start; align-items: center; width: 85%">
-            <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+            <button v-if="path !== ''" style="max-height: 50px;" @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
             <div style="display:flex; width: 85%; justify-content: start; text-align: left; white-space: nowrap; margin-left: 1%;">
               <h2 style="margin-right: 1%">Ruta actual:</h2>
               <h2 v-if="currentPath.split('/')[0] === '...'">...</h2>
@@ -585,7 +600,7 @@ watch(
 
       <div style="display: flex; align-items: center; width: 100%; justify-content: center;">
         <div style="display: flex; justify-content: space-between;">
-          <button @click="modifyItem(editItem)" style="margin-top: 15px">Actualizar</button>
+          <button @click="modifyItem(editItem, true)" style="margin-top: 15px">Actualizar</button>
           <button @click="closeEditNameModal()" style="margin-left: 5px; margin-top: 15px" class="red-button">Cancelar</button>
         </div>
       </div>
@@ -881,12 +896,22 @@ watch(
 }
 
 .notebook h1 {
-  margin-top: 40px;
+  margin-top: 20px;
   text-align: center;
+  padding-bottom: 10px;
+  margin-bottom: 30px;
+  word-wrap: break-word; 
+  display: -webkit-box; 
+  -webkit-line-clamp: 10; 
+  -webkit-box-orient: vertical; 
+  overflow: hidden;
 }
 
 .notebook p {
   line-height: 1.5;
+  white-space: pre-line; 
+  font-size: 2vh;
+  word-wrap: break-word;
 }
 
 .red-button {
@@ -905,7 +930,10 @@ watch(
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    padding-bottom:10px;
+    padding-bottom: 10px;
+    width: 90%;
+    margin-right: 5px;
+    padding-left: 1%;
 }
 
 </style>

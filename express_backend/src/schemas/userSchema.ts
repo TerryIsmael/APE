@@ -13,9 +13,9 @@ const userSchema = new mongoose.Schema<IUser>({
             {
                 async validator(this: IUser, value: string) {
                     const existingUser: IUser = await User.findOne({ username: value }).exec() as IUser;
-                    return !existingUser;
+                    return !existingUser || existingUser._id.toString() === this._id.toString();
                 },
-                message: "El nombre de usuario ya está en uso"
+                message: "Este nombre de usuario ya está en uso"
             }
         ]
     },
@@ -51,14 +51,6 @@ const userSchema = new mongoose.Schema<IUser>({
             {
                 validator: (value: string) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/.test(value),
                 message: "La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un carácter especial"
-            },
-            {
-                validator: (value: string) => !/\s/.test(value),
-                message: "La contraseña no puede contener espacios"
-            },
-            {
-                validator: (value: string) => value.trim().length > 0,
-                message: "La contraseña no puede estar vacía"
             }
         ]
     },
@@ -70,14 +62,14 @@ const userSchema = new mongoose.Schema<IUser>({
         validate: [
             {
                 validator: (value: string) => /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value),
-                message: (props: any) => `${props.value} no es un correo electrónico válido.`
+                message: `El email proporcionado no tiene una estructura válida`
             },
             {
                 async validator(this: IUser, value: string) {
                     const existingUser: IUser = await User.findOne({ email: value }).exec() as IUser;
-                    return !existingUser;
+                    return !existingUser || existingUser._id.toString() === this._id.toString();
                 },
-                message: "El correo ya está en uso"
+                message: "Este email ya está en uso"
             }
         ]
     },

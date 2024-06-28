@@ -6,10 +6,9 @@ import { registerUser, fetchUserData, updateUser, deleteUser, getUserByUsernameO
 import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, getWorkspaceFavs, deleteWorkspace, saveProfile, deleteProfile, createInvitation, getInvitations, toggleActiveInvitation, deleteInvitation, useInvitation, getUserWorkspaces, leaveWorkspace, createWorkspace, getWorkspaceFolders, editWorkspace, getInvitation } from './controllers/workspaceController.ts';
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem, editFile, saveFile } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
-import { isLogged, validateNewUser, validateUser } from './middlewares/userMiddleware.ts';
-import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
-import { validateProfilePerm, validateWsPerms, validateNewWsName, validateEditWsName } from './middlewares/workspaceMiddleware.ts';
-import { validateChat } from './middlewares/chatMiddleware.ts';
+import { isLogged, validatePassword,validateEditPassword } from './middlewares/userMiddleware.ts';
+import { validateFile } from './middlewares/itemMiddleware.ts';
+import { validatePrivateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
 import { addMessage, createChat, editChatName, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
@@ -17,7 +16,7 @@ import { addMessage, createChat, editChatName, getChat, getChatMessages, getChat
 dotenv.config();  
 const router = Router();
 
-router.post('/register', validateNewUser, registerUser);
+router.post('/register', validatePassword, registerUser);
 
 router.post('/login', (req: Request , res: Response, next: NextFunction) => {
     passport.authenticate('local', (err : Error, user : IUser, info: { message: any; }) => {
@@ -39,7 +38,7 @@ router.post('/login', (req: Request , res: Response, next: NextFunction) => {
     })(req, res, next);
 });
 
-router.post('/user/edit', isLogged, validateUser, (req: Request , res: Response) => {
+router.post('/user/edit', isLogged, validateEditPassword, (req: Request , res: Response) => {
     try {
         updateUser(req, res);
     } catch (error) {
@@ -72,7 +71,7 @@ router.get('/workspace/:wsId', isLogged, getWorkspace);
 router.get('/workspace/', isLogged, getWorkspace);
 router.get('/workspaces/', isLogged, getUserWorkspaces);
 
-router.post('/workspace', isLogged, validateNewWsName, async (req: Request, res: Response) => {
+router.post('/workspace', isLogged, async (req: Request, res: Response) => {
     try {
         createWorkspace(req, res);
     } catch (error) {
@@ -80,7 +79,7 @@ router.post('/workspace', isLogged, validateNewWsName, async (req: Request, res:
     }
 });
 
-router.post('/workspace/edit', isLogged, validateEditWsName, async (req: Request, res: Response) => {
+router.post('/workspace/edit', isLogged, async (req: Request, res: Response) => {
     try {
         editWorkspace(req, res);
     } catch (error) {
@@ -132,14 +131,13 @@ router.post('/file', isLogged, createFile, uploader.single('file'), validateFile
 
 router.put('/file', isLogged, editFile);
 
-router.post('/item', isLogged, validateItem, (req: Request, res: Response) => {
+router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
     }
 });
-
 
 router.put('/item', isLogged, (req: Request, res: Response) => {
     try {
@@ -157,7 +155,7 @@ router.delete('/item', isLogged, (req: Request, res: Response) => {
     }
 });
 
-router.post('/profile', isLogged, validateProfilePerm, async (req: Request, res: Response) => { 
+router.post('/profile', isLogged, async (req: Request, res: Response) => { 
     try {
         await saveProfile(req, res);
     } catch(error) {
@@ -181,7 +179,7 @@ router.delete('/leave', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.put('/perms', isLogged, validateWsPerms, async (req: Request, res: Response) => {
+router.put('/perms', isLogged, async (req: Request, res: Response) => {
     try {
         await changeWSPerms(req, res);
     } catch(error) {
@@ -189,7 +187,7 @@ router.put('/perms', isLogged, validateWsPerms, async (req: Request, res: Respon
     }
 });
 
-router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+router.put('/item/perms', isLogged, async (req: Request, res: Response) => {
     try {
         await changeItemPerms(req, res);
     } catch(error) {
@@ -198,7 +196,7 @@ router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Resp
 });
 
 router.put('/invite', isLogged, async (req: Request, res: Response) => {
-    try{
+    try {
         await addUserToWorkspace(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al invitar al usuario. ' + error });
@@ -301,7 +299,7 @@ router.get('/chats', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.post('/chat', isLogged, validateChat, async (req: Request, res: Response) => {
+router.post('/chat', isLogged, validatePrivateChat, async (req: Request, res: Response) => {
     try {
         createChat(req, res);
     } catch(error) {

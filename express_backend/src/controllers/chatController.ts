@@ -16,7 +16,7 @@ export const getChats = async (req: any, res: any) => {
             type: chat.type,
             workspace: chat.workspace ? {_id: chat.workspace?._id, name: (chat.workspace as unknown as IWorkspace)?.name } : null,
             updatedAt: chat.updatedAt,
-            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),    
+            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user?._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),    
             users: (chat.users as IUser[]).map(user => ({ _id: user?._id, username: user?.username, email: user?.email }))
           })
         });
@@ -29,6 +29,11 @@ export const getChats = async (req: any, res: any) => {
 
 export const getChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
+
+    if (!chatId) {
+        return res.status(400).json({ error: 'No se ha especificado el campo chatId' });
+    }
+
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id }).populate("users").populate("messages.user").populate("workspace");
         if (!chat) {
@@ -41,7 +46,7 @@ export const getChat = async (req: any, res: any) => {
             type: chat.type,
             workspace: chat.workspace ? {_id: chat.workspace?._id, name: (chat.workspace as unknown as IWorkspace)?.name } : null,
             updatedAt: chat.updatedAt,
-            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),
+            messages: chat.messages.map(message => ({ _id: message._id, user: {_id: message.user?._id, username:(message.user as unknown as IUser).username}, date: message.date, text: message.text })),
             users: (chat.users as IUser[]).map(user => ({ _id: user?._id, username: user?.username, email: user?.email }))
         };
 
@@ -53,6 +58,11 @@ export const getChat = async (req: any, res: any) => {
 
 export const getChatMessages = async (req: any, res: any) => {
     const chatId = req.params.id;
+
+    if (!chatId) {
+        return res.status(400).json({ error: 'No se ha especificado el campo id' });
+    }
+
     try {
         const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
         if (!chat) {
@@ -69,7 +79,12 @@ export const addMessage = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const message = req.body.message;
 
-    if (!message || message.trim().length === 0) {
+    if (!chatId || !message) {
+        const missingFields = [!chatId?"chatId":null, !message?"message":null].filter((field) => field !== null).join(', ');
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
+    }
+
+    if (message.trim().length === 0) {
         return res.status(400).json({ error: "El mensaje no puede estar vacío" });
     }
 
@@ -93,18 +108,17 @@ export const createChat = async (req: any, res: any) => {
     const name = req.body.name;
     const users = req.body.users;
 
-    if (!users || users.length < 2) {
-        return res.status(400).json({ error: "Debe haber al menos dos usuarios" });
+    if (!name || !users) {
+        const missingFields = [!name?"name":null, !users?"users":null].filter((field) => field !== null).join(', ');
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     const chat = new Chat({ name: name, type: ChatType.PRIVATE, users: users, messages: [] });
-
     try {
-        chat.validateSync();
+        await chat.validate();
     } catch (error) {
         return res.status(400).json({ errors: parseValidationError(error) });
     }
-
     try {
         await chat.save();
         sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "chatAction", chatId: chat._id })
@@ -118,12 +132,9 @@ export const editChatName = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const name = req.body.name;
 
-    if (!name || name.trim().length === 0) {
-        return res.status(400).json({ error: "El nombre no puede estar vacío" });
-    }
-
-    if (name.length > 60) {
-        return res.status(400).json({ error: "El nombre no puede tener más de 60 caracteres" });
+    if (!name || !chatId) {
+        const missingFields = [!name?"name":null, !chatId?"chatId":null].filter((field) => field !== null).join(', ');
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
@@ -140,6 +151,11 @@ export const editChatName = async (req: any, res: any) => {
         }
 
         chat.name = name;
+        try {
+            await chat.validate();
+        } catch (error) {
+            return res.status(400).json({ errors: parseValidationError(error) });
+        }
         await chat.save();
         sendMessageToUsers(chat.users.map( x => x ? x.toString() : ""), { type: "messageAddedToChat", chatId: chatId, name: name });
         res.status(200).json({ message: "Nombre cambiado" });
@@ -150,6 +166,10 @@ export const editChatName = async (req: any, res: any) => {
 
 export const leaveChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
+    
+    if (!chatId) {
+        return res.status(400).json({ error: 'No se ha especificado el campo chatId' });
+      }
 
     try {
         const chat = await Chat.findById(chatId);

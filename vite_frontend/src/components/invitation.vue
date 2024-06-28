@@ -8,6 +8,7 @@ const route = useRoute();
 const invitationCode = ref(null);
 const invitation = ref(null);
 const errorMessage = ref([]);
+const fetched = ref(false);
 
 const applyInvitation = async () => {
     try {
@@ -48,6 +49,7 @@ const fetchInvitation = async () => {
         if (response.ok) {
             const data = await response.json();
             invitation.value = data;
+            fetched.value = true;
         } else {
             errorMessage.value = [];
             const data = await response.json()
@@ -78,6 +80,15 @@ const parsePerm = (perm) => {
 onBeforeMount( async () => {
     invitationCode.value = route.params.invitationCode;
     await fetchInvitation();
+    const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: "include",
+      body: JSON.stringify({
+        username: "prueba6",
+        password: "12345678910aA@",
+      })
+    });
 })
 
 </script>
@@ -86,15 +97,20 @@ onBeforeMount( async () => {
     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
         <div class="invitation-container">
             <h1>Invitación</h1>
-            <p>Estás a punto de unirte al siguiente workspace:</p>
-            <p style="margin-bottom:0"><strong>{{ invitation?.workspace.name }}</strong></p>
-            <p style="margin-top:0"> {{ invitation?.workspace.numUsers }} persona{{invitation?.workspace.numUsers>1?"s":""}}</p>
-            <p v-if="invitation?.profile">Entrará automáticamente con el perfil {{ invitation.profile.name }} y el permiso {{ parsePerm(invitation.profile.wsPerm) }}</p>
-            <p v-else>Entrará con el permiso de lectura</p>
-            <p style="margin-top:5%">¿Quieres continuar?</p>
-            <div style="display:flex; justify-content: center; margin-bottom: 8%;">
-                <button @click="applyInvitation" style="margin-right:5px;">Aceptar</button>
-                <button @click="router.push('/workspace')" style="margin-left:5px;">Rechazar</button>
+            <div v-if="fetched">
+                <p>Estás a punto de unirte al siguiente workspace:</p>
+                <p style="margin-bottom:0"><strong>{{ invitation?.workspace.name }}</strong></p>
+                <p style="margin-top:0"> {{ invitation?.workspace.numUsers }} persona{{invitation?.workspace.numUsers>1?"s":""}}</p>
+                <p v-if="invitation?.profile">Entrará automáticamente con el perfil {{ invitation.profile.name }} y el permiso {{ parsePerm(invitation.profile.wsPerm) }}</p>
+                <p v-else>Entrará con el permiso de lectura</p>
+                <p style="margin-top:5%">¿Quieres continuar?</p>
+                <div style="display:flex; justify-content: center; margin-bottom: 8%;">
+                    <button @click="applyInvitation" style="margin-right:5px;">Aceptar</button>
+                    <button @click="router.push('/workspace')" style="margin-left:5px;">Rechazar</button>
+                </div>
+            </div>
+            <div v-else>
+                <p>Ups. ha ocurrido un error con tu invitación.</p>
             </div>
             <div class="error" v-if="errorMessage.length !== 0" style="padding-left: 5%; padding-right: 5%; margin-top: 10px;">
                 <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>

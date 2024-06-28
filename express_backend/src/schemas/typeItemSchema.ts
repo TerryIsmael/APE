@@ -33,7 +33,6 @@ export const timerSchema = new mongoose.Schema<ITimer>({
         type: Number, 
         required: [true, "La duración del temporizador es obligatoria"],
         min: [1, "La duración del temporizador no puede ser 0 o inferior"],
-        default: 0
     },
     remainingTime: { 
         type: Number, 
@@ -52,7 +51,7 @@ export const timerSchema = new mongoose.Schema<ITimer>({
 export const fileSchema = new mongoose.Schema<IFile>({
     ready: { 
         type: Boolean, 
-        deafault: false
+        default: false
     }
 });
 
@@ -89,7 +88,6 @@ export const folderSchema = new mongoose.Schema<IFolder>({});
 export const calendarSchema = new mongoose.Schema<ICalendar>({
     events: { 
         type: [eventSchema], 
-        required: [true, "El calendario debe tener al menos un evento"],
         default: []
     }
 });

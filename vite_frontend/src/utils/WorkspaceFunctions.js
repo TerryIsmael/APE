@@ -63,13 +63,12 @@ class WorkspaceUtils {
           existFolder.value = true;
         }
         await Utils.verifyWsPerms(workspace, userWsPerms, currentUser);
-      } else if (response.status === 401 || response.status === 404) {
-        if (wsId) {
-          await localStorage.removeItem('workspace');
-          await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-          return;
-        }
+      } else if (response.status === 401) {
         router.push({ name: 'login' });
+      } else if (response.status === 403 || response.status === 404 && wsId) {
+        localStorage.removeItem('workspace');
+        await this.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
+        return;
       } else {
         errorMessage.value = [];
         const data = await response.json();
@@ -102,6 +101,7 @@ class WorkspaceUtils {
 
     wsFolders.sort(comparator);
     otherItems.sort(comparator);
+    currentFolders.sort(comparator);
 
     items.value = [];
     items.value.push(...currentFolders);
@@ -165,8 +165,8 @@ class WorkspaceUtils {
           "profile": workspace.value.profiles.find(y=>y._id==x.profile._id),
           "permission": x.permission
         }
-      }).filter(x => x.profile.users.map(x => x._id).includes(currentUser.value._id)).map(x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0][0];
-      return perm;
+      }).filter(x => x.profile?.users.map(x => x._id).includes(currentUser.value._id)).map(x=>[x.permission, filePermLevels[x.permission]]).sort((a, b) => b[1] - a[1])[0];
+      return perm?perm[0]:null;
     } else {
       return wsPerm[0];
     }
@@ -295,9 +295,9 @@ class WorkspaceUtils {
         newItem.value.text = newItem.value.text;
         newItem.value.important = newItem.value.important;
       } 
-
+      newItem.value.path = path.value;
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, path: path.value, item: newItem.value }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: newItem.value }),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -491,9 +491,9 @@ class WorkspaceUtils {
     errorMessage.value = [];
   };
 
-  static modifyItem = async (item, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
+  static modifyItem = async (item, changeName, selectedItem, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage) => {
     try {
-      if (item && item.itemType == 'File') {
+      if (changeName && item && item.itemType == 'File') {
         const extension = selectedItem.value?.name.split('.').pop(); 
         if (item.name.trim().length !== 0) {
           item.name = item.name + '.' + extension;
@@ -504,7 +504,7 @@ class WorkspaceUtils {
         }
       }
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, item: item, oldName: item.itemType== "Folder"?selectedItem.value.name:null }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: item }),
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

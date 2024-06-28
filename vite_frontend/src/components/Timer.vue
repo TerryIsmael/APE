@@ -192,7 +192,7 @@ watch(() => props.workspace, (newWorkspace) => {
                     <span class="item-name-title" style="padding-bottom:10px">{{ item.name }} </span>
                 </h1>
             </div>
-            <button style="width: 5%; height: 5vh; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
+            <button style="width: 5%; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
             
         </div>
         <p class="timer-text"> {{ timer }}</p>
@@ -236,19 +236,18 @@ watch(() => props.workspace, (newWorkspace) => {
 </template>
 
 <style scoped>
-.title{
+.title {
     display: flex;
     justify-content: space-around;
     align-items: center;
     margin-top: 2vh;
     margin-bottom: 2vh;
-    
-
 }
 
 .timer-text {
     font-size: 8vw;
 }
+
 .button-bar {
     height: 20vh;
     display: flex;
@@ -266,7 +265,6 @@ watch(() => props.workspace, (newWorkspace) => {
     justify-content: center;
     align-items: center;
 }
-
 
 .error {
   grid-column: 1 / -1;
@@ -294,5 +292,19 @@ watch(() => props.workspace, (newWorkspace) => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-bottom:10px;
+}
+
+.timer-input {
+  margin-top: 5px;
+  margin-right: 5px;
+  height: 30px;
+  width: 60px;
+  width: 20%;
+  background-color: #f2f2f2;
+  color: black;
+}
+
+.red-button {
+  background-color: #c55e5e; 
 }
 </style>

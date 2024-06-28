@@ -2,10 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 import User from '../schemas/userSchema';
 
-export const validateChat = [
-    body('name').trim().notEmpty().withMessage('El nombre del chat es obligatorio')
-    .isLength({ min: 1, max: 60 }).withMessage('El nombre de chat debe tener entre 1 y 60 caracteres'),
-
+export const validatePrivateChat = [
     body('users').isArray().withMessage('Los usuarios deben ser un array')
     .custom((value) => value.length >= 2).withMessage('Debe haber al menos 2 usuarios')
     .custom(async (value) => {

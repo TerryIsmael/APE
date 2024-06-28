@@ -8,7 +8,7 @@ import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
@@ -179,10 +179,6 @@ const leaveChat = async () => {
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    ws.value.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
     if (jsonEvent.type === 'messageAddedToChat') {
@@ -249,7 +245,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
               </div>
             </div>
           </div>
-            <button style="width: 90%; margin-left: auto; margin-right: auto;" @click="openModal()">Nuevo chat</button>
+            <button style="width: 90%; margin-left: auto; margin-right: auto; margin-bottom:5px" @click="openModal()">Nuevo chat</button>
         </div>
 
         <div v-if="!inDetails" class="message-chat-container">
@@ -523,6 +519,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
   align-items: center;
   color: white;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .message-input-container {

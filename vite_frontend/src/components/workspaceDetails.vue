@@ -8,7 +8,7 @@ import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
   ws: {
-    ws: Object,
+    type: Object,
     required: true
   },
 });
@@ -109,13 +109,11 @@ const fetchUser = async () => {
 
 const fetchWorkspace = async () => {
   await WorkspaceUtils.fetchWorkspace(workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage);
-  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
   WorkspaceDetailsUtils.populateVariables(workspace, author, profileWsPerms);
 };
 
 const editWorkspace = async () => {
   await WorkspaceDetailsUtils.editWorkspace(newWorkspace, workspace, router, errorMessage, author, profileWsPerms, editing);
-  props.ws.send(JSON.stringify({ type: 'workspaceIdentification', workspaceId: workspace.value._id }));
 };
 
 const selectItem = async (item, direct) => {
@@ -191,8 +189,12 @@ const getFilteredProfiles = computed(() => {
 const getGroupProfiles = computed(() => {
   const profiles = workspace.value.profiles.filter(profile => {
     const profileType = profile.profileType === 'Group';
-    const matchesSearchTerm = searchGroupProfileTerm.value.trim() === '' || profile.name.toLowerCase().includes(searchGroupProfileTerm.value.toLowerCase().trim());
-    return (profileType && matchesSearchTerm);
+    const isNotAdmin = profile.wsPerm !== 'Admin';
+    if (userWsPerms.value === 'Owner') {
+      return (profileType);
+    } else if (userWsPerms.value === 'Admin') {
+      return (profileType && isNotAdmin);
+    }
   });
 
   return profiles.sort((a, b) => {
@@ -253,7 +255,7 @@ const leaveWorkspace = async (workspaceId) => {
 };
 
 const redirectToWorkspace = async(workspaceId) => {
-  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
+  await Utils.redirectToWorkspace(workspaceId, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ref(props.ws));
 };
 
 const toggleLeave = () => {
@@ -277,18 +279,15 @@ const createWorkspace = async (newWorkspaceName) => {
 
 const refreshWindow = async () => {
   await fetchWorkspace();
-
   await fetchInvitations();
+  inviteProfile.value = workspace.value?.profiles?.find(profile=> profile._id === inviteProfile._id);
+
+  if (!inviteProfile.value) inviteProfile.value = 'none';
 };
 
 const websocketEventAdd = () => {
-  props.ws.addEventListener('open', async (event) => {
-    console.log('Connected to server');
-    props.ws.send(JSON.stringify({ type: 'workspaceIdentification', userId: currentUser.value?._id, workspaceId: workspace.value?._id }));
-  });
   props.ws.addEventListener('message', async (event) => {
     const jsonEvent = JSON.parse(event.data);
-    console.log(jsonEvent);
     if (jsonEvent.type === 'workspaceUpdated') {
       await refreshWindow();
     } 
@@ -376,7 +375,7 @@ onUnmounted(() => {
               <select v-model="permToInvite" class="text-input" style="width: 32%; margin-left:3px">
                   <option :value="'Read'">Lectura</option>
                   <option :value="'Write'">Escritura</option>
-                  <option :value="'Admin'">Admin</option>
+                  <option v-if="userWsPerms === 'Owner' ":value="'Admin'">Admin</option>
               </select> 
               <button style="margin-top: 0.5%;" class="invite-button" @click="inviteUser">Invitar</button>
             </div>
@@ -387,7 +386,7 @@ onUnmounted(() => {
             <div style="display: flex; justify-content: space-between; width: 100%;">
               <select v-model="inviteProfile" class="text-input" style="width: 60%;">
                   <option :value="'none'"> Ninguno - Lectura </option>
-                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile.name">{{ profile.name }} </option>
+                  <option v-if="getGroupProfiles.length > 0" v-for="profile in getGroupProfiles" :key="profile._id" :value="profile">{{ profile.name }} - {{ translatePerm(profile.wsPerm) }} </option>
               </select>
               <select v-model="linkDuration" class="text-input" style="width: 20%; margin-left:3px">
                   <option :value="'day'"> 1 día </option>
@@ -405,8 +404,8 @@ onUnmounted(() => {
                 <th style="width:6%">Activo</th>
                 <th style="width:8%; margin-left:5%; text-align: end;">Eliminar</th>
               </tr>
-              <tr v-for="invitation in invitations" :key="invitation._id">  
-                <td >{{ invitation.profile?(invitation.profile.name, "-", invitation.profile.wsPerm):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
+              <tr v-for="invitation in invitations" :key="invitation._id"> 
+                <td >{{ invitation.profile?(invitation.profile.name+ " - "+ translatePerm(invitation.profile.wsPerm)):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
                 <td>{{ invitation.expirationDate?Utils.formatDate(invitation.expirationDate):"Indefinida" }}</td>
                 <td class="td-center"><span @click="toggleActiveInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">{{ invitation.active ? 'check' : 'close' }}</span></td>
                 <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>
@@ -428,7 +427,7 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <input v-if="editing" type="text" class="workspace-input" v-model="newWorkspace.name" :placeholder=workspace.name></input>
+            <input v-if="editing" type="text" class="workspace-input" maxlength="55" v-model="newWorkspace.name" :placeholder=workspace.name></input>
             <div v-else style="margin: 0;">
               <hr style="width: 92%; display: flex; margin-left: 0%; margin-top: 0.5%">
               <h4 style="margin-left: 0; margin-right: 0; margin-top: 0;"> {{ workspace.name }}</h4>

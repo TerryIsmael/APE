@@ -91,37 +91,6 @@ class FavoriteUtils {
     }
   };
 
-  static handleNewItemForm = async (newItem, workspace, errorMessage, currentUser, items, folders, userWsPerms, isNewItemModalOpened, router, hours, minutes, seconds) => {
-    try { 
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, path: '', item: newItem.value }),
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        WorkspaceUtils.closeNewItemModal(isNewItemModalOpened, newItem, errorMessage, hours, minutes, seconds);
-        await this.fetchFavs(workspace, currentUser, items, folders, userWsPerms, router, errorMessage);
-        errorMessage.value = [];
-      } else if (response.status === 401) {
-        router.push({ name: 'login' });
-      } else {
-        errorMessage.value = [];
-        const data = await response.json();
-        if (data.error || data.errors) {
-          Utils.parseErrorMessage(data, errorMessage);
-        } else {
-          throw new Error("Error al crear item");
-        }
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   static changePerms = async (perm, profileId, selectedItem, workspace, currentUser, items, folders, userWsPerms, router, errorMessage) => {
     try { 
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/perms', {

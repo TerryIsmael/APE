@@ -364,21 +364,21 @@ watch(() => props.workspace, (newWorkspace) => {
             <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
         </div>
         <div v-else>
-            <div v-if="appToUse === 'pdf'" style="display:flex; flex-direction: column; align-items: center">
+            <div v-if="appToUse === 'pdf'" style="display:flex; flex-direction: column; align-items: center;">
                 <div style="max-height: 82vh; overflow-y: auto;">
                     <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
                 </div>
-                <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
+                <button @click="downloadFile" style="margin-top: 20px; width: 20%; margin-bottom: 2%">Descargar</button>
             </div>
-            <div v-if="appToUse === 'CKEditor'" style="color:black">
+            <div v-if="appToUse === 'CKEditor'" style="color: black; padding-bottom: 2%">
                 <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
-                <button @click="selectUploadFile" style="margin:5px">Subir imagen</button>
+                <button @click="selectUploadFile" style="margin: 5px">Subir imagen</button>
                 <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
             </div>
             <div v-if="appToUse === 'Sheets'" style="display: flex; flex-direction: column;">
                 <div class="xlsx-table" ref="table" v-html="html"></div>
-                <div style="display:flex; justify-content: center;">
-                <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
+                <div style="display: flex; justify-content: center; margin-bottom: 2%">
+                    <button @click="downloadFile" style="margin-top: 20px; width: 20%;">Descargar</button>
                 </div>
             </div>
             <div v-if="!appToUse" style="display:flex; flex-direction:column; align-items: center;justify-content: center; height: 100%;">
