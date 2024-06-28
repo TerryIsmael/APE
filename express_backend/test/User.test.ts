@@ -240,6 +240,13 @@ describe('/user/edit POST', () => {
     expect(res.status).toBe(400);
     expect(JSON.parse(res.text).errors).toBeArrayOfSize(3);
   });
+
+  it('401 Not Logged', async () => {
+    const res = await request.agent(app).post('/user/edit')
+      .send({user:{ username: 'userTest@', password: '12345678910aA@', firstName: 'Test1', surnames: 'Test1', email: 'userTestEdit@gmail.com'}});
+    expect(res.status).toBe(401);
+    expect(JSON.parse(res.text).error).toBe('No estás autenticado');
+  });
 });
 
 describe('/user/find POST', () => {

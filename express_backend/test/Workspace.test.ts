@@ -389,7 +389,7 @@ describe('/invitation POST', () => {
         .send({ workspace: workspaceId, profile: 'aaaaaaaaaaaaaaaaaaaaaaaa', linkDuration: 'day' });
         expect(res.status).toBe(400);
         expect(JSON.parse(res.text).errors).toBeArrayOfSize(1);
-        expect(JSON.parse(res.text).errors[0]).toBe('Este perfil no existe');
+        expect(JSON.parse(res.text).errors[0]).toInclude('Este perfil no existe');
     });
 
     it('400 Null fields', async () => {

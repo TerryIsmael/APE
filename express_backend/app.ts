@@ -27,9 +27,4 @@ app.use(passport.session());
 app.use(router);
 app.use(history());
 
-app.use(passport.session());
-
-app.use(router);
-app.use(history());
-
 export default app;
