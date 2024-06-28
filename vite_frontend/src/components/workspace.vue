@@ -410,7 +410,7 @@ watch(
   <div v-else style="height: 100%;">
     <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Timer>
     <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Calendar>
-    <File v-if="routedItem && routedItem.itemType == 'File'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path"></File>
+    <File v-if="routedItem && routedItem.itemType == 'File'" :item="routedItem" :ws="ws" :workspace="workspace" :routedItemPerm="routedItemPerm"></File>
     <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
       <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
         <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"

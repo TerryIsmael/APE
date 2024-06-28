@@ -201,7 +201,7 @@ export const editFile = async (req: any, res: any) => {
             return res.status(404).json({ error: 'No se ha encontrado el item' });
         }
         const perm = await getUserPermission(req.user._id, wsId, item._id);
-        if (!perm || perm !== Permission.Owner) {
+        if (!perm || perm === Permission.Read) {
             return res.status(403).json({ error: 'No estás autorizado para editar este item' });
         }
 

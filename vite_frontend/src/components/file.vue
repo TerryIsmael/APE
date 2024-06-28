@@ -41,21 +41,13 @@ const props = defineProps({
         type: Object,
         required: true
     },
-    path: {
+    routedItemPerm: {
         type: String,
-        required: true
-    },
-    currentUser: {
-        type: Object,
         required: true
     }
 });
 
-const itemPermission = ref(null);
-const verifyPermissions = () => {
-  itemPermission.value = WorkspaceUtils.verifyPerms(props.item, ref(props.workspace), ref(props.currentUser));
-}
-
+const itemPermission = ref(props.routedItemPerm);
 
 const url = ref(null);
 const errorMessage = ref([]);
@@ -264,13 +256,6 @@ const selectImage = (item) => {
   return Utils.selectImage(item);
 };
 
-
-
-
-
-
-
-
 const html = ref("");
 const table = ref();
 
@@ -307,7 +292,6 @@ const downloadFile = async () => {
 };
 
 onBeforeMount(async () => {
-    verifyPermissions();
     if(props.item.ready){
         switch(props.item.name.split('.').pop()){
         case 'pdf':
@@ -330,9 +314,8 @@ onBeforeMount(async () => {
     isLoading.value = false;
 });
 
-
-watch(() => props.workspace, (newWorkspace) => {
-  verifyPermissions();
+watch(() => props.routedItemPerm, (newWorkspace) => {
+    itemPermission.value = props.routedItemPerm;
 }, { immediate: true });
 
 </script>
@@ -371,9 +354,14 @@ watch(() => props.workspace, (newWorkspace) => {
                 <button @click="downloadFile" style="margin-top: 20px; width: 20%; margin-bottom: 2%">Descargar</button>
             </div>
             <div v-if="appToUse === 'CKEditor'" style="color: black; padding-bottom: 2%">
+                <div v-if="itemPermission && ['Owner', 'Write'].includes(itemPermission)">
                 <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
                 <button @click="selectUploadFile" style="margin: 5px">Subir imagen</button>
                 <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
+                </div>
+                <div v-else class="html-visor">
+                    <div v-html="editorData"/>
+                </div>
             </div>
             <div v-if="appToUse === 'Sheets'" style="display: flex; flex-direction: column;">
                 <div class="xlsx-table" ref="table" v-html="html"></div>
@@ -462,6 +450,14 @@ watch(() => props.workspace, (newWorkspace) => {
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-bottom:10px;
+}
+
+.html-visor {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+    text-align: auto;
+    background-color: white;
 }
 
 </style>
