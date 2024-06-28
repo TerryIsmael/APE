@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import request from 'supertest';
 import { app } from '../app.ts';
 import fs from 'fs';
@@ -8,16 +8,13 @@ import User from "../src/schemas/userSchema.ts";
 import bcrypt from 'bcrypt';
 
 let agent = request.agent(app);
+
 beforeAll( async () => {
+  await User.deleteMany({ });
+  await Workspace.deleteMany({ });
+  await Profile.deleteMany({ });
   await User.create({ username: 'userTestEdit', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTestEdit@gmail.com'});
 });
-
-afterAll( async () => {
-  await agent.post('/login')
-  .send({ username: 'UserTestNew', password: '12345678910aA@'});
-  await agent.delete('/user');
-  }
-);
 
 describe('/register POST', () => {
   it('201', async () => {

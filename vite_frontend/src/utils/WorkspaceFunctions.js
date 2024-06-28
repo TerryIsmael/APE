@@ -295,9 +295,9 @@ class WorkspaceUtils {
         newItem.value.text = newItem.value.text;
         newItem.value.important = newItem.value.important;
       } 
-
+      newItem.value.path = path.value;
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, path: path.value, item: newItem.value }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: newItem.value }),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -504,7 +504,7 @@ class WorkspaceUtils {
         }
       }
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item', {
-        body: JSON.stringify({ workspace: workspace.value._id, item: item, oldName: item.itemType== "Folder"?selectedItem.value.name:null }),
+        body: JSON.stringify({ workspace: workspace.value._id, item: item }),
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

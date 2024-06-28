@@ -7,7 +7,7 @@ import { getWorkspace, addUserToWorkspace, getWorkspaceNotices, changeWSPerms, g
 import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavorite, createFile, changeItemPerms, editItem, editFile, saveFile } from './controllers/itemController.ts';
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged, validatePassword,validateEditPassword } from './middlewares/userMiddleware.ts';
-import { validateFile, validateItem, validatePerm } from './middlewares/itemMiddleware.ts';
+import { validateFile } from './middlewares/itemMiddleware.ts';
 import { validatePrivateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
@@ -131,14 +131,13 @@ router.post('/file', isLogged, createFile, uploader.single('file'), validateFile
 
 router.put('/file', isLogged, editFile);
 
-router.post('/item', isLogged, validateItem, (req: Request, res: Response) => {
+router.post('/item', isLogged, (req: Request, res: Response) => {
     try {
         addItemToWorkspace(req, res);
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error interno del servidor al manejar la solicitud. ' + error});
     }
 });
-
 
 router.put('/item', isLogged, (req: Request, res: Response) => {
     try {
@@ -188,7 +187,7 @@ router.put('/perms', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.put('/item/perms', isLogged, validatePerm, async (req: Request, res: Response) => {
+router.put('/item/perms', isLogged, async (req: Request, res: Response) => {
     try {
         await changeItemPerms(req, res);
     } catch(error) {

@@ -30,8 +30,7 @@ export const getWorkspace = async (req: any, res: any) => {
       await workspace?.populate('items.profilePerms.profile');
       await workspace?.populate('profiles');
       await workspace?.populate('profiles.users');
-      res.status(200).json(workspace);
-      return;
+      return res.status(200).json(workspace);
     } else {
       const workspace = await Workspace.findOne({ _id: wsId });
       if (!workspace) {
@@ -175,10 +174,7 @@ export const getWorkspaceNotices = async (req: any, res: any) => {
         foldersToShow.push(item);
       }
     }
-
     res.status(200).json({_id: workspace._id, notices: noticesWithOwner, folders: foldersToShow, profiles: workspace.profiles, name: workspace.name});
-    return;
-
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -215,7 +211,6 @@ export const getWorkspaceFolders = async (req: any, res: any) => {
     await workspace.populate('profiles');
     await workspace.populate('profiles.users');
     res.status(200).json({_id: workspace._id, name: workspace.name, folders: foldersToShow, permission: wsPerm});
-    return;
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -226,8 +221,7 @@ export const createWorkspace = async (req: any, res: any) => {
   const user = req.user;
 
   if (!wsName) {
-    res.status(400).json({ error: 'No se ha especificado el campo wsName'});
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo wsName'});
   }
 
   try {
@@ -257,20 +251,17 @@ export const editWorkspace = async (req: any, res: any) => {
   const newWs = req.body.workspace;
 
   if (!newWs) {
-    res.status(400).json({ error: 'No se ha especificado el campo workspace' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo workspace' });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: newWs._id });
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
     const reqPerm = await getWSPermission(req.user._id, newWs._id);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a editar el workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a editar el workspace' });
     }
     workspace.name = newWs.name;
     try {
@@ -303,42 +294,35 @@ export const addUserToWorkspace = async (req: any, res: any) => {
 
   if (!wsId || !username || !perm) {
     const missingFields = [!wsId?"workspace":null, !username?"username":null, !perm?"perm":null].filter(Boolean).join(', ');
-    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-    return;
+    return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     } 
 
     const reqPerms = await getWSPermission(req.user._id, wsId);
     if (!([WSPermission.Owner, WSPermission.Admin].find(x => x == reqPerms))) {
-      res.status(403).json({ error: 'No estás autorizado para añadir usuarios a este workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado para añadir usuarios a este workspace' });
     }
 
     if (perm === WSPermission.Owner) {
-      res.status(403).json({ error: 'No puedes añadir un propietario' });
-      return;
+      return res.status(403).json({ error: 'No puedes añadir un propietario' });
     }
 
     if (reqPerms === WSPermission.Admin && perm === WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
     }
 
     const user = await User.findOne({ username: username });
     if (!user) {
-      res.status(404).json({ error: 'No se ha encontrado el usuario' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el usuario' });
     }
 
     if (workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === user._id.toString()))) {
-      res.status(409).json({ error: 'El usuario ya está en el workspace' });
-      return;
+      return res.status(409).json({ error: 'El usuario ya está en el workspace' });
     }
     
     const profile = new Profile({ name: user._id, profileType: ProfileType.Individual, wsPerm: perm, users: [user] });
@@ -364,7 +348,7 @@ export const addUserToWorkspace = async (req: any, res: any) => {
     res.status(201).json(workspace);
   
   } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -373,8 +357,7 @@ export const changeWSPerms = async (req: any, res: any) => {
 
   if (!wsId || !profileId || !perm) {
     const missingFields = [!wsId?"wsId":null, !profileId?"profileId":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
-    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-    return;
+    return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
   }
 
   try {
@@ -412,7 +395,7 @@ export const changeWSPerms = async (req: any, res: any) => {
       sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
       res.status(201).json(workspace);
   } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -423,32 +406,27 @@ export const createInvitation = async (req: any, res: any) => {
 
   if (!wsId || !linkDuration) {
     const missingFields = [!wsId?"workspace":null, !linkDuration?"linkDuration":null].filter((field) => field !== null).join(', ');
-    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-    return;
+    return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId });
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado para crear invitaciones en este workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado para crear invitaciones en este workspace' });
     }
     const profile = await Profile.findOne({ _id: profileId });
 
     if (profile?.profileType === ProfileType.Individual) {
-      res.status(403).json({ error: 'No puedes crear enlaces para perfiles individuales' });
-      return;
+      return res.status(403).json({ error: 'No puedes crear enlaces para perfiles individuales' });
     }
 
     if (reqPerm === WSPermission.Admin && profile?.wsPerm === WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
     }
 
     const code = Math.random().toString(36).substring(2, 18);
@@ -466,8 +444,7 @@ export const createInvitation = async (req: any, res: any) => {
       case 'none':
         break;
       default:
-        res.status(400).json({ error: 'Duración de la invitación no válida' });
-        return;
+        return res.status(400).json({ error: 'Duración de la invitación no válida' });
     }
     const invitation = new Invitation({ code: code, workspace: wsId, profile: profileId, expirationDate: expirationDate });
     try {
@@ -488,13 +465,11 @@ export const getInvitations = async (req: any, res: any) => {
   try {
     const workspace = await Workspace.findOne({ _id: wsId });
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado para ver las invitaciones de este workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado para ver las invitaciones de este workspace' });
     }
     let invitations= await Invitation.find({ workspace: wsId }).populate('profile');
     if (reqPerm !== WSPermission.Owner) { 
@@ -503,7 +478,7 @@ export const getInvitations = async (req: any, res: any) => {
     res.status(200).json(invitations);
   }
   catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -511,27 +486,24 @@ export const toggleActiveInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
 
   if (!invId) {
-    res.status(400).json({ error: 'No se ha especificado el campo invId' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo invId' });
   }
 
   try {
     const invitation: mongoose.Document<IInvitation> | null = await Invitation.findOne({ _id: invId });
     if (!invitation) {
-      res.status(404).json({ error: 'No se ha encontrado la invitación' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado la invitación' });
     }
     const wsId = invitation.get("workspace")._id.toString();
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) { 
-      res.status(403).json({ error: ('No estás autorizado para '+ (invitation.get('active')?'desactivar':'activar') + ' invitaciones en este workspace')});
-      return;
+      return res.status(403).json({ error: ('No estás autorizado para '+ (invitation.get('active')?'desactivar':'activar') + ' invitaciones en este workspace')});
     }
     invitation.set("active", !invitation.get("active"));
     await invitation.save();
     res.status(200).json({ message: 'Invitación ' + (invitation.get("active") ? 'activada' : 'desactivada') });
   } catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -539,27 +511,24 @@ export const deleteInvitation = async (req: any, res: any) => {
   const invId = req.body.invId;
 
   if (!invId) {
-    res.status(400).json({ error: 'No se ha especificado el campo invId' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo invId' });
   }
 
   try {
     const invitation = await Invitation.findOne({ _id: invId });
     if (!invitation) {
-      res.status(404).json({ error: 'No se ha encontrado la invitación' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado la invitación' });
     }
     const wsId = invitation.get("workspace")._id.toString();
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado para borrar invitaciones en este workspace' });
     }
     await invitation.deleteOne();
     res.status(200).json({ message: 'Invitación eliminada' });
   }
   catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -567,23 +536,19 @@ export const getInvitation = async (req: any, res: any) => {
   const code = req.params.code;
 
   if (!code) {
-    res.status(400).json({ error: 'No se ha especificado el campo code' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo code' });
   }
 
   try {
     const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace').populate('workspace.profiles');
     if (!invitation) {
-      res.status(404).json({ error: 'No se ha encontrado la invitación' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado la invitación' });
     }
     if (!invitation.get("active")) {
-      res.status(403).json({ error: 'La invitación ha sido desactivada' });
-      return;
+      return res.status(403).json({ error: 'La invitación ha sido desactivada' });
     }
     if (invitation.get("expirationDate") < new Date()) {
-      res.status(403).json({ error: 'La invitación ha expirado' });
-      return;
+      return res.status(403).json({ error: 'La invitación ha expirado' });
     }
 
     await invitation.populate('workspace.profiles');
@@ -599,7 +564,7 @@ export const getInvitation = async (req: any, res: any) => {
     res.status(200).json(parsedInvitation);
   }
   catch (error: any) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -607,34 +572,28 @@ export const useInvitation = async (req: any, res: any) => {
   const code = req.params.code;
 
   if (!code) {
-    res.status(400).json({ error: 'No se ha especificado el campo code' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo code' });
   }
 
   try {
     const invitation = await Invitation.findOne({ code: code }).populate('profile').populate('workspace');
     if (!invitation) {
-      res.status(404).json({ error: 'No se ha encontrado la invitación' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado la invitación' });
     }
     if (!invitation.get("active")) {
-      res.status(403).json({ error: 'La invitación ha sido desactivada' });
-      return;
+      return res.status(403).json({ error: 'La invitación ha sido desactivada' });
     }
     if (invitation.get("expirationDate") < new Date()) {
-      res.status(403).json({ error: 'La invitación ha expirado' });
-      return;
+      return res.status(403).json({ error: 'La invitación ha expirado' });
     }
 
     const workspace = await Workspace.findOne({ _id: invitation.workspace._id }).populate('profiles');
     if (!workspace) {
-      res.status(404).json({ error: 'El workspace fue eliminado' });
-      return;
+      return res.status(404).json({ error: 'El workspace fue eliminado' });
     }
 
     if (workspace.profiles.some((profile: mongoose.PopulatedDoc<IProfile>) => profile && ((profile as unknown as IProfile).users as  mongoose.Types.ObjectId[]).find((u: mongoose.Types.ObjectId) => u.toString() === req.user._id.toString()))) {
-      res.status(409).json({ error: 'Ya estás en el workspace' });
-      return;
+      return res.status(409).json({ error: 'Ya estás en el workspace' });
     }
 
     const profile = invitation.profile;
@@ -668,26 +627,22 @@ export const saveProfile = async (req: any, res: any) => {
 
   if (!wsId || !newProfileData) {
     const missingFields = [!wsId?"wsId":null, !newProfileData?"profile":null].filter((field) => field !== null).join(', ');
-    res.status(400).json({ error: 'No se han especificado el/los campo(s) ' + missingFields });
-    return;
+    return res.status(400).json({ error: 'No se han especificado el/los campo(s) ' + missingFields });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a crear o editar perfiles' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a crear o editar perfiles' });
     }
 
     if (reqPerm === WSPermission.Admin && newProfileData.wsPerm === WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a añadir a otros administradores' });
     }
 
     if (newProfileData.wsPerm === WSPermission.Owner) {
@@ -696,8 +651,7 @@ export const saveProfile = async (req: any, res: any) => {
 
     const sameNameProfile = workspace.profiles.find((profile: mongoose.PopulatedDoc<IProfile>) => profile instanceof mongoose.Document && profile.name == newProfileData.name);
     if (sameNameProfile && (!newProfileData._id || sameNameProfile._id.toString() !== newProfileData._id.toString())) {
-        res.status(409).json({ error: 'El perfil ya está en el workspace' });
-        return;
+      return res.status(409).json({ error: 'El perfil ya está en el workspace' });
     }
     
     let areInWorkspace : mongoose.Types.ObjectId[] = [];
@@ -714,16 +668,14 @@ export const saveProfile = async (req: any, res: any) => {
       }
 
       if (areInWorkspace.length !== newProfileData.users.length) {
-        res.status(404).json({ error: `Hay usuarios que no existen en el workspace` });
-        return;
+        return res.status(404).json({ error: `Hay usuarios que no existen en el workspace` });
       }
     }
 
     if (newProfileData._id) {
       const newProfile = await Profile.findOne({ _id: newProfileData._id });
       if (!newProfile) {
-        res.status(404).json({ error: 'No se ha encontrado el perfil' });
-        return;
+        return res.status(404).json({ error: 'No se ha encontrado el perfil' });
       }
       newProfile.name = newProfileData.name;
       newProfile.profileType = newProfileData.profileType;
@@ -763,37 +715,31 @@ export const deleteProfile = async (req: any, res: any) => {
 
   if (!wsId || !profileId) {
     const missingFields = [!wsId?"wsId":null, !profileId?"profileId":null].filter((field) => field !== null).join(', ');
-    res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-    return;
+    return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner && reqPerm !== WSPermission.Admin) {
-      res.status(403).json({ error: 'No estás autorizado a eliminar perfiles' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a eliminar perfiles' });
     }
 
     const profile = workspace.profiles.find(profile => profile?._id.toString() === profileId) as mongoose.PopulatedDoc<IProfile, mongoose.Types.ObjectId | undefined>;
     if (!profile) {
-      res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
     }
 
     if (reqPerm === WSPermission.Admin && ((profile as IProfile).wsPerm === WSPermission.Owner || (profile as IProfile).wsPerm === WSPermission.Admin) && req.user._id.toString() !== (profile as IProfile)?.name.toString()) {
-      res.status(403).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a borrar perfiles con permiso de administrador o propietario' });
     }
 
     if ((profile as IProfile).wsPerm === WSPermission.Owner) {
-      res.status(403).json({ error: 'No puedes borrar al propietario' });
-      return;
+      return res.status(403).json({ error: 'No puedes borrar al propietario' });
     }
 
     if ((profile as IProfile).profileType === ProfileType.Individual) { 
@@ -817,26 +763,22 @@ export const leaveWorkspace = async (req: any, res: any) => {
   const profileName = req.user._id;
 
   if (!wsId) {
-    res.status(400).json({ error: 'No se ha especificado el campo wsId' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo wsId' });
   }
   
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles');
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
 
     const profile = await Profile.findOne({ name: profileName, _id: { $in: workspace.profiles } });
     if (!profile) {
-      res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el perfil en el workspace' });
     }
     
     if (workspace.default && (await getWSPermission(req.user._id, wsId) === WSPermission.Owner)){
-      res.status(403).json({ error: 'No puedes abandonar el workspace por defecto' });
-      return;
+      return res.status(403).json({ error: 'No puedes abandonar el workspace por defecto' });
     }
 
     await deleteUserFromWs(req.user._id, workspace);
@@ -852,21 +794,18 @@ export const deleteWorkspace = async (req: any, res: any) => {
   const wsId = req.body.wsId;
 
   if (!wsId) {
-    res.status(400).json({ error: 'No se ha especificado el campo wsId' });
-    return;
+    return res.status(400).json({ error: 'No se ha especificado el campo wsId' });
   }
 
   try {
     const workspace = await Workspace.findOne({ _id: wsId }).populate('profiles').populate('items');
     if (!workspace) {
-      res.status(404).json({ error: 'No se ha encontrado el workspace' });
-      return;
+      return res.status(404).json({ error: 'No se ha encontrado el workspace' });
     }
 
     const reqPerm = await getWSPermission(req.user._id, wsId);
     if (reqPerm !== WSPermission.Owner) {
-      res.status(403).json({ error: 'No estás autorizado a borrar el workspace' });
-      return;
+      return res.status(403).json({ error: 'No estás autorizado a borrar el workspace' });
     }
 
     for (const profile of workspace.profiles) {

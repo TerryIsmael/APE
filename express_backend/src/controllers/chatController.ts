@@ -81,8 +81,7 @@ export const addMessage = async (req: any, res: any) => {
 
     if (!chatId || !message) {
         const missingFields = [!chatId?"chatId":null, !message?"message":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     if (message.trim().length === 0) {
@@ -111,8 +110,7 @@ export const createChat = async (req: any, res: any) => {
 
     if (!name || !users) {
         const missingFields = [!name?"name":null, !users?"users":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     const chat = new Chat({ name: name, type: ChatType.PRIVATE, users: users, messages: [] });
@@ -136,8 +134,7 @@ export const editChatName = async (req: any, res: any) => {
 
     if (!name || !chatId) {
         const missingFields = [!name?"name":null, !chatId?"chatId":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
@@ -171,8 +168,7 @@ export const leaveChat = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     
     if (!chatId) {
-        res.status(400).json({ error: 'No se ha especificado el campo chatId' });
-        return;
+        return res.status(400).json({ error: 'No se ha especificado el campo chatId' });
       }
 
     try {

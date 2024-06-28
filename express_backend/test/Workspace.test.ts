@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import request from 'supertest';
 import { app } from '../app.ts';
 import Profile from "../src/schemas/profileSchema.ts";
@@ -12,13 +12,12 @@ import type { IUser } from "../src/models/user.ts";
 import bcrypt from 'bcrypt';
 import Invitation from "../src/schemas/invitationSchema.ts";
 import type { IInvitation } from '../src/models/invitation';
-import { FolderItem, NoticeItem } from "../src/schemas/itemSchema.ts";
+import Item, { FolderItem, NoticeItem } from "../src/schemas/itemSchema.ts";
 import { ItemType } from "../src/models/item.ts";
 import type { IWorkspace } from "../src/models/workspace.ts";
 
 let workspaceId: String | undefined;
 let workspace: IWorkspace | null;
-let originalProfiles: mongoose.Types.ObjectId[];
 let allPermProfiles: mongoose.Types.ObjectId[];
 
 type UserDocument = mongoose.Document<unknown, {}, IUser> & IUser & Required<{ _id: mongoose.Types.ObjectId }> | null;
@@ -48,9 +47,6 @@ const createAgents = async () => {
 };
 
 const populateUsersAndProfiles = async () => {
-    ownerUser = await User.findOne({ username: 'userTest' });
-    ownerProfile = workspace?.profiles.find((profile) => (profile as IProfile)?.wsPerm === WSPermission.Owner) as IProfile;
-    originalProfiles = workspace?.profiles as mongoose.Types.ObjectId[];
     workspaceId = workspace?._id.toString();
 
     adminUser = await User.create({ username: 'adminUser', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'adminTest@gmail.com'});
@@ -64,7 +60,7 @@ const populateUsersAndProfiles = async () => {
     groupProfileNotExists = await Profile.create({profileType: 'Group', name: 'notInWs', users: [], wsPerm: WSPermission.Read});
     
     notMemberUser = await User.create({ username: 'notMemberUser', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'notMemberTest@gmail.com'});
-    notMemberUserProfile = await Profile.create({profileType: 'Individual', name: writeReadUser._id, users: [writeReadUser._id], wsPerm: WSPermission.Write});
+    notMemberUserProfile = await Profile.create({profileType: 'Individual', name: notMemberUser._id, users: [notMemberUser._id], wsPerm: WSPermission.Write});
     await User.create({ username: 'userInvite', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'inviteTest@gmail.com'});
 
     groupProfileToDelete1 = await Profile.create({profileType: 'Group', name: 'groupProfileToDelete', users: [], wsPerm: WSPermission.Read});
@@ -105,27 +101,26 @@ const createWorkspaceToDelete = async () => {
     await workspaceDelete?.save();
 };
 
+const initDb = async () => {
+    await User.deleteMany({ });
+    await Workspace.deleteMany({ });
+    await Profile.deleteMany({ });
+    await Item.deleteMany({ });
+    await Invitation.deleteMany({ });
+
+    ownerUser = await User.create({ username: 'userTest', password: bcrypt.hashSync('12345678910aA@', 10), firstName: 'Test', surnames: 'Test', email: 'userTest@gmail.com'});
+    ownerProfile = await Profile.create({profileType: 'Individual', name: ownerUser._id, users: [ownerUser._id], wsPerm: WSPermission.Owner});
+    workspace = await Workspace.create({name: 'Workspace de ' + ownerUser.username, creationDate: new Date(), items: [], profiles: [ownerProfile._id], default: true});
+};
+
 beforeAll(async () => { 
-    workspace = await ((await Workspace.findOne({ name: 'Workspace de userTest' }))?.populate("profiles")) as IWorkspace;
+    await initDb();
     await populateUsersAndProfiles();
     await createItems();
     await workspace?.save();
     await createInvitations();
     await createAgents();
     await createWorkspaceToDelete();
-});
-
-afterAll(async () => {
-    await User.deleteOne({ username: 'adminUser' });
-    await User.deleteOne({ username: 'writeReadUser' });
-    await User.deleteOne({ username: 'notMemberUser' });
-    await Invitation.deleteMany({ wsId: workspaceId });
-
-    const workspace = await Workspace.findOne({ _id: workspaceId });
-    if (workspace) {
-        workspace.profiles = originalProfiles;
-        await workspace?.save();
-    }
 });
 
 describe('/workspace POST', () => {

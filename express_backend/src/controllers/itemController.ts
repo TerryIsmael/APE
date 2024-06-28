@@ -33,79 +33,81 @@ const openAsync = promisify(fs.open);
 export const addItemToWorkspace = async (req: any, res: any) => {
 
     const wsId = req.body.workspace;
-    const path = req.body.path ? req.body.path : "";
     const itemData = req.body.item;
 
     if (!wsId || !itemData) {
         const missingFields = [!wsId?"workspace":null, !itemData?"item":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) ' + missingFields });
     }
 
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-        } else {
-            const folders = path.split('/');
-            const folder = folders[folders.length - 1];
-            const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
-            const folderPath = folders.slice(0, -1).join('/');
-
-            if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath)) {
-                res.status(404).json({ error: 'No se ha encontrado la carpeta' });
-                return;
-            } else {
-                let item;
-                try {
-                    switch (itemData.itemType) {
-                        case ItemType.Folder:
-                            item = new FolderItem();
-                            break;
-                        case ItemType.Timer:
-                            item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.duration, initialDate: new Date() });
-                            break;
-                        case ItemType.Note:
-                            item = new NoteItem({ text: itemData.text });
-                            break;
-                        case ItemType.Notice:
-                            item = new NoticeItem({ text: itemData.text, important: itemData.important });
-                            break;
-                        case ItemType.Calendar:
-                            item = new CalendarItem({events:[]});
-                            break;
-                        default:
-                            res.status(400).json({ error: 'Tipo de item no válido' });
-                            return;
-                    }
-                } catch (error) {
-                    res.status(400).json({ error: 'Los atributos del item no son válidos' });
-                    return;
-                }
-
-                item.name = itemData.name;
-                item.path = path;
-                item.itemType = itemData.itemType;
-                item.uploadDate = new Date();
-                item.modifiedDate = new Date();
-                const profile = await Profile.findOne({ name: req.user._id, _id : { $in: workspace.profiles }});
-                item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
-                const perm = await getUserPermission(req.user._id, wsId, existingFolder?._id.toString());
-                if (perm === Permission.Read || !perm) {
-                    res.status(403).json({ error: 'No estás autorizado para añadir items en este directorio' });
-                } else {
-                    try {
-                        await item.save();
-                        workspace.items.push(item.id);
-                        await workspace.save();
-                        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
-                        res.status(201).json(item);
-                    } catch (error) {
-                        res.status(400).json({ errors: parseValidationError(error) });
-                    }
-                }
-            }
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
+        let path = req.body.item.path ? req.body.item.path : "";
+        if (req.body.item.itemType == ItemType.Notice){
+            path = "/notices";
+        }
+        const folders = path.split('/');
+        const folder = folders[folders.length - 1];
+        const existingFolder = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === folder && item.itemType === ItemType.Folder);
+        const folderPath = folders.slice(0, -1).join('/');
+
+        if (path != "/notices" && path != "" && (!existingFolder || existingFolder.path != folderPath)) {
+            return res.status(404).json({ error: 'No se ha encontrado la carpeta' });
+        }
+
+        const perm = await getUserPermission(req.user._id, wsId, existingFolder?._id.toString());
+        if (perm === Permission.Read || !perm) {
+            return res.status(403).json({ error: 'No estás autorizado para añadir items en este directorio' });
+        } 
+
+        const existingItem = (workspace.items as unknown as IItem[]).find((item: IItem) => item.name === itemData.name && item.path === path);
+        if (existingItem) {
+            return res.status(409).json({ error: 'No puede haber 2 items con el mismo nombre en una ruta' });
+        }
+
+        let item;
+        switch (itemData.itemType) {
+            case ItemType.Folder:
+                item = new FolderItem();
+                break;
+            case ItemType.Timer:
+                item = new TimerItem({ duration: itemData.duration, remainingTime: itemData.duration, initialDate: new Date() });
+                break;
+            case ItemType.Note:
+                item = new NoteItem({ text: itemData.text });
+                break;
+            case ItemType.Notice:
+                item = new NoticeItem({ text: itemData.text, important: itemData.important });
+                break;
+            case ItemType.Calendar:
+                item = new CalendarItem({ events: [] });
+                break;
+            default:
+                return res.status(400).json({ error: 'Tipo de item no válido' });
+        }
+
+        item.name = itemData.name;
+        item.path = path;
+        item.itemType = itemData.itemType;
+        item.uploadDate = new Date();
+        item.modifiedDate = new Date();
+        const profile = await Profile.findOne({ name: req.user._id, _id : { $in: workspace.profiles }});
+        item.profilePerms = [{ profile: new mongoose.Types.ObjectId(profile?._id), permission: Permission.Owner } as IProfilePerms];
+        
+        try {
+            await item.validate();                
+        } catch (error) {
+            return res.status(400).json({ errors: parseValidationError(error) });
+        }
+
+        await item.save();
+        workspace.items.push(item.id);
+        await workspace.save();
+        sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
+        res.status(201).json(item);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -114,33 +116,35 @@ export const addItemToWorkspace = async (req: any, res: any) => {
 export const editItem = async (req: any, res: any) => {
     const wsId = req.body.workspace;
     const itemData = req.body.item;
-    const oldName = req.body.oldName;
 
     if (!wsId || !itemData) {
         const missingFields = [!wsId?"workspace":null, !itemData?"item":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
         const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === itemData._id);
         if (!item) {
-            res.status(404).json({ error: 'No se ha encontrado el item' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el item' });
         }
+        const oldName = item.name;
         const perm = await getUserPermission(req.user._id, wsId, itemData._id);
         if (!perm || perm === Permission.Read) {
-            res.status(403).json({ error: 'No estás autorizado para editar este item' });
-            return;
+            return res.status(403).json({ error: 'No estás autorizado para editar este item' });
         }
+
+        if (itemData.itemType && itemData.itemType !== item.itemType) {
+            return res.status(400).json({ error: 'No se puede cambiar el tipo de item' });
+        }
+
         item.name = itemData.name;
         item.modifiedDate = new Date();
         item.path = itemData.path;
+        item.itemType = itemData.itemType;
 
         switch (item.itemType) {
             case ItemType.Timer:
@@ -162,17 +166,15 @@ export const editItem = async (req: any, res: any) => {
                 break;
         }
         try {
-            item.validateSync();
-            await item.save();
-
-            if (item.itemType === ItemType.Folder && item.name !== oldName) {
-                await updateFilesPath(item, oldName, wsId);
-            }
-
+            await item.validate();
         } catch (error) {
-            res.status(400).json({ errors: parseValidationError(error) });
-            return;
+            return res.status(400).json({ errors: parseValidationError(error) });
         }
+        await item.save();
+        if (item.itemType === ItemType.Folder && item.name !== oldName) {
+            await updateFilesPath(item, oldName, wsId);
+        }
+        
         sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
         res.status(200).json(item);
     } catch (error: any) {
@@ -186,31 +188,27 @@ export const editFile = async (req: any, res: any) => {
 
     if (!wsId || !fileId) {
         const missingFields = [!wsId?"workspace":null, !fileId?"fileId":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
         const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === fileId);
         if (!item) {
-            res.status(404).json({ error: 'No se ha encontrado el item' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el item' });
         }
         const perm = await getUserPermission(req.user._id, wsId, item._id);
         if (!perm || perm !== Permission.Owner) {
-            res.status(403).json({ error: 'No estás autorizado para editar este item' });
-            return;
+            return res.status(403).json({ error: 'No estás autorizado para editar este item' });
         }
 
         replaceFileContent(`uploads/${wsId}/${fileId}`, req.body.content);
 
         sendMessageToWorkspace(req.body.workspace, { type: 'workspaceUpdated' });
-        res.status(200).json({ success: true, message: 'Archivo subido exitosamente' });
+        res.status(200).json({ success: true, message: 'Archivo editado exitosamente' });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error al subir el archivo. ' + error });
     }
@@ -267,39 +265,31 @@ async function processQueue(filePath: string): Promise<void> {
 
 export const changeItemPerms = async (req: any, res: any) => {
     const { itemId, profileId, perm } = req.body;
-
-    if (!itemId || !profileId || !perm) {
-        const missingFields = [!itemId?"itemId":null, !profileId?"profileId":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
-    }
-
     const wsId = req.body.workspace;
+
+    if (!wsId || !itemId || !profileId || !perm) {
+        const missingFields = [!wsId?"workspace":null, !itemId?"itemId":null, !profileId?"profileId":null, !perm?"perm":null].filter((field) => field !== null).join(', ');
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
+    }
+    if (![...Object.values(Permission), "None"].filter( (x: String) => x != "Owner").includes(perm)) {
+        return res.status(400).json({ error: 'El permiso del archivo debe ser Read, Write, o None para eliminar el permiso' });
+    }
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items').populate('profiles').populate('profiles.users').populate('items.profilePerms.profile');
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
         const item = await Item.findOne({ _id: itemId }).populate('profilePerms.profile');
         if (!item) {
-            res.status(404).json({ error: 'No se ha encontrado el item' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el item' });
         }
         const reqPerm = await getUserPermission(req.user._id, wsId, itemId);
-        if (reqPerm !== Permission.Owner) {
-            res.status(403).json({ error: 'No estás autorizado para cambiar los permisos de este item' });
-            return;
+        if (!reqPerm || (reqPerm !== Permission.Owner)) {
+            return res.status(403).json({ error: 'No estás autorizado para cambiar los permisos de este item' });
         }
         const profile  = workspace.profiles.find(profile => profile && profile._id.toString() === profileId) as IProfile;
         if (!profile) {
-            res.status(404).json({ error: 'El perfil no existe en el workspace' });
-            return;
-        }
-        const itemPerm = await getUserPermission(req.user._id, wsId, itemId);
-        if (!itemPerm || (itemPerm !== Permission.Owner)) {
-            res.status(403).json({ error: 'No tienes permiso para cambiar permisos' });
-            return;
+            return res.status(404).json({ error: 'El perfil no existe en el workspace' });
         }
         const profilePerms = item.profilePerms.filter((profilePerm: IProfilePerms) =>{
             return profilePerm.profile?._id.toString() !== profile._id.toString();
@@ -314,10 +304,16 @@ export const changeItemPerms = async (req: any, res: any) => {
         }
 
         item.profilePerms = profilePerms as Types.DocumentArray<IProfilePerms>;
+        
+        try{
+            await item.validate();
+        } catch (error) {
+            return res.status(400).json({ errors: parseValidationError(error) });
+        }
         await item.save();
         await workspace.save();
         sendMessageToWorkspace(wsId, { type: 'workspaceUpdated' });
-        res.status(201).json(item);
+        res.status(200).json(item);
     } catch (error: any) {
         res.status(500).json({ error: error.message }); 
     }
@@ -394,30 +390,25 @@ export const downloadFile = async (req: any, res: any) => {
 
     if (!wsId || !fileId) {
         const missingFields = [!wsId?"workspace":null, !fileId?"fileId":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
         const workspace = await Workspace.findOne({ _id: wsId });
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
         const file = await FileItem.findOne({ _id: fileId });
         if (!file) {
-            res.status(404).json({ error: 'No se ha encontrado el archivo' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el archivo' });
         }
         const perm = await getUserPermission(req.user._id, wsId, fileId);
         if (!perm) {
-            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
-            return;
+            return res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
         }
         try{
             await fs.promises.access(`uploads/${wsId}/${fileId}.lock`);
-            res.status(409).json({ error: 'El archivo está siendo editado o precesado en estos momentos' });
-            return;
+            return res.status(409).json({ error: 'El archivo está siendo editado o precesado en estos momentos' });
         }catch{
 
         }
@@ -460,26 +451,22 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
 
     if (!wsId || !itemId) {
         const missingFields = [!wsId?"workspace":null, !itemId?"itemId":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
         const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
         if (!workspace) {
-            res.status(404).json({ error: 'No se ha encontrado el workspace' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
         }
         const item = (workspace.items as unknown as IItem[]).find((item: IItem) => item._id.toString() === itemId);
         if (!item) {
-            res.status(404).json({ error: 'No se ha encontrado el item' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el item' });
         }
         const perm = await getUserPermission(req.user._id, wsId, itemId);
 
         if (![Permission.Owner, Permission.Write].find(x => x == perm)) {
-            res.status(403).json({ error: 'No estás autorizado para borrar este item' });
-            return;
+            return res.status(403).json({ error: 'No estás autorizado para borrar este item' });
         }
         (workspace.items as unknown as IItem[]) = (workspace.items as unknown as IItem[]).filter((item: IItem) => item._id.toString() !== itemId);
         if (item.itemType === ItemType.File) {
@@ -487,8 +474,7 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
         } else if (item.itemType === ItemType.Folder) {
             const isThereItemsOfAnother = await deleteFolderItems(req.user._id, item, wsId, check);
             if (check){
-                isThereItemsOfAnother? res.status(409).json({ error: 'Hay items de otros usuarios en este directorio' }): res.status(200).json({ success: true });
-                return;
+                return isThereItemsOfAnother? res.status(409).json({ error: 'Hay items de otros usuarios en este directorio' }): res.status(200).json({ success: true });
             }
         }
         if (!check) {
@@ -498,7 +484,7 @@ export const deleteItemFromWorkspace = async (req: any, res: any) => {
             res.status(200).json({ success: true });
         }
     } catch (error: any) {
-        res.status(404).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -509,25 +495,29 @@ export const toggleFavorite = async (req: any, res: any) => {
 
     if (!wsId || !itemId) {
         const missingFields = [!wsId?"workspace":null, !itemId?"itemId":null].filter((field) => field !== null).join(', ');
-        res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
-        return;
+        return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
     }
 
     try {
         const item = await Item.findOne({ _id: itemId });
         if (!item) {
-            res.status(404).json({ error: 'No se ha encontrado el item' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el item' });
+        }
+
+        const workspace = await Workspace.findOne({ _id: wsId }).populate('items');
+        if (!workspace) {
+            return res.status(404).json({ error: 'No se ha encontrado el workspace' });
+        }
+        if (!(workspace.items as unknown as IItem[]).some((item: IItem) => item._id.toString() === itemId)) {
+            return res.status(404).json({ error: 'El item no pertenece al workspace' });
         }
         const perm = await getUserPermission(loggedUser._id, wsId, itemId);
         if (!perm) {
-            res.status(403).json({ error: 'No estás autorizado para ver este archivo' });
-            return;
+            return res.status(403).json({ error: 'No estás autorizado para ver este item' });
         }
         const user = await User.findOne({ _id: loggedUser._id }).exec();
         if (!user) {
-            res.status(404).json({ error: 'No se ha encontrado el usuario' });
-            return;
+            return res.status(404).json({ error: 'No se ha encontrado el usuario' });
         }
         const liked = user.favorites.includes(itemId);
         if (liked) {
@@ -539,6 +529,6 @@ export const toggleFavorite = async (req: any, res: any) => {
         !liked ? res.json({ success: true, message: 'Item ' + itemId + ' marcado como favorito' }) : res.json({ success: true, message: 'Item ' + itemId + ' desmarcado como favorito' });
 
     } catch (error: any) {
-        res.status(404).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
