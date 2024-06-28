@@ -21,9 +21,9 @@
   "scripts": {
     "start": "bun run server.ts",
     "dev": "bun run --watch server.ts",
-    "test-only": "bun --env-file=test.env test --preload ./test/setup.ts --only",
-    "test-coverage": "bun --env-file=test.env test --preload ./test/setup.ts --coverage",
-    "test": "bun --env-file=test.env test --preload ./test/setup.ts"
+    "test-only": "bun --env-file=.env.test test --preload ./test/setup.ts --only",
+    "test-coverage": "bun --env-file=.env.test test --preload ./test/setup.ts --coverage",
+    "test": "bun --env-file=.env.test test --preload ./test/setup.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

@@ -8,10 +8,9 @@ import { addItemToWorkspace, downloadFile, deleteItemFromWorkspace, toggleFavori
 import { modifyTimer } from './controllers/timerController.ts';
 import { isLogged, validatePassword,validateEditPassword } from './middlewares/userMiddleware.ts';
 import { validateFile } from './middlewares/itemMiddleware.ts';
-import { validatePrivateChat } from './middlewares/chatMiddleware.ts';
 import type { IUser } from './models/user.ts';
 import { uploader } from './config/multer.ts'; 
-import { addMessage, createChat, editChatName, getChat, getChatMessages, getChats, leaveChat } from './controllers/chatController.ts';
+import { addMessage, createChat, editChatName, getChat, getChats, leaveChat } from './controllers/chatController.ts';
 
 dotenv.config();  
 const router = Router();
@@ -299,7 +298,7 @@ router.get('/chats', isLogged, async (req: Request, res: Response) => {
     }
 });
 
-router.post('/chat', isLogged, validatePrivateChat, async (req: Request, res: Response) => {
+router.post('/chat', isLogged, async (req: Request, res: Response) => {
     try {
         createChat(req, res);
     } catch(error) {
@@ -312,14 +311,6 @@ router.post('/chat/messages', isLogged, async (req: Request, res: Response) => {
         getChat(req, res);
     } catch(error) {
         res.status(500).json({ success: false, error: 'Error al crear el chat. ' + error });
-    }
-});
-
-router.get('/chat/message', isLogged, async (req: Request, res: Response) => {
-    try {
-        getChatMessages(req, res);
-    } catch(error) {
-        res.status(500).json({ success: false, error: 'Error al obtener los mensajes. ' + error });
     }
 });
 

@@ -56,25 +56,6 @@ export const getChat = async (req: any, res: any) => {
     }
 };
 
-export const getChatMessages = async (req: any, res: any) => {
-    const chatId = req.params.id;
-
-    if (!chatId) {
-        return res.status(400).json({ error: 'No se ha especificado el campo id' });
-    }
-
-    try {
-        const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
-        if (!chat) {
-            return res.status(404).json({ error: "Chat no encontrado" });
-        }
-
-        res.status(200).json({ messages: chat.messages });
-    } catch (error) {
-        res.status(500).json({ error: error });
-    }
-};
-
 export const addMessage = async (req: any, res: any) => {
     const chatId = req.body.chatId;
     const message = req.body.message;
@@ -89,9 +70,13 @@ export const addMessage = async (req: any, res: any) => {
     }
 
     try {
-        const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
+        const chat = await Chat.findOne({ _id: chatId});
         if (!chat) {
             return res.status(404).json({ error: "Chat no encontrado" });
+        }
+
+        if (!chat.users.includes(req.user._id)) {
+            return res.status(403).json({ error: "No puedes enviar mensajes a un chat en el que no estás" });
         }
 
         chat.messages.push({ user: req.user._id, date: new Date(), text: message } as IMessage);
@@ -111,6 +96,10 @@ export const createChat = async (req: any, res: any) => {
     if (!name || !users) {
         const missingFields = [!name?"name":null, !users?"users":null].filter((field) => field !== null).join(', ');
         return res.status(400).json({ error: 'No se han especificado el/los campo(s) '+ missingFields });
+    }
+    
+    if (users.length < 2) {
+        return res.status(400).json({ error: "Debe haber al menos 2 usuarios" });
     }
 
     const chat = new Chat({ name: name, type: ChatType.PRIVATE, users: users, messages: [] });
@@ -138,7 +127,7 @@ export const editChatName = async (req: any, res: any) => {
     }
 
     try {
-        const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
+        const chat = await Chat.findOne({ _id: chatId });
         if (!chat) {
             return res.status(404).json({ error: "Chat no encontrado" });
         }
@@ -169,10 +158,14 @@ export const leaveChat = async (req: any, res: any) => {
     
     if (!chatId) {
         return res.status(400).json({ error: 'No se ha especificado el campo chatId' });
-      }
+    }
 
-    try {
-        const chat = await Chat.findById(chatId);
+    const chat = await Chat.findById(chatId);
+    if (chat?.type === ChatType.WORKSPACE) {
+        return res.status(403).json({ error: "No puedes abandonar un chat de workspace" });
+    }
+
+    try {   
         if (!chat) {
             return res.status(404).json({ error: "Chat no encontrado" });
         }

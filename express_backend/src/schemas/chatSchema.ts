@@ -1,7 +1,8 @@
 import mongoose from '../config/mongoose.ts';
 import { ChatType, type IChat, type IMessage } from '../models/chat.ts';
-import type { IProfile } from '../models/profile.ts';
 import type { IUser } from '../models/user.ts';
+import type { IWorkspace } from '../models/workspace.ts';
+import User from './userSchema.ts';
 
 const messageSchema = new mongoose.Schema<IMessage>({
     user: {
@@ -53,7 +54,7 @@ const chatSchema = new mongoose.Schema<IChat>({
         ref: 'Workspace',
         validate: {
             validator: async function(value: mongoose.Types.ObjectId) {
-                const existingWorkspace = await mongoose.model<IProfile>('Workspace').findById(value);
+                const existingWorkspace = await mongoose.model<IWorkspace>('Workspace').findById(value);
                 return !value || existingWorkspace;
             },
             message: "Este workspace no existe"
@@ -66,7 +67,7 @@ const chatSchema = new mongoose.Schema<IChat>({
         validate: {
             validator: async function(value: mongoose.Types.ObjectId[] | mongoose.PopulatedDoc<IUser>[]) {
                 for (const user of value) {
-                    const existingUser = await mongoose.model<IUser>('User').findById(user);
+                    const existingUser = await User.findById(user);
                     if (!existingUser) {
                         return false;
                     }
