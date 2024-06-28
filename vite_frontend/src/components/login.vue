@@ -49,7 +49,6 @@ const logout = async () => {
       credentials: "include",
     });
     if (response.ok) {
-      localStorage.removeItem('workspace');
       router.push({ name: 'login' });
     } else if (response.status === 401){
       router.push({ name: 'login' });
