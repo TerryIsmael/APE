@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import request from 'supertest';
 import { app } from '../app.ts';
 import fs from 'fs';
@@ -11,9 +11,11 @@ import { WSPermission } from "../src/models/profile.ts";
 import { FolderItem } from "../src/schemas/itemSchema.ts";
 import { Permission } from "../src/models/profilePerms.ts";
 import { ItemType } from "../src/models/item.ts";
+import type mongoose from 'mongoose';
 
 let notLoggedAgent = request.agent(app);
 let userAgent = request.agent(app);
+let trash: (mongoose.Types.ObjectId|undefined)[] = [];
 
 beforeAll( async () => {
   await User.deleteMany({ });
@@ -32,6 +34,13 @@ beforeAll( async () => {
   await workspace.save();
 });
 
+afterAll( async () => {
+  trash = trash.filter((id) => id !== undefined);
+  for(const id of trash) {
+    fs.rmSync(`uploads/${id}`, { recursive: true });
+  }
+});
+
 describe('/register POST', () => {
   it('201', async () => {
     const res = await notLoggedAgent.post('/register')
@@ -43,7 +52,9 @@ describe('/register POST', () => {
     fs.access(`uploads/${workspace?._id}/temp`, fs.constants.F_OK, (err) => {
       if (err) {
         return new Error('No se ha encontrado la carpeta por defecto');
-      } 
+      } else{
+        trash.push(workspace?._id);
+      }
     });
   });
   

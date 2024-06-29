@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import request from 'supertest';
 import { app } from '../app.ts';
 import Profile from "../src/schemas/profileSchema.ts";
@@ -15,6 +15,7 @@ import type { IInvitation } from '../src/models/invitation';
 import Item, { FolderItem, NoticeItem } from "../src/schemas/itemSchema.ts";
 import { ItemType } from "../src/models/item.ts";
 import type { IWorkspace } from "../src/models/workspace.ts";
+import fs from 'fs';
 
 let workspaceId: String | undefined;
 let workspace: IWorkspace | null;
@@ -37,6 +38,8 @@ let notMemberAgent = request.agent(app);
 let inviteAgent = request.agent(app);
 
 let workspaceDelete: IWorkspace | null;
+
+let trash: (mongoose.Types.ObjectId|undefined)[] = [];
 
 const createAgents = async () => {
     await ownerAgent.post('/login').send({ username: 'userTest', password: '12345678910aA@'});
@@ -122,6 +125,14 @@ beforeAll(async () => {
     await createAgents();
     await createWorkspaceToDelete();
 });
+
+afterAll( async () => {
+    const wsId = (await Workspace.findOne({ name:'workspaceCreateTest' }))?._id;
+    if (wsId){
+        fs.rmSync(`uploads/${wsId}`, { recursive: true });
+    }
+  });
+  
 
 describe('/workspace POST', () => {
     it('201', async () => {
