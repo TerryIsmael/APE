@@ -405,7 +405,7 @@ onUnmounted(() => {
                 <th style="width:8%; margin-left:5%; text-align: end;">Eliminar</th>
               </tr>
               <tr v-for="invitation in invitations" :key="invitation._id"> 
-                <td >{{ invitation.profile?(invitation.profile.name+ " - "+ translatePerm(invitation.profile.wsPerm)):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
+                <td style="word-break: break-all;">{{ invitation.profile?(invitation.profile.name+ " - "+ translatePerm(invitation.profile.wsPerm)):"Ninguno - Lectura" }} <span @click="copyInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer;vertical-align:middle">content_copy</span></td>
                 <td>{{ invitation.expirationDate?Utils.formatDate(invitation.expirationDate):"Indefinida" }}</td>
                 <td class="td-center"><span @click="toggleActiveInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">{{ invitation.active ? 'check' : 'close' }}</span></td>
                 <td class="td-center" style="margin-left:5%; text-align: end"><span @click="deleteInvitation(invitation)" class="material-symbols-outlined" style="cursor:pointer">delete</span></td>
