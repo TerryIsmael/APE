@@ -5,7 +5,6 @@ const TEST_MODE = process.env.TEST_MODE === 'true';
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'chrome-extension://eipdnjedkpcnlmmdfdkgfpljanehloah',
 ];
 
 const allowedIPOrigins = [

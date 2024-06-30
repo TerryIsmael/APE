@@ -94,7 +94,7 @@ watch(() => props.userWsPerms, (newVal) => {
 
         <ul style="height: 85%; min-height: 85%;">
         <div style="display: flex; width: 50px; height: 50px;">
-            <div style="margin-left: 35%"><img class="logo-img" src="https://i.pinimg.com/564x/27/bb/89/27bb898786b2fe976f67c318b91a5d2d.jpg"></img></div>
+            <div style="margin-left: 35%"><img class="logo-img" src="/APE.png"></img></div>
             <div style="margin-left: 65%; display:flex; align-items: center; justify-content: space-between; width: calc(100% - 40px);">
                 <div style="text-align: center;">
                     <p style="margin: 0; font-weight: bold;">APE</p>

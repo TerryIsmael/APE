@@ -15,10 +15,11 @@ APE es una aplicación desarrollada para un trabajo de fin de grado universitari
 
 ### Pasos para la instalación: 
 - Descargar la carpeta de código en este repositorio.
-- Abrir una terminal, dirigirse al directorio de backend (cd .\express_backend) y ejecutar bun install.
-- Abrir otra terminal, dirigirse al directorio de frontend (cd .\vite_frontend) y ejecutar bun install.
-- Copiar los ficheros finalizados en .env y renombrarlos para que queden como .env y .test.env.
-- Para iniciar los servidores, ejecutar bun run dev en cada terminal mencionada previamente.
-- Para parar los servidores, hacer Ctrl + C en cada terminal.
+- Copiar los ficheros .env y renombrarlos para que queden como .env y .test.env.
+- Para instalar las dependencias, ejecutar en una consola que se encuentre en la raiz del proyecto install.bat.
 
+### Pasos para su uso:
+- Para iniciar los servidores, ejecutar en una consola que se encuentre en la raiz del proyecto run.bat.
+
+### Manual de usuario:
 ¿Dudas sobre su uso? Consulta el manual de usuario disponible en la Wiki del repositorio (https://github.com/TerryIsmael/TFG/wiki/Manual-de-usuario).
