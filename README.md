@@ -20,3 +20,5 @@ APE es una aplicación desarrollada para un trabajo de fin de grado universitari
 - Copiar los ficheros finalizados en .env y renombrarlos para que queden como .env y .test.env.
 - Para iniciar los servidores, ejecutar bun run dev en cada terminal mencionada previamente.
 - Para parar los servidores, hacer Ctrl + C en cada terminal.
+
+¿Dudas sobre su uso? Consulta el manual de usuario disponible en la Wiki del repositorio (https://github.com/TerryIsmael/TFG/wiki/Manual-de-usuario).
