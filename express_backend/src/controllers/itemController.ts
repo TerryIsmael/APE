@@ -205,7 +205,7 @@ export const editFile = async (req: any, res: any) => {
             return res.status(403).json({ error: 'No estás autorizado para editar este item' });
         }
 
-        replaceFileContent(`uploads/${wsId}/${fileId}`, req.body.content);
+        replaceFileContent(`uploads/${wsId}/${fileId}`, req.body.content, req.body.workspace);
 
         sendMessageToWorkspace(req.body.workspace, { type: 'workspaceUpdated' });
         res.status(200).json({ success: true, message: 'Archivo editado exitosamente' });
@@ -214,7 +214,7 @@ export const editFile = async (req: any, res: any) => {
     }
 }
 
-async function replaceFileContent(filePath: string, newContent: string): Promise<void> {
+async function replaceFileContent(filePath: string, newContent: string, workspace: string): Promise<void> {
     if (!fileQueues[filePath]) {
         fileQueues[filePath] = [];
     }
@@ -223,6 +223,7 @@ async function replaceFileContent(filePath: string, newContent: string): Promise
         fileQueues[filePath].push({ newContent, resolve, reject });
         if (fileQueues[filePath].length === 1) {
             processQueue(filePath);
+            sendMessageToWorkspace(workspace, { type: 'workspaceUpdated' });
         }
     });
 }

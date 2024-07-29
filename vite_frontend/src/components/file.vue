@@ -88,7 +88,6 @@ const editorConfig = {
             language: 'es'
     },
     autosave: {
-        waitingTime: 3000,
         save( editor ) {
             return saveData( editor.getData() );
         }
@@ -291,7 +290,7 @@ const downloadFile = async () => {
   await WorkspaceUtils.downloadFile(workspace, ref(props.item), errorMessage);
 };
 
-onBeforeMount(async () => {
+const initItem = async () => {
     if(props.item.ready){
         switch(props.item.name.split('.').pop()){
         case 'pdf':
@@ -312,10 +311,18 @@ onBeforeMount(async () => {
         }
     }
     isLoading.value = false;
+}
+
+onBeforeMount(async () => {
+    initItem();
 });
 
-watch(() => props.routedItemPerm, (newWorkspace) => {
+watch(() => props.routedItemPerm, (_) => {
     itemPermission.value = props.routedItemPerm;
+}, { immediate: true });
+
+watch(() => props.item, async (_) => {
+    await initItem();
 }, { immediate: true });
 
 </script>
@@ -354,7 +361,7 @@ watch(() => props.routedItemPerm, (newWorkspace) => {
                 <button @click="downloadFile" style="margin-top: 20px; width: 20%; margin-bottom: 2%">Descargar</button>
             </div>
             <div v-if="appToUse === 'CKEditor'" style="color: black; padding-bottom: 2%">
-                <div v-if="itemPermission && ['Owner', 'Write'].includes(itemPermission)">
+                <div v-if="itemPermission && ['Owner','Admin','Write'].includes(itemPermission)">
                 <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
                 <button @click="selectUploadFile" style="margin: 5px">Subir imagen</button>
                 <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
