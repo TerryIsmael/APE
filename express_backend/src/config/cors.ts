@@ -1,16 +1,9 @@
 import cors from 'cors';
 import type { CorsOptions } from 'cors';
 
-const TEST_MODE = process.env.TEST_MODE === 'true'; 
-
-const allowedOrigins = [
-  'http://localhost:5173',
-];
-
-const allowedIPOrigins = [
-  'http://localhost',
-  'http://127.0.0.1',
-];
+const TEST_MODE = process.env.TEST_MODE === 'false'; 
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+const allowedIPOrigins = process.env.ALLOWED_IP_ORIGINS?.split(',') || [];
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
