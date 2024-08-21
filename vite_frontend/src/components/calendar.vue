@@ -6,7 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es';
-import WorkspaceUtils from '../utils/workspaceFunctions.js';
+import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
 const props = defineProps({
   ws: {
