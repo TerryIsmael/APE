@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, onBeforeMount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
-import Utils from '../utils/utilsFunctions.js';
+import Utils from '../utils/UtilsFunctions.js';
 import MainSidebar from './mainSidebar.vue';
 
 const props = defineProps({
