@@ -28,9 +28,6 @@ const showSidebar = ref(false);
 const selectedItemPerms = ref(null);
 const author = ref(null);
 const profileWsPerms = ref({});
-const hours = ref(0);
-const minutes = ref(0);
-const seconds = ref(0);
 
 const workspaceId = ref(null);
 const workspace = ref({});
@@ -40,7 +37,6 @@ const userToInvite = ref('');
 const permToInvite = ref('Read');
 const isModalOpened = ref(false);
 const searchModalProfileTerm = ref('');
-const searchGroupProfileTerm = ref('');
 const modalProfile = ref({});
 const selectedProfile = ref(null);
 const linkDuration = ref('day');
@@ -51,8 +47,6 @@ const showMainSidebar = ref(false);
 const searchProfileTerm = ref('');
 const searchTypeProfile = ref('All');
 const errorMessage = ref([]);
-const isNewItemModalOpened = ref(false);
-const newItem = ref({});
 const editing = ref(false);
 const loading = ref(true);
 
@@ -124,10 +118,6 @@ const selectItem = async (item, direct) => {
 
 const formatDate = (date) => {
   return Utils.formatDate(date);
-};
-
-const translateItemType = (item) => {
-  return Utils.translateItemType(item);
 };
 
 const translatePerm = (perm) => {
@@ -236,10 +226,6 @@ const deleteProfile = async (profileId) => {
 
 const deleteWorkspace = async () => {
   await WorkspaceDetailsUtils.deleteWorkspace(workspace, router, errorMessage);
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const openWsModal = async () => {
@@ -656,7 +642,8 @@ table {
   margin-right: 5px;
   word-wrap: break-word; 
   display: -webkit-box; 
-  -webkit-line-clamp: 1; 
+  -webkit-line-clamp: 1;
+  line-clamp: 1; 
   -webkit-box-orient: vertical; 
   overflow: hidden;
 }

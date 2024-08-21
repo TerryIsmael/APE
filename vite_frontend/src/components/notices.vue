@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
+import { ref, onBeforeMount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
 import NoticeUtils from '../utils/NoticeFunctions.js';
@@ -99,12 +99,15 @@ const closeModal = () => {
 
 const getFilteredProfiles = computed(() => {
   const ownerProfile = selectedItem.value.profilePerms?.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const ownProfile = workspace.value.profiles.find(profile => profile.users.find(user => user._id === currentUser.value._id));
+
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
     const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
     const isNotOwner = profile._id !== ownerProfile;
+    const isNotOwnProfile = profile._id !== ownProfile._id;
 
-    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner && isNotOwnProfile) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value && isNotOwnProfile);
   });
 
   const orderedProfiles = [];
@@ -146,10 +149,6 @@ const handleSelectItem = async (item) => {
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const openWsModal = async () => {
@@ -297,7 +296,7 @@ onBeforeMount(async () => {
   <!-- Main sidebar -->
   <MainSidebar :currentUser="currentUser" :workspace="workspace" :folders="workspace?.folders" :selectedFolder="selectedFolder" :userWsPerms="userWsPerms" 
   :isWsModalOpened="isWsModalOpened" :errorMessage="errorMessage" :isLeaving="isLeaving" :workspaces="workspaces" :isNewWsModalOpened="isNewWsModalOpened"
-  @selectItem="selectItem" @openWsModal="openWsModal"  @toggleLeave="toggleLeave" @openNewWsModal="openNewWsModal" @leaveWorkspace="leaveWorkspace"
+  @selectItem="selectItem" @openWsModal="openWsModal" @toggleLeave="toggleLeave" @openNewWsModal="openNewWsModal" @leaveWorkspace="leaveWorkspace"
   @redirectToWorkspace="redirectToWorkspace" @closeWsModal="closeWsModal" @closeNewWsModal="closeNewWsModal" @createWorkspace="createWorkspace"></MainSidebar>
   
   <!-- Modal de edit item --> 

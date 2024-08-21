@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Utils from "../utils/UtilsFunctions.js";
 

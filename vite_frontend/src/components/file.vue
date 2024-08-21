@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onBeforeMount, onMounted, watch } from 'vue';
+import { ref, onBeforeMount, watch } from 'vue';
 import Utils from '../utils/UtilsFunctions.js';
-import PdfEmbed, { useVuePdfEmbed } from 'vue-pdf-embed';
+import PdfEmbed from 'vue-pdf-embed';
 import 'vue-pdf-embed/dist/style/index.css'
 import 'vue-pdf-embed/dist/style/annotationLayer.css'
 import 'vue-pdf-embed/dist/style/textLayer.css'
@@ -15,7 +15,7 @@ import { Alignment } from '@ckeditor/ckeditor5-alignment';
 import { Autoformat } from '@ckeditor/ckeditor5-autoformat';
 import { BlockQuote } from '@ckeditor/ckeditor5-block-quote';
 import { Heading } from '@ckeditor/ckeditor5-heading';
-import { Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize, PictureEditing } from '@ckeditor/ckeditor5-image';
+import { Image, ImageCaption, ImageStyle, ImageToolbar, ImageUpload, ImageResize } from '@ckeditor/ckeditor5-image';
 import { Autosave } from '@ckeditor/ckeditor5-autosave';
 import { Indent } from '@ckeditor/ckeditor5-indent';
 import { List } from '@ckeditor/ckeditor5-list';
@@ -23,9 +23,7 @@ import { MediaEmbed } from '@ckeditor/ckeditor5-media-embed';
 import { PasteFromOffice } from '@ckeditor/ckeditor5-paste-from-office';
 import { Table, TableToolbar } from '@ckeditor/ckeditor5-table';
 import { TextTransformation } from '@ckeditor/ckeditor5-typing';
-import { CKBox, CKBoxImageEdit } from "@ckeditor/ckeditor5-ckbox";
-import { CloudServices } from '@ckeditor/ckeditor5-cloud-services';
-import { read, utils as xlsxUtils, writeFileXLSX  } from 'xlsx';
+import { read, utils as xlsxUtils } from 'xlsx';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
 const props = defineProps({
@@ -153,9 +151,7 @@ const handleFileInputChange = (event) => {
   }
 };
 
-
 const editorData = ref(null);
-
 
 const saveData = async () => {
     try {
@@ -356,18 +352,18 @@ watch(() => props.item, async (_) => {
         <div v-else>
             <div v-if="appToUse === 'pdf'" style="display:flex; flex-direction: column; align-items: center;">
                 <div style="max-height: 82vh; overflow-y: auto;">
-                    <pdf-embed annotation-layer text-layer :source="url" :width="600" :height="800" />
+                    <pdf-embed :key="url" annotation-layer text-layer :source="url" :width="600" :height="800" />
                 </div>
                 <button @click="downloadFile" style="margin-top: 20px; width: 20%; margin-bottom: 2%">Descargar</button>
             </div>
             <div v-if="appToUse === 'CKEditor'" style="color: black; padding-bottom: 2%">
                 <div v-if="itemPermission && ['Owner','Admin','Write'].includes(itemPermission)">
-                <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
-                <button @click="selectUploadFile" style="margin: 5px">Subir imagen</button>
-                <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
+                    <input hidden type="file" ref="fileInput" @change="handleFileInputChange">
+                    <button @click="selectUploadFile" style="margin: 5px">Subir imagen</button>
+                    <ckeditor :editor="ClassicEditor" v-model="editorData" :config="editorConfig"></ckeditor>
                 </div>
                 <div v-else class="html-visor">
-                    <div v-html="editorData"/>
+                    <div v-html="editorData"></div>
                 </div>
             </div>
             <div v-if="appToUse === 'Sheets'" style="display: flex; flex-direction: column;">
@@ -454,6 +450,7 @@ watch(() => props.item, async (_) => {
 .item-name-title {
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-bottom:10px;

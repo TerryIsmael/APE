@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, onBeforeMount, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import FavoriteUtils from '../utils/FavoritesFunctions.js';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
@@ -34,12 +34,6 @@ const searchProfileTerm = ref('');
 const searchTypeProfile = ref('All');
 const errorMessage = ref([]);
 const loading = ref(true);
-
-const isNewItemModalOpened = ref(false);
-const newItem = ref({});
-const hours = ref(0);
-const minutes = ref(0);
-const seconds = ref(0);
 
 const currentPath = ref('');
 const existFolder = ref(false);
@@ -76,14 +70,6 @@ const toggleLike = async (item) => {
   await FavoriteUtils.toggleLike(item, workspace, router, currentUser, items, folders, userWsPerms, errorMessage);
 };
 
-const translateItemType = (item) => {
-  return Utils.translateItemType(item);
-};
-
-const translatePerm = (perm) => {
-  return Utils.translatePerm(perm);
-};
-
 const deleteItem = async (item) => {
   await FavoriteUtils.deleteItem(item, selectedItem, author, workspace, currentUser, items, folders, userWsPerms, router, showSidebar, errorMessage);
 };
@@ -110,12 +96,15 @@ const changePerms = async (perm, profileId) => {
 
 const getFilteredProfiles = computed(() => {
   const ownerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const ownProfile = workspace.value.profiles.find(profile => profile.users.find(user => user._id === currentUser.value._id));
+
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
     const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
     const isNotOwner = profile._id !== ownerProfile._id;
+    const isNotOwnProfile = profile._id !== ownProfile._id;
 
-    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner && isNotOwnProfile) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value && isNotOwnProfile);
   });
 
   const orderedProfiles = [];
@@ -132,10 +121,6 @@ const downloadFile = async () => {
 
 const clearErrorMessage = () => {
   Utils.clearErrorMessage(errorMessage);
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const checkDictUserItemPerms = (profileId) => {
@@ -285,9 +270,8 @@ onUnmounted(() => {
   <!-- Main sidebar -->
   <MainSidebar :currentUser="currentUser" :workspace="workspace" :folders="folders" :selectedFolder="selectedFolder" :userWsPerms="userWsPerms" 
   :isWsModalOpened="isWsModalOpened" :errorMessage="errorMessage" :isLeaving="isLeaving" :workspaces="workspaces" :isNewWsModalOpened="isNewWsModalOpened"
-  @selectItem="selectItem" @openWsModal="openWsModal"  @toggleLeave="toggleLeave" @openNewWsModal="openNewWsModal" @leaveWorkspace="leaveWorkspace"
+  @selectItem="selectItem" @openWsModal="openWsModal" @toggleLeave="toggleLeave" @openNewWsModal="openNewWsModal" @leaveWorkspace="leaveWorkspace"
   @redirectToWorkspace="redirectToWorkspace" @closeWsModal="closeWsModal" @closeNewWsModal="closeNewWsModal" @createWorkspace="createWorkspace"></MainSidebar>
-  
   
   <!-- Modal de edit item --> 
   <Modal class="modal" :isOpen="isEditNameModalOpened" @modal-close="closeEditNameModal" name="edit-item-modal">
@@ -402,6 +386,7 @@ onUnmounted(() => {
   word-wrap: break-word; 
   display: -webkit-box; 
   -webkit-line-clamp: 1; 
+  line-clamp: 1;
   -webkit-box-orient: vertical; 
   overflow: hidden;
 }
@@ -448,6 +433,7 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   width: 100%;
   margin: 0;
@@ -480,6 +466,7 @@ onUnmounted(() => {
   word-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 10;
+  line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -488,6 +475,7 @@ onUnmounted(() => {
 
 .email {
   -webkit-line-clamp: 5;
+  line-clamp: 5;
 }
 
 .error {

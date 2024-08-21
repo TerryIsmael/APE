@@ -35,7 +35,7 @@ const applyInvitation = async () => {
     } catch (error) {
         console.log(error);
     }
-}
+};
 
 const fetchInvitation = async () => {
     try {
@@ -62,7 +62,7 @@ const fetchInvitation = async () => {
     } catch (error) {
         console.log(error);
     }
-}
+};
 
 const parsePerm = (perm) => {
     switch (perm) {
@@ -75,7 +75,7 @@ const parsePerm = (perm) => {
         default:
             return "Lectura";
     }
-}
+};
 
 onBeforeMount( async () => {
     invitationCode.value = route.params.invitationCode;

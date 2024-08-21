@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, onBeforeMount, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, onBeforeMount, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Timer from './Timer.vue';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
@@ -87,10 +87,6 @@ const translateItemType = (item) => {
   return Utils.translateItemType(item);
 };
 
-const translatePerm = (perm) => {
-  return Utils.translatePerm(perm);
-};
-
 const deleteItem = async (item) => {
   await WorkspaceUtils.deleteItem(item, selectedItem, author, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, showSidebar, errorMessage);
 };
@@ -141,13 +137,15 @@ const verifyPerms = (item) => {
 
 const getFilteredProfiles = computed(() => {
   const fileOwnerProfile = selectedItem.value.profilePerms.find(profilePerm => profilePerm.permission === 'Owner').profile;
+  const ownProfile = workspace.value.profiles.find(profile => profile.users.find(user => user._id === currentUser.value._id));
   const ownerProfile = workspace.value.profiles.find(profile => profile.wsPerm === 'Owner');
   const profiles = workspace.value.profiles.filter(profile => {
     const name = profile.profileType === 'Individual' ? profile.users[0].username : profile.name;
     const matchesSearchTerm = searchProfileTerm.value.trim() === '' || name.toLowerCase().includes(searchProfileTerm.value.toLowerCase().trim());
     const isNotOwner = profile._id !== ownerProfile._id && profile._id !== fileOwnerProfile._id;
+    const isNotOwnProfile = profile._id !== ownProfile._id;
 
-    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner ) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value);
+    return searchTypeProfile.value === 'All' ? (matchesSearchTerm && isNotOwner && isNotOwnProfile) : (matchesSearchTerm && isNotOwner && profile.profileType === searchTypeProfile.value && isNotOwnProfile);
   });
 
   const orderedProfiles = [];
@@ -173,10 +171,6 @@ const selectUploadFile = () => {
 
 const uploadFile = async (event) => {
   await WorkspaceUtils.uploadFile(event, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, router, errorMessage, fileInput);
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const checkDictUserItemPerms = (profileId) => {
@@ -260,16 +254,22 @@ const initPath = () => {
   path.value = route.params.path ? JSON.stringify(route.params.path).replace("[", '').replace("]", '').replace(/"/g, '').split(',').join('/') : '';
   const pathArray = path.value.split('/');
   if (pathArray[pathArray.length - 2] == "i") {
+    routedItem.value = null;
     workspace.value.items.forEach(item => {
       if (item._id == pathArray[pathArray.length - 1] && item.path == pathArray.slice(0, pathArray.length - 2).join('/')) {
         routedItem.value = item;
         routedItemPerm.value = verifyPerms(item);
         path.value = pathArray.slice(0, pathArray.length - 2).join('/');
         showMainSidebar.value = false;
+        if (routedItem.value.itemType !== 'Note' || !['Write', 'Owner', 'Admin'].includes(routedItemPerm.value) ) {
+          editing.value = false;
+        }
       }
     });
-    if (!routedItem.value) routedItem.value = 'Not found';
-    
+    if (!routedItem.value) {
+      routedItem.value = 'Not found';
+      editing.value = false;
+    }
   } 
   showSidebar.value = false;
 };
@@ -324,14 +324,6 @@ const createWorkspace = async (newWorkspace) => {
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
   }
-};
-
-const refreshWindow = async () => {
-  await fetchWorkspace();
-  initPath();
-  await selectItem(selectedItem.value, true);
-  getFolderPermission();
-
 };
 
 const getFolderPermission = () => {
@@ -408,10 +400,10 @@ watch(
     <img :src="'/loading.gif'" alt="item.name" width="100" height="100"/>
   </div>
   <div v-else style="height: 100%;">
-    <Timer v-if="routedItem && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Timer>
-    <Calendar v-if="routedItem && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Calendar>
-    <File v-if="routedItem && routedItem.itemType == 'File'" :item="routedItem" :ws="ws" :workspace="workspace" :routedItemPerm="routedItemPerm"></File>
-    <div v-if="routedItem && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
+    <Timer v-if="routedItem && routedItem !='Not found' && routedItem.itemType == 'Timer'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Timer>
+    <Calendar v-if="routedItem && routedItem !='Not found' && routedItem.itemType == 'Calendar'" :item="routedItem" :ws="ws" :workspace="workspace" :path="path" :currentUser="currentUser"></Calendar>
+    <File v-if="routedItem && routedItem !='Not found' && routedItem.itemType == 'File'" :item="routedItem" :ws="ws" :workspace="workspace" :routedItemPerm="routedItemPerm"></File>
+    <div v-if="routedItem && routedItem !='Not found' && routedItem.itemType == 'Note'" style="display:flex; flex-direction:column; align-items: center;">
       <div :class="{ 'main-sidebar-toggle': true, 'main-sidebar-toggle-opened': showMainSidebar }">
         <span v-if="!showMainSidebar" @click="showMainSidebar = true" class="material-symbols-outlined"
           style="z-index: 1002">chevron_right</span>
@@ -468,7 +460,7 @@ watch(
           {{ workspace?.name }}
         </h1>
       </div>
-      <h2>No se encuentra el item. Puede que haya sido movido o eliminado.</h2>
+      <h2>No se encuentra el item. Puede que haya sido movido o eliminado, o que se te hayan revocado los permisos.</h2>
     </div>
 
     <div v-if="!routedItem">
@@ -513,7 +505,7 @@ watch(
           </div>
         </div>
         <div class="main-content container">
-          <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio</p>
+          <p v-if="!existFolder" style="font-size: xx-large; font-weight: bolder;">No existe este directorio o no tienes permisos para acceder</p>
           <div v-if="existFolder && items.length === 0">
             <p style="font-size: xx-large; font-weight: bolder;">Aún no hay items...</p>
           </div>
@@ -699,7 +691,8 @@ watch(
   margin-right: 10px;
   word-wrap: break-word; 
   display: -webkit-box; 
-  -webkit-line-clamp: 1; 
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical; 
   overflow: hidden;
 }
@@ -762,6 +755,7 @@ watch(
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   width: 100%;
   margin: 0;
@@ -794,6 +788,7 @@ watch(
   word-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 10;
+  line-clamp: 10;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -802,6 +797,7 @@ watch(
 
 .email {
   -webkit-line-clamp: 5;
+  line-clamp: 5;
 }
 
 .error {
@@ -902,7 +898,8 @@ watch(
   margin-bottom: 30px;
   word-wrap: break-word; 
   display: -webkit-box; 
-  -webkit-line-clamp: 10; 
+  -webkit-line-clamp: 10;
+  line-clamp: 10; 
   -webkit-box-orient: vertical; 
   overflow: hidden;
 }
@@ -928,6 +925,7 @@ watch(
 .item-name-title {
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-bottom: 10px;

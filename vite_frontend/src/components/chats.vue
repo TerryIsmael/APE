@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount, onUnmounted, watch, nextTick, onMounted } from 'vue'
+import { ref, onBeforeMount, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router';
 import Utils from '../utils/UtilsFunctions.js';
 import UserDetailsUtils from '../utils/UserDetailsFunctions.js';
@@ -34,7 +34,6 @@ const messagesContainer = ref(null);
 const newChat = ref({ name: '', users: [] });
 const userToAdd = ref('');
 
-const messages = ref([]);
 const message = ref('');
 const chats = ref([]);
 const selectedChat = ref(null);
@@ -51,10 +50,6 @@ const selectChat = async (chat) => {
   inDetails.value = false;
   message.value = '';
   selectedChat.value = chat;
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const formatDate = (date) => {

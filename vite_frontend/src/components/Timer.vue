@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, defineComponent, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkspaceUtils from '../utils/WorkspaceFunctions.js';
 
@@ -72,7 +72,7 @@ const modifyTimer = async (action) => {
         duration = newTime.value.hours * 3600 + newTime.value.minutes * 60 + newTime.value.seconds;
     }
 
-    try{
+    try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/item/timer', {
             method: 'POST',
             credentials: "include",
@@ -92,7 +92,7 @@ const modifyTimer = async (action) => {
             const data = await response.json();
             if (data.error.includes('No estás autenticado')) {
                 router.push('/login');
-            }else{
+            } else {
                 if (data.timer){
                     item.value = data.timer;
                 }
@@ -100,40 +100,9 @@ const modifyTimer = async (action) => {
             }
         }
         
-    }catch(error){
+    } catch(error) {
         console.error(error);
     }
-}; 
-
-const startTimer = () => {
-    item.value.active = true;
-    if (!interval.value){
-        interval.value = setInterval(() => {
-        item.value.remainingTime--;
-        if ( item.value.remainingTime <= 0) {
-            clearInterval(interval.value);
-            item.value.active = false;
-        }
-    }, 1000);
-    }
-    
-};
-const setTimer = (timer) => {
-    item.value.remainingTime = timer.remainingTime;
-    item.value.active = timer.active;
-    item.value.duration = timer.duration;
-    if (timer.active){
-        startTimer();
-    } else{
-        stopTimer();
-    }
-};
-const stopTimer = () => {
-    if (interval.value){
-        clearInterval(interval.value);
-        interval.value = null;
-    }
-    item.value.active = false;
 };
 
 const navigateToPreviousItem = () => {
@@ -141,7 +110,6 @@ const navigateToPreviousItem = () => {
     const newRoute = pathArray.slice(0,pathArray.indexOf('i')).join('/');
     router.push("/workspace"+(newRoute == ""?'/'+newRoute:''))
 };
-
 
 onMounted( async () => {
     props.ws.addEventListener('message', async (event) => {
@@ -175,43 +143,58 @@ watch(() => props.ws, (newWs) => {
 watch(() => props.workspace, (newWorkspace) => {
   workspace.value = newWorkspace;
   item.value = workspace.value.items.find(it => it._id === item.value._id);
+  if (!item.value || item.value == 'Not found'){
+    routedItemPerm.value = "None";
+    return;
+  }
   routedItemPerm.value = WorkspaceUtils.verifyPerms(item.value, workspace, currentUser);
 }, { immediate: true });
 </script>
 
 <template>
-    <div>
-        <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousItem()"><span class="material-symbols-outlined">arrow_back</span></button>
-        <div class="title">
-            <div style="display:flex; justify-content: start;  width: 10vw;">
-                <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+    <div v-if="item">
+        <div>
+            <button v-if="path !== ''" style=" max-height: 50px;" @click="navigateToPreviousItem()"><span class="material-symbols-outlined">arrow_back</span></button>
+            <div class="title">
+                <div style="display:flex; justify-content: start;  width: 10vw;">
+                    <button @click="navigateToPreviousFolder()"><span class="material-symbols-outlined">arrow_back</span></button>
+                </div>
+                <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
+                    <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
+                        <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+                        <span class="item-name-title" style="padding-bottom:10px">{{ item.name }} </span>
+                    </h1>
+                </div>
+                <button style="width: 5%; margin-left: 3%;" @click="openEditModal()" v-if="routedItemPerm && routedItemPerm !== 'Read'"><span class="material-symbols-outlined">edit</span></button>
+                <div style="width: 5%; margin-left: 3%;" v-else></div>
             </div>
-            <div style="display: flex; justify-content: center; align-items: center; word-wrap: break-word; line-break: anywhere; justify-self: start;">
-                <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px;">
-                    <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
-                    <span class="item-name-title" style="padding-bottom:10px">{{ item.name }} </span>
-                </h1>
+            <p class="timer-text"> {{ timer }}</p>
+            <div class="button-bar" v-if="routedItemPerm && routedItemPerm !== 'Read'">
+                <button @click="modifyTimer('init')"><span class="material-symbols-outlined">play_arrow</span></button>
+                <button @click="modifyTimer('stop')"><span class="material-symbols-outlined">pause</span></button>
+                <button @click="modifyTimer('reset')"><span class="material-symbols-outlined">sync</span></button>
             </div>
-            <button style="width: 5%; margin-left: 3%;" @click="openEditModal()"><span class="material-symbols-outlined">edit</span></button>
             
         </div>
-        <p class="timer-text"> {{ timer }}</p>
-        <div class="button-bar" v-if="routedItemPerm && routedItemPerm !== 'Read'">
-            <button @click="modifyTimer('init')"><span class="material-symbols-outlined" style="z-index: 1002">play_arrow</span></button>
-            <button @click="modifyTimer('stop')"><span class="material-symbols-outlined" style="z-index: 1002">pause</span></button>
-            <button @click="modifyTimer('reset')"><span class="material-symbols-outlined" style="z-index: 1002">sync</span></button>
+        <div class="error" v-if="errorMessage.length !== 0" style="display: flex; justify-content: space-between; padding-left: 2%;">
+            <div>
+            <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
+                {{ error }}
+            </p>
+            </div>
+            <button @click="errorMessage=[]" style="display: flex; align-items: top; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
+            <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
+            </button>
         </div>
-        
     </div>
-    <div class="error" v-if="errorMessage.length !== 0" style="display: flex; justify-content: space-between; padding-left: 2%;">
-        <div>
-        <p v-for="error in errorMessage" :key="error" style="margin-top: 5px; margin-bottom: 5px; text-align: center; position: relative;">
-            {{ error }}
-        </p>
-        </div>
-        <button @click="errorMessage=[]" style="display: flex; align-items: top; background: none; border: none; cursor: pointer; color: #f2f2f2; outline: none;">
-        <span style="font-size: 20px; "class="material-symbols-outlined">close</span>
-        </button>
+    <div v-else>
+      <div class="main-content" style="display: flex; justify-content: center; align-items: center; word-wrap: break-word;">
+        <h1 @click="$router.push('/workspace/')" style="cursor: pointer; display: flex; align-items: center; margin-right: 10px">
+          <span style="color: #C8B1E4; font-size: 60px;" class="material-symbols-outlined">home</span>
+          {{ workspace?.name }}
+        </h1>
+      </div>
+      <h2>No se encuentra el item. Puede que haya sido movido o eliminado, o que se te hayan revocado los permisos.</h2>
     </div>
 
     <!-- Modal de edit timer -->
@@ -289,6 +272,7 @@ watch(() => props.workspace, (newWorkspace) => {
 .item-name-title {
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-bottom:10px;

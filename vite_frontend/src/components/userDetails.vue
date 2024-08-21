@@ -31,14 +31,9 @@ const selectedItemPerms = ref(null);
 const userItemPerms = ref(null);
 const existFolder = ref(false);
 const author = ref(null);
-const hours = ref(0);
-const minutes = ref(0);
-const seconds = ref(0);
 
 const showMainSidebar = ref(false);
 const errorMessage = ref([]);
-const isNewItemModalOpened = ref(false);
-const newItem = ref({});
 const editing = ref(false);
 const loading = ref(true);
 
@@ -60,14 +55,6 @@ const fetchFolders = async () => {
 
 const selectItem = async (item, direct) => {
   await WorkspaceUtils.selectItem(item, direct, selectedFolder, router, selectedItem, showSidebar, selectedItemPerms, workspace, currentUser, author, userItemPerms, errorMessage);
-};
-
-const clearErrorMessage = () => {
-  Utils.clearErrorMessage(errorMessage);
-};
-
-const logout = async () => {
-  await Utils.logout(router);
 };
 
 const openWsModal = async () => {
@@ -344,6 +331,7 @@ onBeforeMount(async () => {
   word-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
