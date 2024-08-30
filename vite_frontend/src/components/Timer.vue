@@ -149,6 +149,24 @@ watch(() => props.workspace, (newWorkspace) => {
   }
   routedItemPerm.value = WorkspaceUtils.verifyPerms(item.value, workspace, currentUser);
 }, { immediate: true });
+
+watch(
+  () => newTime.value.minutes,
+  (newVal) => {
+    if (newVal > 59) {
+        newTime.value.minutes = 59;
+    }
+  }
+);
+
+watch(
+  () => newTime.value.seconds,
+  (newVal) => {
+    if (newVal > 59) {
+        newTime.value.seconds = 59;
+    }
+  }
+);
 </script>
 
 <template>

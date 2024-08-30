@@ -393,6 +393,23 @@ watch(
   }
 );
 
+watch(
+  () => minutes.value,
+  (newVal) => {
+    if (newVal > 59) {
+      minutes.value = 59;
+    }
+  }
+);
+
+watch(
+  () => seconds.value,
+  (newVal) => {
+    if (newVal > 59) {
+      seconds.value = 59;
+    }
+  }
+);
 </script>
 
 <template>
@@ -571,7 +588,7 @@ watch(
           <div v-if="newItem.itemType == 'Timer'" style="display: inline-flex; vertical-align: middle; align-items: center; justify-content: center;">
             <input v-model="hours" type="number" min="0" placeholder="Hor" class="timer-input" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px;" />
             :<input v-model="minutes" type="number" min="0" placeholder="Min" class="timer-input" />
-            :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input"style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;" />
+            :<input v-model="seconds" type="number" min="0" placeholder="Seg" class="timer-input" style="border-top-right-radius: 5px; border-bottom-right-radius: 5px;" />
           </div>
       </div>
       <button @click="handleNewItemForm()" style="margin-top:15px">Crear</button>
