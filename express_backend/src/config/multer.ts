@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
 export const uploader = multer({
   storage:storage,
   fileFilter: (_, file, cb) => {
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
     if (file.originalname.includes('../')) {
       return 'El nombre del archivo no puede contener "../"';
     }
