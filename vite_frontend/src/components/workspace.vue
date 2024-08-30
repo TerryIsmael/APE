@@ -323,6 +323,7 @@ const createWorkspace = async (newWorkspace) => {
   await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, currentPath, currentUser, items, folders, selectedFolder, existFolder, userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
+    showMainSidebar.value = false;
   }
 };
 

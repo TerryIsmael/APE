@@ -13,6 +13,7 @@ const props = defineProps({
   },
 });
 
+const ws = ref(null);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const router = useRouter();
@@ -285,6 +286,7 @@ const websocketEventAdd = () => {
 };
 
 onBeforeMount(async () => {
+  ws.value = props.ws;
   path.value = "/" + route.name;
   await fetchUser();
   await fetchWorkspace();

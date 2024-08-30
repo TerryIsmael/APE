@@ -13,7 +13,7 @@ const props = defineProps({
   },
 });
 
-const ws = ref(null);
+const ws = ref(props.ws);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const router = useRouter();
@@ -86,7 +86,7 @@ const closeNewWsModal = () => {
 };
 
 const createWorkspace = async (newWorkspace) => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
   }

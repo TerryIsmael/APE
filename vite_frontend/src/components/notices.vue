@@ -16,7 +16,6 @@ const props = defineProps({
 const router = useRouter();
 const route = useRoute();
 const path = ref('');
-
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const wsId = ref(null);
@@ -217,6 +216,7 @@ const websocketEventAdd = () => {
 };
 
 onBeforeMount(async () => {
+  ws.value = props.ws;
   path.value = "/" + route.name;
   wsId.value = localStorage.getItem('workspace');
   await fetchUser();

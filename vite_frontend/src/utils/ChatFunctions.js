@@ -132,7 +132,7 @@ class ChatUtils {
                 errorMessage.value = [];
                 const data = await response.json();
                 await this.fetchChats(chats, errorMessage, router);
-                selectedChat.value = data;
+                selectedChat.value = chats.value.find(chat=>chat._id ==data.chat._id);
             } else {
                 errorMessage.value = [];
                 const data = await response.json()

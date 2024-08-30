@@ -13,7 +13,7 @@ const props = defineProps({
     errorMessage: { Array, required: true },
     isLeaving: { Boolean, required: true },
     workspaces: { Array, required: true },
-    isNewWsModalOpened: { Boolean, required: true }
+    isNewWsModalOpened: { Boolean, required: true }, 
 })
 
 const emit = defineEmits(['selectItem', 'openNewItemModal', 'openWsModal', 'closeWsModal', 'toggleLeave', 'openNewWsModal', 'leaveWorkspace', 'redirectToWorkspace', 'closeNewWsModal', 'createWorkspace']);
@@ -66,6 +66,7 @@ const closeNewWsModal = () => {
 };
 
 const createWorkspace = () => {
+    showMainSidebar.value = false;
     emit('createWorkspace', newWorkspace)
 };
 

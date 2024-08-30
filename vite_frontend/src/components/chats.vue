@@ -112,19 +112,19 @@ const fetchWorkspace = async () => {
   
 const fetchChats = async () => {
   await ChatUtils.fetchChats(chats, errorMessage, router);
-  selectedChat.value = chats.value.find(chat => chat._id === route.params.chatId);
+  //selectedChat.value = chats.value.find(chat => chat._id === route.params.chatId);
 };
 
 const fetchChat = async (chatId) => {
   await ChatUtils.fetchChat(chatId, chats, selectedChat, errorMessage, router);
 };
 
-const openNewChat = async () => {    
+const openNewChat = async () => {  
   await ChatUtils.openNewChat(newChat, chats, selectedChat, currentUser, errorMessage, router);
   if (errorMessage.value.length === 0) {
+    inDetails.value = false;
     await fetchChats();
-    isModalOpened.value = false;
-    newChat.value = { name: '', users: [] };
+    closeModal();
   }
 };
 
@@ -159,7 +159,7 @@ const closeNewWsModal = () => {
 };
 
 const createWorkspace = async (newWorkspace) => {
-  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar);
+  await Utils.createWorkspace(isNewWsModalOpened, newWorkspace, router, workspace, path, ref('/chats'), currentUser, ref([]), folders, selectedFolder, ref(false), userWsPerms, errorMessage, isWsModalOpened, workspaces, showMainSidebar, ws);
   if (errorMessage.value.length === 0) {
     closeNewWsModal();
   }
@@ -292,7 +292,7 @@ watch(() => selectedChat.value?.messages, async (newMessages, oldMessages) => {
               <p style="margin-top: 5px; margin-bottom: 5px; text-align: center" v-for="error in errorMessage">{{ error }}</p>
             </div>
             
-            <div v-if="!editing && selectedChat.type !== 'Workspace'">
+            <div v-if="!editing && selectedChat && selectedChat.type !== 'Workspace'">
               <button @click="editingName = selectedChat.name; editing=true">Editar</button>
               <button @click="leaveChat()" class="red-button" style="margin-left: 5px;">Abandonar chat</button>
             </div>

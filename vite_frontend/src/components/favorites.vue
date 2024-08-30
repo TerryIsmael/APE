@@ -12,7 +12,7 @@ const props = defineProps({
       required: true
   },
 });
-
+const ws = ref(null);
 const currentUser = ref(null);
 const userWsPerms = ref(null);
 const userItemPerms = ref(null);
@@ -196,6 +196,7 @@ const websocketEventAdd = () => {
 
 onBeforeMount(async () => {
   path.value = "/" + route.name;
+  ws.value = props.ws;
   await fetchUser();
   await fetchWorkspace();
   websocketEventAdd();
