@@ -409,7 +409,7 @@ export const downloadFile = async (req: any, res: any) => {
         }
         try{
             await fs.promises.access(`uploads/${wsId}/${fileId}.lock`);
-            return res.status(409).json({ error: 'El archivo está siendo editado o precesado en estos momentos' });
+            return res.status(409).json({ error: 'El archivo está siendo editado o procesado en estos momentos' });
         }catch{
 
         }
